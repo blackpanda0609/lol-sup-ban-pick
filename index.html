@@ -126,6 +126,9 @@ td.key{font-weight:700;white-space:nowrap}
 td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px 3px 3px;font-size:13.5px;cursor:help;display:inline-flex;align-items:center;gap:6px}
 .chip .ic{width:22px;height:22px}
+.ichip{padding:3px}
+.ichip .wr{padding-right:5px}
+.tag{white-space:nowrap}
 .tier{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;font-family:var(--display);font-size:14px;border:1px solid currentColor}
 .tier-S{color:var(--accent);background:var(--accent-soft)}
 .tier-A{color:var(--good)}
@@ -133,6 +136,9 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .tier-C{color:var(--mage)}
 .tier-D{color:var(--bad)}
 .tier-none{color:var(--muted);border-style:dashed}
+.dmg{display:flex;width:72px;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
+.dmg i{display:block;height:100%}
+.d-p{background:var(--engage)}.d-m{background:var(--catch)}.d-t{background:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 .cls-filter .tg{color:var(--fg)}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
@@ -276,7 +282,7 @@ const ID={thresh:"Thresh",blitz:"Blitzcrank",pyke:"Pyke",bard:"Bard",naut:"Nauti
  ashe:"Ashe",jhin:"Jhin",twitch:"Twitch",mf:"MissFortune",samira:"Samira",zeri:"Zeri",aphelios:"Aphelios",trist:"Tristana",sivir:"Sivir",
  varus:"Varus",kog:"KogMaw",nilah:"Nilah",smolder:"Smolder",ziggs:"Ziggs",swain:"Swain",hwei:"Hwei",karthus:"Karthus"};
 const APC=new Set(["ziggs","swain","hwei","karthus"]);
-const NEEDS={front:"フロント",engage:"エンゲージ",ap:"AP",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
+const NEEDS={front:"フロント",engage:"エンゲージ",cc:"CC",ap:"AP",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
 const TR={
  thresh:"front engage peel catch",blitz:"engage catch",pyke:"engage catch",bard:"catch peel",
  naut:"front engage catch",leona:"front engage",rell:"front engage",ali:"front engage disengage",rakan:"engage disengage",
@@ -316,13 +322,24 @@ const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm
 // 上位10%=S / 次の20%=A / 35%=B / 20%=C / 残り=D
 const tierScore=r=>(r[1]+20)/(r[0]+40);
 const tierMin=()=>Math.max(MIN,20);
+// 環境への影響力：勝率点（ならした勝率と50%の差を1.5倍）＋ 人気点（ピック率%の平方根 × 重み）
+// 例（バランス）：勝率53%・ピック率1% → 4.5+1.5=6.0 ／ 勝率50.5%・ピック率15% → 0.75+5.8=6.6
+let PR_W=1.5;
+const PR_WEIGHTS=[["勝率重視",.5],["バランス",1.5],["環境重視",3]];
+const wrPts=r=>(tierScore(r)-.5)*100*1.5;
+const prPts=r=>PR_W*Math.sqrt(r[0]/ST.matches*100);
+// BAN率：チャンプ単位（レーン共通）。ban を数えた試合が200試合に届くまではスコアに入れない
+const BAN_MIN=200;
+const banRate=key=>ST&&ST.ban_matches>=1?((ST.bans||{})[key]||0)/ST.ban_matches:null;
+const banPts=(r,key)=>ST&&ST.ban_matches>=BAN_MIN?PR_W*.7*Math.sqrt(banRate(key)*100):0;
+const powerScore=(r,key)=>wrPts(r)+prPts(r)+banPts(r,key);
 function tierMapOf(L){
-  const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>tierScore(b[1])-tierScore(a[1]));
+  const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>powerScore(b[1],b[0])-powerScore(a[1],a[0]));
   const map={};
   ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
   return map;
 }
-const tierBadge=(t,r)=>t?`<span class="tier tier-${t}" title="ならした勝率 ${(tierScore(r)*100).toFixed(1)}%">${t}</span>`:`<span class="tier tier-none" title="${tierMin()}試合未満なのでTierなし">—</span>`;
+const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" title="スコア ${powerScore(r,key).toFixed(1)}（勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}／人気点 +${prPts(r).toFixed(1)}／BAN点 +${banPts(r,key).toFixed(1)}）">${t}</span>`:`<span class="tier tier-none" title="${tierMin()}試合未満なのでTierなし">—</span>`;
 const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -380,7 +397,7 @@ showTab(first);
 
 // ===== 全チャンプの役割（レーンタブ用）=====
 // フロント：Data Dragon の Tank タグ / AP・AD：手入力リストか magic と attack の比較 / それ以外：手入力リスト（Data Dragon のID）
-const LANE_NEEDS={front:"フロント",engage:"エンゲージ",ap:"AP",ad:"AD",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
+const LANE_NEEDS={front:"フロント",engage:"エンゲージ",cc:"CC",ap:"AP",ad:"AD",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
 const idSet=s=>new Set(s.split(/\s+/));
 const T_LIST={
  engage:idSet("Malphite Ornn Sejuani Zac Amumu Leona Nautilus Rell Alistar Rakan Maokai JarvanIV Vi MonkeyKing Sion Gragas Rammus Nunu Skarner Diana Galio Kennen Orianna Hecarim Kled Volibear Shen Sett Poppy KSante Camille Annie Seraphine Nocturne Warwick Briar Yone Thresh Blitzcrank Pyke Neeko Lillia Ambessa"),
@@ -390,11 +407,31 @@ const T_LIST={
  poke:idSet("Xerath Velkoz Ziggs Jayce Varus Ezreal Lux Zoe Hwei Karma Nidalee Corki Caitlyn Jhin Mel Seraphine Zyra Brand Syndra Gangplank Senna Smolder Kennen Viktor Taliyah Aurora Kayle")
 };
 const AP_LIST=idSet("Gwen Diana Ekko Lillia Mordekaiser Rumble Sylas Gragas Kennen Akali Kayle Teemo Fizz Evelynn Elise Kassadin Katarina Vladimir Swain Nidalee Fiddlesticks Karthus Ahri Singed Malphite Amumu Zac Maokai Sejuani Nunu Rammus Chogath Cassiopeia Aurora Hwei Mel AurelionSol Ziggs Seraphine Brand Zyra Karma Lux Morgana Neeko Lissandra Malzahar Taliyah Anivia Azir Orianna Syndra Viktor Xerath Velkoz Zoe Annie Veigar Vex Ryze Leblanc Galio Heimerdinger Zilean Ivern Brand Sona Nami Lulu Janna Soraka Yuumi Milio Renata Bard Taric Rell Leona");
-function traitsOf(key){
+// 実データ（レーンごと）：[試合数, 試合時間(秒), 敵にCCを当てた時間(秒), 物理, 魔法, 確定ダメージ]
+const EXT_MIN=10;
+const extOf=(L,key)=>{const e=L&&L.ext&&L.ext[key];return e&&e[0]>=EXT_MIN&&e[1]>0?e:null;};
+const ccPerMin=e=>e[2]/(e[1]/60);
+const dmgShare=e=>{const s=(e[3]+e[4]+e[5])||1;return [e[3]/s,e[4]/s,e[5]/s];};
+const ccCuts=new WeakMap();
+// レーン内でCC時間が多い上位1/3の境目
+function ccCut(L){
+  if(!L)return null;
+  if(ccCuts.has(L))return ccCuts.get(L);
+  const v=Object.values(L.ext||{}).filter(e=>e[0]>=EXT_MIN&&e[1]>0).map(ccPerMin).sort((a,b)=>b-a);
+  const c=v.length>=6?v[Math.floor(v.length/3)]:null;
+  ccCuts.set(L,c);return c;
+}
+// AP・AD と CC は、そのレーンで10試合以上の実データがあればそれを使い、なければ推定する
+function traitsOf(key,L){
   const c=BYKEY[key];if(!c)return new Set();
   const t=new Set(Object.keys(T_LIST).filter(n=>T_LIST[n].has(c.id)));
   if(c.tags.includes("Tank"))t.add("front");
-  t.add(AP_LIST.has(c.id)||(c.info.magic||0)>(c.info.attack||0)?"ap":"ad");
+  const e=extOf(L,key);
+  if(e){const [p,m]=dmgShare(e);if(m>=.45)t.add("ap");if(p>=.45)t.add("ad");if(!t.has("ap")&&!t.has("ad"))t.add(m>p?"ap":"ad");}
+  else t.add(AP_LIST.has(c.id)||(c.info.magic||0)>(c.info.attack||0)?"ap":"ad");
+  const cut=ccCut(L);
+  if(e&&cut!==null){if(ccPerMin(e)>=cut)t.add("cc");}
+  else if(t.has("engage")||t.has("catch"))t.add("cc");
   return t;
 }
 
@@ -430,7 +467,7 @@ function buildLane(id,pos,label){
     if(needs.size){
       // 点数：足りない役割1つにつき +1.5 / 敵を選んでいればその対面の勝率で ±2、なければ全体勝率で ±1
       const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=MIN&&k!==E).map(([k,r])=>{
-        const tr=traitsOf(k),hit=[...needs].filter(n=>tr.has(n));
+        const tr=traitsOf(k,L),hit=[...needs].filter(n=>tr.has(n));
         if(!hit.length)return null;
         let s=hit.length*1.5,note;
         const vr=E&&(L.vs[k]||{})[E];
@@ -465,11 +502,18 @@ function buildLane(id,pos,label){
 }
 
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）
+// CC/分 とダメージ内訳のセル
+function extCells(L,k){
+  const e=extOf(L,k);
+  if(!e)return `<td class="n">—</td><td><span class="why">—</span></td>`;
+  const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
+  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" title="物理 ${f(p)}／魔法 ${f(m)}／確定 ${f(t)}（${e[0]}試合）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
+}
 function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは、勝率に20勝20敗ぶんを足して50%寄りにならした値で、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。試合数が多いほど実際の勝率がそのまま効くので、たくさん使われていて勝率が低いチャンプは下がります。20試合未満のチャンプは、たまたまの勝ち負けが大きいので「—」にしています。</p>`;
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc" title="敵にCCを当てた時間（1分あたり）">CC/分</th><th data-s="ap" title="対チャンピオンダメージの内訳：赤=物理、紫=魔法、灰=確定">ダメージ</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。人気をどれだけ重く見るかは、上の「Tierの基準」で変えられます。20試合未満のチャンプは「—」です。Tierにカーソルを合わせると内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -484,10 +528,10 @@ function laneTable(host,L,label,extra=null){
   function table(){
     const t=kata(tq.value.trim());
     const rows=Object.entries(L.champs).filter(([k])=>BYKEY[k]&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
-    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?tierScore(r):-1+r[0]/1e6):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
-    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||tierScore(b[1])-tierScore(a[1]);});
+    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
+    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0])-powerScore(a[1],a[0]);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td>${extra?`<td>${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?7:6}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extra?`<td>${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?10:9}">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
@@ -535,7 +579,7 @@ function rank(e,a){
       else if(yt.has(S[k][1])){s+=1;pros.push(`${A[a]}と相性のいい${TYPES[S[k][1]]}系`);}
       const r=duoOf(a,k); if(r){const b=Math.max(-2,Math.min(2,(smooth(r)-.5)*40));s+=b;(b>=0?pros:cons).push(`データ：${A[a]}と組んで勝率${pct(r)}（${r[0]}試合）`);}
     }
-    const hit=[...needs].filter(n=>TR[k].split(" ").includes(n));
+    const hit=[...needs].filter(n=>n==="cc"?(ST&&kKey(k)?traitsOf(kKey(k),ST.lanes.UTILITY).has("cc"):/engage|catch/.test(TR[k])):TR[k].split(" ").includes(n));
     if(hit.length){s+=1.5*hit.length;pros.push(`構成を補える：${hit.map(n=>NEEDS[n]).join("・")}`);}
     if(needs.size&&!hit.length){s-=1;cons.push("足りない役割を補えない");}
     return {k,s,pros,cons};
@@ -579,6 +623,8 @@ function renderSup(){
   $("results").innerHTML=out.join("");
 }
 
+// アイコンだけのチップ（名前と理由はカーソルで表示）
+const iconChip=(k,w,r=null)=>`<span class="chip ichip" title="${S[k][0]}：${w}${r?`（${pct(r)}・${r[0]}試合）`:""}" aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 const chip=(k,w,r=null)=>`<span class="chip" title="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 function stable(){
   const q=kata($("sq").value.trim());
@@ -598,7 +644,9 @@ function drawStatus(p){
   const d=new Date(ST.updated);
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
-    <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
+    <label for="tier-w">Tierの基準<select id="tier-w">${PR_WEIGHTS.map(([n,w])=>`<option value="${w}"${w===PR_W?" selected":""}>${n}</option>`).join("")}</select></label>
+    <label for="min-g" style="margin-left:0">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
+  $("tier-w").addEventListener("change",e=>{PR_W=+e.target.value;Object.values(lanePanels).forEach(p=>p.table());});
   $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();stable();});
 }
 (async()=>{
@@ -622,8 +670,8 @@ function drawStatus(p){
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
   if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
     lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
-      head:"このサポートに有利なピック（定番・カーソルで理由）",
-      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>chip(c,w,supVs(c,s))).join("")}</div>`:"";}
+      head:"有利なピック（定番・カーソルで名前と理由）",
+      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(c,s))).join("")}</div>`:"";}
     })};}
   pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
 })();
