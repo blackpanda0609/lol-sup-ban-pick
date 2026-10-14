@@ -66,6 +66,30 @@ ul.list li{display:grid;gap:2px}
 .tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.6}
 .t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}
 .score{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.toggles{display:flex;flex-wrap:wrap;gap:8px}
+.tg{font:inherit;font-size:13.5px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tg[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:700}
+.tg .ic{width:22px;height:22px}
+#unavail .tg{padding:3px 10px 3px 3px}
+#unavail .tg[aria-pressed="true"]{background:var(--bg);border-color:var(--engage);color:var(--muted);text-decoration:line-through}
+#unavail .tg[aria-pressed="true"] .ic{filter:grayscale(1);opacity:.5}
+.unavail{display:grid;gap:10px}
+.unavail summary{cursor:pointer;font-weight:700;font-size:13px}
+.unavail summary span{color:var(--engage);margin-left:6px}
+.unavail[open]{gap:10px}
+.unavail > .toggles{margin-top:10px}
+.linkbtn{justify-self:start;font:inherit;font-size:13px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
+.card.best{grid-column:1/-1}
+.rank{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 24px}
+.rank li{display:grid;gap:4px;min-width:0}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.pros,.cons{margin:0;padding:0;list-style:none;font-size:13.5px;display:grid;gap:2px}
+.pros li::before{content:"＋ ";color:var(--ench);font-weight:700}
+.cons li::before{content:"－ ";color:var(--engage);font-weight:700}
+.cons{color:var(--engage)}
+.off{opacity:.45}
+.off .name::after{content:"使えない";font-size:11px;color:var(--engage);border:1px solid currentColor;border-radius:999px;padding:0 6px}
 .tablebar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
 .tablebar input{max-width:260px}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
@@ -100,6 +124,15 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
     <div class="field"><span class="flabel" id="adc-l">味方ADC <span>隣のADC・APC</span></span><select id="adc" hidden></select></div>
     <div class="field"><span class="flabel" id="mine-l">自分の得意チャンプ <span>ban候補を出す</span></span><select id="mine" hidden></select></div>
   </div>
+  <div class="field">
+    <span class="flabel" id="needs-l">味方の構成で足りないもの <span>トップ・ジャングル・ミッドを見て、当てはまるものを選ぶ</span></span>
+    <div class="toggles" id="needs" role="group" aria-labelledby="needs-l"></div>
+  </div>
+  <details class="unavail">
+    <summary>使えないチャンプ（ban・ピック済み）<span id="unavail-count"></span></summary>
+    <div class="toggles" id="unavail" role="group" aria-label="使えないチャンプ"></div>
+    <button type="button" class="linkbtn" id="unavail-clear">すべて解除</button>
+  </details>
   <div class="results" id="results"></div>
   <div class="legend" id="legend"></div>
 </section>
@@ -222,24 +255,62 @@ $("mine").innerHTML=opt(S,"選択しない",true);
 $("adc").innerHTML=opt(A,"選択しない",false);
 $("legend").innerHTML=Object.keys(TYPES).map(t=>`<span class="tag t-${t}">${TYPES[t]}</span>`).join("");
 
-const li=(k,why,extra="")=>`<li><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
+// 味方の構成で補える役割
+const NEEDS={front:"前衛（硬さ）",engage:"エンゲージ役",ap:"魔法ダメージ",peel:"ADCを守る役",disengage:"ダイブ・突進対策",poke:"ポーク",catch:"キャッチ（ピック）"};
+const TR={
+ thresh:"front engage peel catch",blitz:"engage catch",pyke:"engage catch",bard:"catch peel",
+ naut:"front engage catch",leona:"front engage",rell:"front engage",ali:"front engage disengage",rakan:"engage disengage",
+ braum:"front peel disengage",taric:"front peel",tahm:"front peel disengage",mao:"front engage disengage",
+ lulu:"peel disengage",janna:"peel disengage",nami:"peel ap",soraka:"peel",yuumi:"peel",karma:"peel poke ap",
+ milio:"peel disengage",renata:"peel disengage",sona:"peel ap poke",sera:"ap poke peel",
+ senna:"poke",brand:"ap poke",zyra:"ap poke disengage",xerath:"ap poke",vel:"ap poke",morg:"ap catch peel",lux:"ap poke catch peel"
+};
+const needs=new Set(),unavail=new Set();
+$("needs").innerHTML=Object.keys(NEEDS).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${NEEDS[n]}</button>`).join("");
+const drawUnavail=()=>{
+  $("unavail").innerHTML=Object.keys(S).sort((a,b)=>S[a][0].localeCompare(S[b][0],"ja")).map(k=>`<button type="button" class="tg" data-k="${k}" aria-pressed="${unavail.has(k)}">${ic(k)}${S[k][0]}</button>`).join("");
+  $("unavail-count").textContent=unavail.size?`${unavail.size}体`:"";
+};
+$("needs").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;needs.has(n)?needs.delete(n):needs.add(n);b.setAttribute("aria-pressed",needs.has(n));render();});
+$("unavail").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;const k=b.dataset.k;unavail.has(k)?unavail.delete(k):unavail.add(k);b.setAttribute("aria-pressed",unavail.has(k));$("unavail-count").textContent=unavail.size?`${unavail.size}体`:"";render();});
+$("unavail-clear").addEventListener("click",()=>{unavail.clear();drawUnavail();render();});
+
+// 点数：敵に有利 +3 / 敵が苦手 −3 / ADCと好相性 +2（同系統 +1）/ 足りない役割1つにつき +1.5
+function rank(e,a){
+  const yt=a?new Set(Y[a].map(([k])=>S[k][1])):new Set();
+  return Object.keys(S).filter(k=>k!==e&&!unavail.has(k)).map(k=>{
+    let s=0;const pros=[],cons=[];
+    if(e){
+      const c=C[e].find(([x])=>x===k); if(c){s+=3;pros.push(`${S[e][0]}に有利：${c[1]}`);}
+      const w=(C[k]||[]).find(([x])=>x===e); if(w){s-=3;cons.push(`${S[e][0]}が苦手：${w[1]}`);}
+    }
+    if(a){
+      const y=Y[a].find(([x])=>x===k);
+      if(y){s+=2;pros.push(`${A[a]}と好相性：${y[1]}`);}
+      else if(yt.has(S[k][1])){s+=1;pros.push(`${A[a]}と相性のいい${TYPES[S[k][1]]}系`);}
+    }
+    const hit=[...needs].filter(n=>TR[k].split(" ").includes(n));
+    if(hit.length){s+=1.5*hit.length;pros.push(`構成を補える：${hit.map(n=>NEEDS[n]).join("・")}`);}
+    if(needs.size&&!hit.length){s-=1;cons.push("足りない役割を補えない");}
+    return {k,s,pros,cons};
+  }).filter(r=>r.pros.length).sort((x,y)=>y.s-x.s||S[x.k][0].localeCompare(S[y.k][0],"ja")).slice(0,6);
+}
+
+const li=(k,why,extra="")=>`<li${unavail.has(k)?' class="off"':""}><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
 const card=(title,body,best)=>`<div class="card${best?" best":""}"><h3>${title}</h3>${body}</div>`;
 const empty=t=>`<p class="empty">${t}</p>`;
 
 function render(){
   const e=$("enemy").value,a=$("adc").value,m=$("mine").value;
   const out=[];
-  if(e&&a){
-    const cs=C[e]||[],ys=Y[a]||[];
-    const both=cs.filter(([k])=>ys.some(([y])=>y===k));
-    // 同タイプ一致もゆるく拾う：カウンター候補のうちADCの相性候補と同タイプのもの
-    const ytypes=new Set(ys.map(([k])=>S[k][1]));
-    const near=cs.filter(([k])=>!both.some(([b])=>b===k)&&ytypes.has(S[k][1]));
-    let body;
-    if(both.length) body=`<ul class="list">${both.map(([k,w])=>li(k,`${w}／${ys.find(([y])=>y===k)[1]}`,`<span class="score">両方◎</span>`)).join("")}${near.map(([k,w])=>li(k,w,`<span class="score">タイプ一致</span>`)).join("")}</ul>`;
-    else if(near.length) body=`<ul class="list">${near.map(([k,w])=>li(k,w,`<span class="score">タイプ一致</span>`)).join("")}</ul>`;
-    else body=empty(`完全一致はありません。下の2枚から、相手への有利を優先するか、${A[a]}との相性を優先するか選んでください。`);
-    out.push(card(`おすすめ：${S[e][0]}に有利 × ${A[a]}と好相性`,body,true));
+  if(e||a||needs.size){
+    const rs=rank(e,a),top=rs.length?Math.max(...rs.map(r=>r.s),1):1;
+    const conds=[e&&`${S[e][0]}に有利`,a&&`${A[a]}と好相性`,needs.size&&`${[...needs].map(n=>NEEDS[n]).join("・")}を補う`].filter(Boolean).join(" × ");
+    const body=rs.length?`<ul class="rank">${rs.map(r=>`<li><span class="name">${ic(r.k)}${S[r.k][0]} ${tag(r.k)}<span class="score">${r.s.toFixed(1)}点</span></span>
+      <span class="bar"><i style="width:${Math.max(4,r.s/top*100)}%"></i></span>
+      <ul class="pros">${r.pros.map(p=>`<li>${p}</li>`).join("")}</ul>${r.cons.length?`<ul class="cons">${r.cons.map(p=>`<li>${p}</li>`).join("")}</ul>`:""}</li>`).join("")}</ul>`
+      :empty("条件に合う候補が見つかりません。「使えないチャンプ」を減らすか、条件をゆるめてください。");
+    out.push(card(`総合おすすめ：${conds}`,body,true));
   }
   if(e) out.push(card(`${S[e][0]}に有利なピック`,`<ul class="list">${C[e].map(([k,w])=>li(k,w)).join("")}</ul>`));
   if(a) out.push(card(`${A[a]}と相性のいいサポート`,`<ul class="list">${Y[a].map(([k,w])=>li(k,w)).join("")}</ul>`));
@@ -249,7 +320,7 @@ function render(){
     out.push(card(`${S[m][0]}を使うならban候補`,`<ul class="list">${bans.map(([k,w])=>li(k,`${S[m][0]}への対策：${w}`)).join("")}</ul>`+
       (goodVs.length?`<p class="why" style="margin:0">得意な相手：${goodVs.map(k=>S[k][0]).join("、")}</p>`:"")));
   }
-  if(!out.length) out.push(card("使い方",empty("敵サポートと味方ADCを両方選ぶと、2つの条件を満たす候補が一番上に出ます。自分の得意チャンプを選ぶと、そのチャンプが苦手な相手（＝ban候補）が出ます。")));
+  if(!out.length) out.push(card("使い方",empty("敵サポート・味方ADC・味方の構成で足りないものを選ぶと、条件を合わせて点数の高い順に候補が出ます。banやピックで使えないチャンプは「使えないチャンプ」で外せます。自分の得意チャンプを選ぶと、そのチャンプが苦手な相手（＝ban候補）が出ます。")));
   $("results").innerHTML=out.join("");
 }
 
@@ -293,6 +364,7 @@ function makePicker(id){
   const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();q.focus();ul.children[active]?.scrollIntoView({block:"nearest"});};
   const close=()=>{panel.hidden=true;btn.setAttribute("aria-expanded","false");};
   const choose=k=>{sel.value=k;sel.dispatchEvent(new Event("change"));drawBtn();close();btn.focus();};
+  sel.addEventListener("change",drawBtn);
   btn.addEventListener("click",()=>panel.hidden?open():close());
   q.addEventListener("input",drawList);
   q.addEventListener("keydown",e=>{
@@ -308,7 +380,7 @@ function makePicker(id){
 ["enemy","adc","mine"].forEach(makePicker);
 document.addEventListener("click",e=>pickers.forEach(p=>{if(!p.wrap.contains(e.target))p.close();}));
 
-const drawAll=()=>{render();ctable($("cq").value.trim());stable($("sq").value.trim());pickers.forEach(p=>p.drawBtn());};
+const drawAll=()=>{render();ctable($("cq").value.trim());stable($("sq").value.trim());pickers.forEach(p=>p.drawBtn());drawUnavail();};
 drawAll();
 // 最新パッチのアイコンに差し替え
 fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json()).then(v=>{if(v[0]&&v[0]!==DD){DD=v[0];drawAll();}}).catch(()=>{});
