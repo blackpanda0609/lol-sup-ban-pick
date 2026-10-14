@@ -132,15 +132,31 @@ def count_match(m, patch, stats):
         lane[(p.get("teamId"), p.get("teamPosition"))] = p
     if any((t, pos) not in lane for t in (100, 200) for pos in POS):
         return False
+    dur = int(info.get("gameDuration", 0))
     for pos in POS:
         L = stats["lanes"].setdefault(pos, {"champs": {}, "vs": {}})
+        ext = L.setdefault("ext", {})
         a, b = lane[(100, pos)], lane[(200, pos)]
         for me, op in ((a, b), (b, a)):
             add(L["champs"], me["championId"], me["win"])
             add(L["vs"].setdefault(str(me["championId"]), {}), op["championId"], me["win"])
+            # [試合数, 試合時間(秒), 敵にCCを当てた時間(秒), 物理・魔法・確定ダメージ(対チャンピオン)]
+            e = ext.setdefault(str(me["championId"]), [0, 0, 0, 0, 0, 0])
+            e[0] += 1
+            e[1] += dur
+            e[2] += int(me.get("timeCCingOthers", 0) or 0)
+            e[3] += int(me.get("physicalDamageDealtToChampions", 0) or 0)
+            e[4] += int(me.get("magicDamageDealtToChampions", 0) or 0)
+            e[5] += int(me.get("trueDamageDealtToChampions", 0) or 0)
     for t in (100, 200):
         adc, sup = lane[(t, "BOTTOM")], lane[(t, "UTILITY")]
         add(stats["duo"].setdefault(str(adc["championId"]), {}), sup["championId"], adc["win"])
+    # ban：同じ試合で両チームが同じチャンプをbanしても1回と数える
+    banned = {b.get("championId", -1) for t in info.get("teams", []) for b in t.get("bans", [])}
+    for c in banned:
+        if c and c > 0:
+            stats["bans"][str(c)] = stats["bans"].get(str(c), 0) + 1
+    stats["ban_matches"] += 1
     stats["matches"] += 1
     return True
 
@@ -182,6 +198,9 @@ def main():
     print(f"patch {patch}, platforms {PLATFORMS}, {MAX_MINUTES} min", flush=True)
     stats = load_json(DATA / "patches" / f"{patch}.json",
                       {"patch": patch, "matches": 0, "lanes": {}, "duo": {}})
+    # ban は途中から集計を始めたので、分母（ban を数えた試合数）を別に持つ
+    stats.setdefault("bans", {})
+    stats.setdefault("ban_matches", 0)
     seen_path = DATA / "seen" / f"{patch}.txt"
     seen = set(seen_path.read_text(encoding="utf-8").split()) if seen_path.exists() else set()
     before = stats["matches"]
