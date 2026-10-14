@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>サポートBPノート</title>
+<meta name="description" content="LoLサポート向けのBP早見表。敵サポートへのカウンター、味方ADCとの相性、ban候補をすぐ引けます。">
+<meta property="og:title" content="サポートBPノート">
+<meta property="og:description" content="LoLサポート向けのカウンター早見表とADC相性表">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 6v9c0 7 5 12 12 15 7-3 12-8 12-15V6z' fill='%23a8761b'/%3E%3C/svg%3E">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 上部にBPアシスト（3つの選択→結果）、下に2つの早見表。1カラム、最大幅 960px */
+:root{
+  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2230; --muted:#5d6779; --line:#d5dbe5;
+  --accent:#a8761b; --accent-soft:#f3e7cc;
+  --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
+  --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
+  --accent:#e0b35a; --accent-soft:#3a3020;
+  --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
+  --accent:#e0b35a; --accent-soft:#3a3020;
+  --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65}
+.wrap{max-width:960px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:40px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,40px);line-height:1.2;margin:0;text-wrap:balance}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:balance}
+h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
+header p{color:var(--muted);margin:8px 0 0;max-width:62ch}
+section{display:grid;gap:16px}
+.pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.pickers label{display:grid;gap:6px;font-weight:700;font-size:13px}
+.pickers label span{color:var(--muted);font-weight:500}
+select,input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;width:100%;box-sizing:border-box}
+select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+.card.best{border-color:var(--accent);background:linear-gradient(var(--accent-soft),var(--surface) 70%)}
+.card .empty{color:var(--muted);font-size:14px;margin:0}
+ul.list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+ul.list li{display:grid;gap:2px}
+.name{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.why{color:var(--muted);font-size:13.5px}
+.tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.6}
+.t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}
+.score{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.tablebar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
+.tablebar input{max-width:260px}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
+tr:last-child td{border-bottom:none}
+td.key{font-weight:700;white-space:nowrap}
+td .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:13.5px;cursor:help}
+.legend{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+<header>
+  <h1>サポートBPノート</h1>
+  <p>相手のサポートと味方ADCを選ぶと、カウンターかつADCと噛み合うピック候補を出します。自分の得意チャンプを選べば、ban候補も出ます。</p>
+</header>
+
+<section aria-labelledby="bp-h">
+  <h2 id="bp-h">BPアシスト</h2>
+  <div class="pickers">
+    <label for="enemy">敵サポート <span>相手が先に出したら</span><select id="enemy"></select></label>
+    <label for="adc">味方ADC <span>隣のADC</span><select id="adc"></select></label>
+    <label for="mine">自分の得意チャンプ <span>ban候補を出す</span><select id="mine"></select></label>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="legend" id="legend"></div>
+</section>
+
+<section aria-labelledby="c-h">
+  <div class="tablebar">
+    <h2 id="c-h">カウンター早見表</h2>
+    <input id="cq" type="search" placeholder="チャンプ名で絞り込み" aria-label="カウンター早見表を絞り込み">
+  </div>
+  <div class="tbl"><table><thead><tr><th>敵サポート</th><th>タイプ</th><th>有利なピック（カーソルで理由）</th></tr></thead><tbody id="ctable"></tbody></table></div>
+</section>
+
+<section aria-labelledby="s-h">
+  <div class="tablebar">
+    <h2 id="s-h">ADC相性表</h2>
+    <input id="sq" type="search" placeholder="ADC名で絞り込み" aria-label="ADC相性表を絞り込み">
+  </div>
+  <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート（カーソルで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
+</section>
+
+<p class="note">定番の相性をもとにした目安です。パッチやビルドの変化で有利不利は動くので、気になるマッチアップは最新パッチの統計サイトで勝率も確認してください。ラン（ルーン）やプレイ精度次第でひっくり返る組み合わせも多いです。</p>
+<p class="note">サポートBPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
+</div>
+<script>
+const TYPES={engage:"エンゲージ",catch:"キャッチ",tank:"タンク",ench:"エンチャンター",mage:"メイジ"};
+const S={
+ thresh:["スレッシュ","catch"],blitz:["ブリッツクランク","catch"],pyke:["パイク","catch"],bard:["バード","catch"],
+ naut:["ノーチラス","engage"],leona:["レオナ","engage"],rell:["レル","engage"],ali:["アリスター","engage"],rakan:["ラカン","engage"],
+ braum:["ブラウム","tank"],taric:["タリック","tank"],tahm:["タム・ケンチ","tank"],mao:["マオカイ","tank"],
+ lulu:["ルル","ench"],janna:["ジャンナ","ench"],nami:["ナミ","ench"],soraka:["ソラカ","ench"],yuumi:["ユーミ","ench"],
+ karma:["カルマ","ench"],milio:["ミリオ","ench"],renata:["レナータ・グラスク","ench"],sona:["ソナ","ench"],sera:["セラフィーン","ench"],
+ senna:["セナ","mage"],brand:["ブランド","mage"],zyra:["ザイラ","mage"],xerath:["ゼラス","mage"],vel:["ヴェル＝コズ","mage"],morg:["モルガナ","mage"],lux:["ラックス","mage"]
+};
+// 敵サポート → それに有利なピック
+const C={
+ thresh:[["morg","Eのシールドでフックとフレイを無効化"],["braum","Eでフックを受け止め、パッシブで返せる"],["janna","引かれた後の追撃をQ・Rで止める"]],
+ blitz:[["morg","Eでグラブを無効化できる"],["braum","Eで射線を塞ぎ、ADCを守れる"],["tahm","グラブされた味方を飲み込んで救出"]],
+ naut:[["morg","Eでアンカーと通常攻撃のスネアを防ぐ"],["janna","Qで突進後の追撃を割る"],["braum","受けてからのパッシブスタンで返す"]],
+ leona:[["morg","Eでスタンを無効化し、逆にQで捕まえる"],["janna","Qのノックアップでダイブを止める"],["braum","Eで突進を受けてパッシブで反撃"]],
+ pyke:[["braum","硬さと反撃スタンで処刑ラインに入りにくい"],["leona","硬く、Eに合わせてカウンターエンゲージできる"],["ali","ヒールと硬さでキル圏を外せる"]],
+ rell:[["janna","突っ込んだレルをQ・Rで押し返す"],["morg","Eで味方へのスタンを防ぐ"],["lulu","Rの打ち上げ・Wでダイブを受け止める"]],
+ ali:[["janna","WQ後の追撃をQで割り、ADCを逃がす"],["morg","Eで味方へのCCを防ぐ"],["lulu","Rの打ち上げで2回目の入りを止める"]],
+ rakan:[["leona","対象指定のEとQで捕まえやすい"],["naut","パッシブとRで確実に止める"],["janna","Qで突進を割り込める"]],
+ lulu:[["naut","序盤のオールインに弱く、硬いエンゲージで押し切れる"],["leona","レベル2先行からのダイブが刺さる"],["blitz","Wの射程外からグラブで捕まえる"]],
+ janna:[["brand","防御が届かない射程からダメージを取る"],["xerath","長射程ポークでレーンを押し下げる"],["vel","ノックアップ後の反撃を受けにくい距離で戦える"]],
+ nami:[["leona","逃げ手段がなく、オールインに弱い"],["naut","エンゲージ後にナミのQが当てにくい"],["blitz","細い体で捕まりやすい"]],
+ soraka:[["blitz","捕まえれば回復が間に合わない"],["pyke","低耐久をキルラインで仕留める"],["leona","オールインで回復量を上回る（重傷は早めに）"]],
+ yuumi:[["leona","レーン序盤からADCを集中して倒す"],["naut","降りた瞬間を狙えば相手は何もできない"],["pyke","ADCを処刑ラインまで削りやすい"]],
+ karma:[["leona","硬いエンゲージでポークの間合いを潰す"],["naut","エンゲージでシールドを使わせて押し込む"],["ali","硬さで削りを受けつつ入れる"]],
+ milio:[["blitz","逃げ手段が乏しく捕まえやすい"],["naut","CC解除のRより先に倒し切る"],["pyke","低耐久をキルラインで狙える"]],
+ senna:[["blitz","射程は長いが逃げ手段がない"],["naut","捕まえれば一気に落とせる"],["pyke","低耐久でキルラインに入りやすい"]],
+ brand:[["leona","低耐久のメイジにオールインが刺さる"],["naut","スキル空振りの隙に入る"],["rakan","機動力でスキルを避けて入れる"]],
+ zyra:[["leona","植物を無視して本体に入れる"],["naut","対象指定のRで確実に捕まえる"],["rakan","スネアを避けつつ入れる"]],
+ xerath:[["leona","機動力のない相手にダイブ"],["naut","射程を詰めれば無力"],["blitz","細い体を捕まえて落とす"]],
+ vel:[["leona","ノックアップ前に入れる"],["naut","スキル空振り後を狙える"],["pyke","キルラインを取りやすい"]],
+ morg:[["brand","シールドに関係ない範囲ポーク"],["xerath","Eの届かない射程から削る"],["zyra","植物でシールドを無駄撃ちさせる"]],
+ lux:[["naut","逃げ手段がなく、オールインに弱い"],["leona","スキル空振りの隙に入る"],["blitz","細い体を捕まえやすい"]],
+ bard:[["leona","バードがレーンを離れた隙に2対1"],["naut","序盤のトレードで押し勝てる"],["ali","硬さで序盤レーンを支配"]],
+ braum:[["zyra","Eの盾で防げない植物ポーク"],["brand","範囲ダメージで盾を無視"],["karma","射程外から削れる"]],
+ taric:[["zyra","射程外からのポークで消耗させる"],["brand","範囲で削り、レーンの回復も追いつかない"],["xerath","近づかせずに削れる"]],
+ tahm:[["zyra","射程外からポークで削る"],["brand","パッシブの燃焼で硬さに対抗"],["karma","Qのポークで寄らせない"]],
+ mao:[["zyra","植物で一方的に削れる"],["brand","範囲ダメージで硬さに対抗"],["xerath","近寄られる前に削る"]],
+ renata:[["leona","オールインでRを使う前に崩す"],["naut","捕まえれば逃げ手段が乏しい"],["blitz","捕まえれば倒し切れる"]],
+ sona:[["blitz","低耐久で捕まえれば即キル"],["leona","オールインに弱い"],["naut","序盤から押し込める"]],
+ sera:[["naut","射程を詰めれば脆い"],["blitz","捕まえやすい"],["pyke","キルラインを取りやすい"]]
+};
+const A={
+ kaisa:"カイサ",jinx:"ジンクス",lucian:"ルシアン",draven:"ドレイヴン",ezreal:"エズリアル",kalista:"カリスタ",xayah:"ザヤ",vayne:"ヴェイン",
+ cait:"ケイトリン",ashe:"アッシュ",jhin:"ジン",twitch:"トゥイッチ",mf:"ミス・フォーチュン",samira:"サミーラ",zeri:"ゼリ",aphelios:"アフェリオス",
+ trist:"トリスターナ",sivir:"シヴィア",varus:"ヴァルス",kog:"コグ＝マウ",nilah:"ニーラ",smolder:"スモルダー"
+};
+// 味方ADC → 相性のいいサポート
+const Y={
+ kaisa:[["naut","CCに合わせてQとパッシブで一気に倒す"],["leona","対象指定CCからRで追撃"],["rell","まとめて固めたところにカイサが入れる"]],
+ jinx:[["lulu","ポリモーフとRで突っ込んでくる相手を止める"],["thresh","ランタンで救出、フレイで守る"],["nami","泡とEで追撃と防御を両立"]],
+ lucian:[["nami","Eの効果をパッシブの連射で全部乗せる"],["braum","連打でパッシブのスタックがすぐ溜まる"],["milio","Eのシールドと射程延長で短射程を補う"]],
+ draven:[["naut","序盤からオールインして斧で倒し切る"],["leona","レベル2で一緒に入りやすい"],["blitz","グラブ1回がそのままキルになる"]],
+ ezreal:[["karma","射程の長いQで一緒にポーク"],["yuumi","Eの距離を伸ばしてポークを続けられる"],["lux","スネアにQを重ねやすい"]],
+ kalista:[["thresh","Rで投げてフックとつなげる"],["ali","Rで投げた直後のWQで固める"],["taric","Rで投げた後のスタンが決まりやすい"]],
+ xayah:[["rakan","専用連携リコールとWの合わせ"],["naut","固めた相手にEの羽根を戻す"],["rell","まとめた相手に羽根を刺す"]],
+ vayne:[["lulu","スケールするまで守り切れる"],["janna","ダイブをことごとく止める"],["taric","Rで集団戦の生存力が上がる"]],
+ cait:[["lux","スネアに罠を重ねて確定ヘッドショット"],["morg","Qのスネアに罠を置ける"],["zyra","根に罠を重ねる"]],
+ ashe:[["sona","スロウとパワーコードでポークが強い"],["braum","通常攻撃が多くパッシブを溜めやすい"],["zyra","スロウと根でレーンを支配"]],
+ jhin:[["zyra","根にWの拘束を重ねる"],["morg","Qのスネアから確定W"],["lux","スネアに合わせてダメージを集中"]],
+ twitch:[["lulu","奇襲からRとWで暴れ続けられる"],["yuumi","移動速度でステルス奇襲を活かす"],["milio","射程延長でRが更に長くなる"]],
+ mf:[["leona","Rで固めて弾丸の雨を当て切る"],["naut","対象指定CCからR"],["rell","まとめて止めた相手にR"]],
+ samira:[["naut","ノックアップでスタイルを溜めてR"],["rell","集団を固めてそのまま突っ込める"],["rakan","ノックアップが多く、連携が取りやすい"]],
+ zeri:[["yuumi","移動速度と回復で機動力が伸びる"],["lulu","移動速度とシールドで逃げ撃ちが強くなる"],["milio","射程延長で短射程を補う"]],
+ aphelios:[["thresh","ランタンで移動手段のなさを補う"],["lulu","低機動のADCを守り切れる"],["nami","泡と攻撃強化で武器ローテを支える"]],
+ trist:[["leona","レベル2からのオールインが強い"],["naut","CCに合わせてWで飛び込める"],["nami","攻撃強化で序盤のトレードが強い"]],
+ sivir:[["karma","移動速度を重ねて一気に寄れる"],["nami","攻撃強化とスロウで押しが強い"],["naut","固めた相手にQを当てやすい"]],
+ varus:[["naut","CCとRの拘束を重ねて固め続ける"],["leona","入った相手にRで追撃"],["karma","ポークの射程を合わせられる"]],
+ kog:[["lulu","攻撃速度と巨大化でハイパーキャリーを守る"],["milio","射程延長でWがさらに伸びる"],["braum","前に立って射線を守る"]],
+ nilah:[["taric","パッシブで回復とシールドを共有できる"],["soraka","大量回復をパッシブで受け取れる"],["nami","泡と回復で一緒に入れる"]],
+ smolder:[["milio","射程延長でスタックを稼ぎやすい"],["lulu","スケールまで守り切れる"],["taric","Rで集団戦を生き残らせる"]]
+};
+
+const $=id=>document.getElementById(id);
+const tag=k=>`<span class="tag t-${S[k][1]}">${TYPES[S[k][1]]}</span>`;
+const opt=(map,label,isSup)=>`<option value="">${label}</option>`+Object.keys(map).sort((a,b)=>(isSup?map[a][0]:map[a]).localeCompare(isSup?map[b][0]:map[b],"ja")).map(k=>`<option value="${k}">${isSup?map[k][0]:map[k]}</option>`).join("");
+$("enemy").innerHTML=opt(S,"選択しない",true);
+$("mine").innerHTML=opt(S,"選択しない",true);
+$("adc").innerHTML=opt(A,"選択しない",false);
+$("legend").innerHTML=Object.keys(TYPES).map(t=>`<span class="tag t-${t}">${TYPES[t]}</span>`).join("");
+
+const li=(k,why,extra="")=>`<li><span class="name">${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
+const card=(title,body,best)=>`<div class="card${best?" best":""}"><h3>${title}</h3>${body}</div>`;
+const empty=t=>`<p class="empty">${t}</p>`;
+
+function render(){
+  const e=$("enemy").value,a=$("adc").value,m=$("mine").value;
+  const out=[];
+  if(e&&a){
+    const cs=C[e]||[],ys=Y[a]||[];
+    const both=cs.filter(([k])=>ys.some(([y])=>y===k));
+    // 同タイプ一致もゆるく拾う：カウンター候補のうちADCの相性候補と同タイプのもの
+    const ytypes=new Set(ys.map(([k])=>S[k][1]));
+    const near=cs.filter(([k])=>!both.some(([b])=>b===k)&&ytypes.has(S[k][1]));
+    let body;
+    if(both.length) body=`<ul class="list">${both.map(([k,w])=>li(k,`${w}／${ys.find(([y])=>y===k)[1]}`,`<span class="score">両方◎</span>`)).join("")}${near.map(([k,w])=>li(k,w,`<span class="score">タイプ一致</span>`)).join("")}</ul>`;
+    else if(near.length) body=`<ul class="list">${near.map(([k,w])=>li(k,w,`<span class="score">タイプ一致</span>`)).join("")}</ul>`;
+    else body=empty(`完全一致はありません。下の2枚から、相手への有利を優先するか、${A[a]}との相性を優先するか選んでください。`);
+    out.push(card(`おすすめ：${S[e][0]}に有利 × ${A[a]}と好相性`,body,true));
+  }
+  if(e) out.push(card(`${S[e][0]}に有利なピック`,`<ul class="list">${C[e].map(([k,w])=>li(k,w)).join("")}</ul>`));
+  if(a) out.push(card(`${A[a]}と相性のいいサポート`,`<ul class="list">${Y[a].map(([k,w])=>li(k,w)).join("")}</ul>`));
+  if(m){
+    const bans=C[m]||[];
+    const goodVs=Object.keys(C).filter(k=>C[k].some(([c])=>c===m));
+    out.push(card(`${S[m][0]}を使うならban候補`,`<ul class="list">${bans.map(([k,w])=>li(k,`${S[m][0]}への対策：${w}`)).join("")}</ul>`+
+      (goodVs.length?`<p class="why" style="margin:0">得意な相手：${goodVs.map(k=>S[k][0]).join("、")}</p>`:"")));
+  }
+  if(!out.length) out.push(card("使い方",empty("敵サポートと味方ADCを両方選ぶと、2つの条件を満たす候補が一番上に出ます。自分の得意チャンプを選ぶと、そのチャンプが苦手な相手（＝ban候補）が出ます。")));
+  $("results").innerHTML=out.join("");
+}
+
+const chip=(k,w)=>`<span class="chip" title="${w}">${S[k][0]}</span>`;
+function ctable(q=""){
+  $("ctable").innerHTML=Object.keys(C).filter(k=>!q||S[k][0].includes(q)||C[k].some(([c])=>S[c][0].includes(q)))
+   .sort((a,b)=>S[a][1].localeCompare(S[b][1])||S[a][0].localeCompare(S[b][0],"ja"))
+   .map(k=>`<tr><td class="key">${S[k][0]}</td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   ||`<tr><td colspan="3">該当なし</td></tr>`;
+}
+function stable(q=""){
+  $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
+   .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
+   .map(k=>`<tr><td class="key">${A[k]}</td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   ||`<tr><td colspan="2">該当なし</td></tr>`;
+}
+["enemy","adc","mine"].forEach(id=>$(id).addEventListener("change",render));
+$("cq").addEventListener("input",e=>ctable(e.target.value.trim()));
+$("sq").addEventListener("input",e=>stable(e.target.value.trim()));
+// 初期表示は使用例として選択済みにしておく
+$("enemy").value="blitz";$("adc").value="jinx";
+render();ctable();stable();
+</script>
+
+</body>
+</html>
