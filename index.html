@@ -15,7 +15,7 @@
   --bg:#eef1f5; --surface:#ffffff; --fg:#1b2230; --muted:#5d6779; --line:#d5dbe5;
   --accent:#a8761b; --accent-soft:#f3e7cc;
   --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
-  --good:#2a8a6a; --bad:#c0392b;
+  --good:#2a8a6a; --bad:#c0392b; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
   --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
   --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
@@ -24,12 +24,12 @@
   --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
-  --good:#5cc9a2; --bad:#ef6b5c; color-scheme:dark}}
+  --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
-  --good:#5cc9a2; --bad:#ef6b5c; color-scheme:dark}
+  --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65}
 .wrap{max-width:1000px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
@@ -67,6 +67,7 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 .panel li.active{background:var(--bg)}
 .panel li[aria-selected="true"]{color:var(--accent);font-weight:700}
 .panel li .tag,.panel li .gc{margin-left:auto}
+.panel li .tag + .gc{margin-left:0}
 .gc{font-size:12px;color:var(--muted);font-family:var(--mono)}
 .panel .none-hit{color:var(--muted);cursor:default}
 .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
@@ -79,7 +80,7 @@ ul.list li{display:grid;gap:2px}
 .name{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .why{color:var(--muted);font-size:13.5px}
 .tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.6}
-.t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}
+.t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}.t-fighter{color:var(--fighter)}.t-assassin{color:var(--assassin)}.t-marks{color:var(--marks)}
 .score{font-family:var(--mono);font-size:12px;color:var(--accent)}
 .wr{font-family:var(--mono);font-size:13px;margin-left:auto}
 .wr.up{color:var(--good)}.wr.down{color:var(--bad)}
@@ -303,7 +304,10 @@ const card=(title,body,best)=>`<div class="card${best?" best":""}"><h3>${title}<
 const empty=t=>`<p class="empty">${t}</p>`;
 const fewMsg=()=>empty(`${MIN}試合以上の組み合わせがまだありません。上の「最低試合数」を下げるか、データがたまるのを待ってください。`);
 // 勝率つきの1行
-const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
+// Data Dragon のクラス（1つ目の色で表示し、2つ目があれば併記）
+const CLS={Fighter:["ファイター","fighter"],Tank:["タンク","tank"],Mage:["メイジ","mage"],Assassin:["アサシン","assassin"],Marksman:["マークスマン","marks"],Support:["サポート","ench"]};
+const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join("／")}</span>`:"";};
+const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
 const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -395,9 +399,9 @@ function buildLane(id,pos,label){
     </div>
     <div class="results"></div></section>
     <section><div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
-    <div class="tbl"><table><thead><tr><th data-s="name">チャンプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div></section>`;
+    <div class="tbl"><table><thead><tr><th data-s="name">チャンプ</th><th>タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div></section>`;
   const fields=root.querySelectorAll(".field"),res=root.querySelector(".results"),tq=root.querySelector("input[type=search]"),tb=root.querySelector("tbody");
-  const items=()=>Object.keys(L.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`<span class="gc">${L.champs[k][0]}試合</span>`}));
+  const items=()=>Object.keys(L.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${L.champs[k][0]}試合</span>`}));
   const pe=makePicker(fields[0],`${id}-e-l`,items,draw);
   const pm=makePicker(fields[1],`${id}-m-l`,items,draw);
   const needs=new Set();
@@ -421,7 +425,7 @@ function buildLane(id,pos,label){
         return {k,s,hit,note,r:vr&&vr[0]>=MIN?vr:r};
       }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,8);
       const title=`構成を補えるピック：${[...needs].map(n=>LANE_NEEDS[n]).join("・")}${E?` × ${nm(E)}に勝ちやすい`:""}`;
-      out.push(card(title,rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl"><span class="name">${icK(x.k)}${nm(x.k)}<span class="score">${x.s.toFixed(1)}点</span></span><span class="why">${x.hit.map(n=>LANE_NEEDS[n]).join("・")}を補える／${x.note}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg(),true));
+      out.push(card(title,rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}<span class="score">${x.s.toFixed(1)}点</span></span><span class="why">${x.hit.map(n=>LANE_NEEDS[n]).join("・")}を補える／${x.note}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg(),true));
     }
     if(E){
       const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
@@ -447,7 +451,7 @@ function buildLane(id,pos,label){
     const rows=Object.entries(L.champs).filter(([k])=>BYKEY[k]&&(!t||kata(nm(k)).includes(t)));
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd;});
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="4">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="5">該当なし</td></tr>`;
     root.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   root.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
