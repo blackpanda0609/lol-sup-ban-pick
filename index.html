@@ -36,8 +36,23 @@ h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:7
 header p{color:var(--muted);margin:8px 0 0;max-width:62ch}
 section{display:grid;gap:16px}
 .pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.pickers label{display:grid;gap:6px;font-weight:700;font-size:13px}
-.pickers label span{color:var(--muted);font-weight:500}
+[hidden]{display:none!important}
+.field{display:grid;gap:6px;align-content:start}
+.flabel{font-weight:700;font-size:13px;display:grid;gap:6px}
+.flabel span{color:var(--muted);font-weight:500}
+.picker{position:relative}
+.pbtn{font:inherit;font-weight:700;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 12px 7px 8px;width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;text-align:left}
+.pbtn::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-2px) rotate(45deg);flex:none}
+.pbtn[aria-expanded="true"]{border-color:var(--accent)}
+.ic.none{display:inline-block;background:transparent;border:1px dashed var(--line);box-sizing:border-box}
+.panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.25);padding:8px;display:grid;gap:8px}
+.panel input{padding:8px 10px}
+.panel ul{list-style:none;margin:0;padding:0;max-height:280px;overflow-y:auto;display:grid;gap:2px}
+.panel li{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;cursor:pointer}
+.panel li.active{background:var(--bg)}
+.panel li[aria-selected="true"]{color:var(--accent);font-weight:700}
+.panel .tag{margin-left:auto}
+.panel .none-hit{color:var(--muted);padding:6px 8px;cursor:default}
 select,input{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;width:100%;box-sizing:border-box}
 select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
@@ -81,9 +96,9 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 <section aria-labelledby="bp-h">
   <h2 id="bp-h">BPアシスト</h2>
   <div class="pickers">
-    <label for="enemy">敵サポート <span>相手が先に出したら</span><select id="enemy"></select></label>
-    <label for="adc">味方ADC <span>隣のADC</span><select id="adc"></select></label>
-    <label for="mine">自分の得意チャンプ <span>ban候補を出す</span><select id="mine"></select></label>
+    <div class="field"><span class="flabel" id="enemy-l">敵サポート <span>相手が先に出したら</span></span><select id="enemy" hidden></select></div>
+    <div class="field"><span class="flabel" id="adc-l">味方ADC <span>隣のADC</span></span><select id="adc" hidden></select></div>
+    <div class="field"><span class="flabel" id="mine-l">自分の得意チャンプ <span>ban候補を出す</span></span><select id="mine" hidden></select></div>
   </div>
   <div class="results" id="results"></div>
   <div class="legend" id="legend"></div>
@@ -248,7 +263,46 @@ function stable(q=""){
 ["enemy","adc","mine"].forEach(id=>$(id).addEventListener("change",render));
 $("cq").addEventListener("input",e=>ctable(e.target.value.trim()));
 $("sq").addEventListener("input",e=>stable(e.target.value.trim()));
-const drawAll=()=>{render();ctable($("cq").value.trim());stable($("sq").value.trim());};
+// アイコン付きのプルダウン。値は隠した <select> に入れて change を発火させる
+const kata=s=>s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
+const pickers=[];
+function makePicker(id){
+  const sel=$(id),isSup=id!=="adc";
+  const wrap=document.createElement("div");wrap.className="picker";
+  wrap.innerHTML=`<button type="button" class="pbtn" id="${id}-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${id}-l ${id}-btn"></button>
+    <div class="panel" hidden><input type="search" id="${id}-q" placeholder="名前で検索（ひらがなOK）" aria-label="検索" autocomplete="off"><ul role="listbox" aria-labelledby="${id}-l"></ul></div>`;
+  sel.after(wrap);
+  const btn=wrap.querySelector(".pbtn"),panel=wrap.querySelector(".panel"),q=wrap.querySelector("input"),ul=wrap.querySelector("ul");
+  let items=[],active=0;
+  const label=k=>k?(isSup?S[k][0]:A[k]):"選択しない";
+  const face=k=>k?ic(k):`<span class="ic none" style="width:28px;height:28px"></span>`;
+  const drawBtn=()=>{btn.innerHTML=`${face(sel.value)}<span>${label(sel.value)}</span>`;};
+  const drawList=()=>{
+    const t=kata(q.value.trim());
+    items=[...sel.options].map(o=>o.value).filter(k=>!t||(k&&label(k).includes(t)));
+    active=Math.max(0,items.indexOf(sel.value));
+    ul.innerHTML=items.map((k,i)=>`<li role="option" data-k="${k}" aria-selected="${k===sel.value}" class="${i===active?"active":""}">${face(k)}<span>${label(k)}</span>${k&&isSup?tag(k):""}</li>`).join("")||`<li class="none-hit">見つかりません</li>`;
+  };
+  const setActive=i=>{if(!items.length)return;active=(i+items.length)%items.length;[...ul.children].forEach((li,j)=>li.classList.toggle("active",j===active));ul.children[active].scrollIntoView({block:"nearest"});};
+  const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();q.focus();ul.children[active]?.scrollIntoView({block:"nearest"});};
+  const close=()=>{panel.hidden=true;btn.setAttribute("aria-expanded","false");};
+  const choose=k=>{sel.value=k;sel.dispatchEvent(new Event("change"));drawBtn();close();btn.focus();};
+  btn.addEventListener("click",()=>panel.hidden?open():close());
+  q.addEventListener("input",drawList);
+  q.addEventListener("keydown",e=>{
+    if(e.key==="ArrowDown"){e.preventDefault();setActive(active+1);}
+    else if(e.key==="ArrowUp"){e.preventDefault();setActive(active-1);}
+    else if(e.key==="Enter"){e.preventDefault();if(items.length)choose(items[active]);}
+    else if(e.key==="Escape"){close();btn.focus();}
+  });
+  ul.addEventListener("click",e=>{const li=e.target.closest("li[data-k]");if(li)choose(li.dataset.k);});
+  const api={close,drawBtn,wrap};
+  pickers.push(api);drawBtn();
+}
+["enemy","adc","mine"].forEach(makePicker);
+document.addEventListener("click",e=>pickers.forEach(p=>{if(!p.wrap.contains(e.target))p.close();}));
+
+const drawAll=()=>{render();ctable($("cq").value.trim());stable($("sq").value.trim());pickers.forEach(p=>p.drawBtn());};
 drawAll();
 // 最新パッチのアイコンに差し替え
 fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json()).then(v=>{if(v[0]&&v[0]!==DD){DD=v[0];drawAll();}}).catch(()=>{});
