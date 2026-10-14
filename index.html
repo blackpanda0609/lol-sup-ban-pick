@@ -165,6 +165,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
       <div class="results" id="results"></div>
       <div class="legend" id="legend"></div>
     </section>
+    <section id="sup-table" hidden></section>
     <section aria-labelledby="c-h">
       <div class="tablebar">
         <h2 id="c-h">カウンター早見表</h2>
@@ -398,9 +399,8 @@ function buildLane(id,pos,label){
       <div class="toggles lane-needs" role="group" aria-labelledby="${id}-n-l">${Object.keys(LANE_NEEDS).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
     </div>
     <div class="results"></div></section>
-    <section><div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
-    <div class="tbl"><table><thead><tr><th data-s="name">チャンプ</th><th>タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div></section>`;
-  const fields=root.querySelectorAll(".field"),res=root.querySelector(".results"),tq=root.querySelector("input[type=search]"),tb=root.querySelector("tbody");
+    <section class="lt"></section>`;
+  const fields=root.querySelectorAll(".field"),res=root.querySelector(".results");
   const items=()=>Object.keys(L.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${L.champs[k][0]}試合</span>`}));
   const pe=makePicker(fields[0],`${id}-e-l`,items,draw);
   const pm=makePicker(fields[1],`${id}-m-l`,items,draw);
@@ -445,6 +445,16 @@ function buildLane(id,pos,label){
     if(!out.length)out.push(card("使い方",empty(`敵の${label}を選ぶと、そのチャンプに勝率が高いピックが出ます。自分のチャンプを選ぶと、苦手な相手（ban候補）と得意な相手が出ます。${pos==="BOTTOM"?"ADCを選ぶと、勝率が高いサポートも出ます。":""}`)));
     res.innerHTML=out.join("");
   }
+  const table=laneTable(root.querySelector(".lt"),L,label);
+  draw();
+  lanePanels[id]={draw,table};
+}
+
+// レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）
+function laneTable(host,L,label){
+  host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
+    <div class="tbl"><table><thead><tr><th data-s="name">チャンプ</th><th>タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div>`;
+  const tq=host.querySelector("input"),tb=host.querySelector("tbody");
   let sk="g",sd=-1;
   function table(){
     const t=kata(tq.value.trim());
@@ -452,16 +462,17 @@ function buildLane(id,pos,label){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd;});
     tb.innerHTML=rows.map(([k,r])=>`<tr><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="5">該当なし</td></tr>`;
-    root.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
+    host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
-  root.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
+  host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
   tq.addEventListener("input",table);
-  draw();table();
-  lanePanels[id]={draw,table};
+  table();
+  return table;
 }
 
 // ===== サポートタブ =====
-const supItems=()=>Object.keys(S).sort((a,b)=>S[a][0].localeCompare(S[b][0],"ja")).map(k=>({v:k,name:S[k][0],icon:ic(k),extra:tag(k)}));
+const supAll=k=>{const r=ST&&((ST.lanes.UTILITY||{}).champs||{})[kKey(k)];return r&&r[0]>=MIN?r:null;};
+const supItems=()=>Object.keys(S).sort((a,b)=>S[a][0].localeCompare(S[b][0],"ja")).map(k=>({v:k,name:S[k][0],icon:ic(k),extra:`${tag(k)}<span class="gc">${supAll(k)?pct(supAll(k)):""}</span>`}));
 const adcItems=()=>Object.keys(A).sort((a,b)=>A[a].localeCompare(A[b],"ja")).map(k=>({v:k,name:A[k],icon:ic(k),extra:APC.has(k)?apcTag:""}));
 const supE=makePicker($("f-enemy"),"enemy-l",supItems,()=>renderSup());
 const supA=makePicker($("f-adc"),"adc-l",adcItems,()=>renderSup());
@@ -505,7 +516,9 @@ function rank(e,a){
   }).filter(r=>r.pros.length).sort((x,y)=>y.s-x.s||S[x.k][0].localeCompare(S[y.k][0],"ja")).slice(0,6);
 }
 
-const li=(k,why,extra="")=>`<li${unavail.has(k)?' class="off"':""}><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
+// 勝率の小さな表示（r が null なら何も出さない）
+const wrBadge=(r,label="")=>r?`<span class="wr ${dirOf(r)}" title="${r[0]}試合">${label}${pct(r)}</span>`:"";
+const li=(k,why,extra="",r=null,rl="")=>`<li${unavail.has(k)?' class="off"':""}><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}${wrBadge(r,rl)}</span><span class="why">${why}${r?`（${rl}${r[0]}試合）`:""}</span></li>`;
 function renderSup(){
   const e=supE.value,a=supA.value,m=supM.value,out=[];
   const U=ST&&ST.lanes.UTILITY;
@@ -519,19 +532,19 @@ function renderSup(){
     out.push(card(`総合おすすめ：${conds}`,body,true));
   }
   if(e){
-    out.push(card(`${S[e][0]}に有利なピック<span class="src">定番</span>`,`<ul class="list">${C[e].map(([k,w])=>li(k,w)).join("")}</ul>`));
+    out.push(card(`${S[e][0]}に有利なピック<span class="src">定番</span>`,`<ul class="list">${C[e].map(([k,w])=>li(k,w,"",supVs(k,e),"対面 ")).join("")}</ul>`));
     if(U){const E=kKey(e);const list=Object.keys(U.vs).map(x=>[x,U.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
       out.push(card(`${S[e][0]}に勝率が高いサポート<span class="src">データ</span>`,statList(list.slice(0,6))));}
   }
   if(a){
-    out.push(card(`${A[a]}と相性のいいサポート<span class="src">定番</span>`,`<ul class="list">${Y[a].map(([k,w])=>li(k,w)).join("")}</ul>`));
+    out.push(card(`${A[a]}と相性のいいサポート<span class="src">定番</span>`,`<ul class="list">${Y[a].map(([k,w])=>li(k,w,"",duoOf(a,k),"組んで ")).join("")}</ul>`));
     if(ST){const d=Object.entries((ST.duo||{})[kKey(a)]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
       out.push(card(`${A[a]}と組んで勝率が高いサポート<span class="src">データ</span>`,statList(d.slice(0,6))));}
   }
   if(m){
     const bans=C[m]||[];
     const goodVs=Object.keys(C).filter(k=>C[k].some(([c])=>c===m));
-    out.push(card(`${S[m][0]}を使うならban候補<span class="src">定番</span>`,`<ul class="list">${bans.map(([k,w])=>li(k,`${S[m][0]}への対策：${w}`)).join("")}</ul>`+
+    out.push(card(`${S[m][0]}を使うならban候補<span class="src">定番</span>`,`<ul class="list">${bans.map(([k,w])=>li(k,`${S[m][0]}への対策：${w}`,"",supVs(k,m),"対面 ")).join("")}</ul>`+
       (goodVs.length?`<p class="why" style="margin:0">得意な相手：${goodVs.map(k=>S[k][0]).join("、")}</p>`:"")));
     if(U){const mine=Object.entries(U.vs[kKey(m)]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1]));
       out.push(card(`${S[m][0]}が苦手なサポート<span class="src">データ</span>`,statList(mine.slice(0,6))));}
@@ -540,19 +553,19 @@ function renderSup(){
   $("results").innerHTML=out.join("");
 }
 
-const chip=(k,w)=>`<span class="chip" title="${w}">${ic(k)}${S[k][0]}</span>`;
+const chip=(k,w,r=null)=>`<span class="chip" title="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 function ctable(){
   const q=kata($("cq").value.trim());
   $("ctable").innerHTML=Object.keys(C).filter(k=>!q||S[k][0].includes(q)||C[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>S[a][1].localeCompare(S[b][1])||S[a][0].localeCompare(S[b][0],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${S[k][0]}</span></td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${S[k][0]}</span></td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w,supVs(c,k))).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="3">該当なし</td></tr>`;
 }
 function stable(){
   const q=kata($("sq").value.trim());
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w,duoOf(k,c))).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="2">該当なし</td></tr>`;
 }
 $("cq").addEventListener("input",ctable);
@@ -567,7 +580,7 @@ function drawStatus(p){
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
     <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
-  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();});
+  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();ctable();stable();});
 }
 (async()=>{
   try{const v=await getJSON("https://ddragon.leagueoflegends.com/api/versions.json");if(v[0])DD=v[0];}catch(e){}
@@ -588,6 +601,7 @@ function drawStatus(p){
   if(ST)MIN=ST.matches<2000?3:ST.matches<10000?5:10;
   drawStatus();
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
+  if(ST){$("sup-table").hidden=false;lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP")};}
   pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();ctable();stable();
 })();
 </script>
