@@ -126,6 +126,15 @@ td.key{font-weight:700;white-space:nowrap}
 td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px 3px 3px;font-size:13.5px;cursor:help;display:inline-flex;align-items:center;gap:6px}
 .chip .ic{width:22px;height:22px}
+.tier{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;font-family:var(--display);font-size:14px;border:1px solid currentColor}
+.tier-S{color:var(--accent);background:var(--accent-soft)}
+.tier-A{color:var(--good)}
+.tier-B{color:var(--fg)}
+.tier-C{color:var(--mage)}
+.tier-D{color:var(--bad)}
+.tier-none{color:var(--muted);border-style:dashed}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+.cls-filter .tg{color:var(--fg)}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
 .note + .note{border-top:none;padding-top:0}
 </style>
@@ -309,6 +318,18 @@ const fewMsg=()=>empty(`${MIN}試合以上の組み合わせがまだありま�
 const CLS={Fighter:["ファイター","fighter"],Tank:["タンク","tank"],Mage:["メイジ","mage"],Assassin:["アサシン","assassin"],Marksman:["マークスマン","marks"],Support:["サポート","ench"]};
 const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join("／")}</span>`:"";};
 const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
+// Tier：勝率に「20勝20敗」を足して50%寄りにならした値で並べる（試合数が多いほど実際の勝率に近づく）。
+// 20試合（最低試合数のほうが多ければそちら）に届いたチャンプだけを対象に、レーン内の順位で
+// 上位10%=S / 次の20%=A / 35%=B / 20%=C / 残り=D
+const tierScore=r=>(r[1]+20)/(r[0]+40);
+const tierMin=()=>Math.max(MIN,20);
+function tierMapOf(L){
+  const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>tierScore(b[1])-tierScore(a[1]));
+  const map={};
+  ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
+  return map;
+}
+const tierBadge=(t,r)=>t?`<span class="tier tier-${t}" title="ならした勝率 ${(tierScore(r)*100).toFixed(1)}%">${t}</span>`:`<span class="tier tier-none" title="${tierMin()}試合未満なのでTierなし">—</span>`;
 const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -453,15 +474,27 @@ function buildLane(id,pos,label){
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）
 function laneTable(host,L,label){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
-    <div class="tbl"><table><thead><tr><th data-s="name">チャンプ</th><th>タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div>`;
-  const tq=host.querySelector("input"),tb=host.querySelector("tbody");
-  let sk="g",sd=-1;
+    <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">Tierは、勝率に20勝20敗ぶんを足して50%寄りにならした値で、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。試合数が多いほど実際の勝率がそのまま効くので、たくさん使われていて勝率が低いチャンプは下がります。20試合未満のチャンプは、たまたまの勝ち負けが大きいので「—」にしています。</p>`;
+  const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
+  const cls=new Set();
+  let sk="tier",sd=-1;
+  cf.addEventListener("click",e=>{
+    const b=e.target.closest("[data-c]");if(!b)return;
+    const c=b.dataset.c;
+    if(!c)cls.clear();else cls.has(c)?cls.delete(c):cls.add(c);
+    cf.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c?cls.has(x.dataset.c):!cls.size));
+    table();
+  });
+  const order=Object.keys(CLS);
   function table(){
     const t=kata(tq.value.trim());
-    const rows=Object.entries(L.champs).filter(([k])=>BYKEY[k]&&(!t||kata(nm(k)).includes(t)));
-    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):r[0];
-    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd;});
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="5">該当なし</td></tr>`;
+    const rows=Object.entries(L.champs).filter(([k])=>BYKEY[k]&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
+    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?tierScore(r):-1+r[0]/1e6):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
+    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||tierScore(b[1])-tierScore(a[1]);});
+    const tm=tierMapOf(L);
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="6">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
