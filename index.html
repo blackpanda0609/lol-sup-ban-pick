@@ -60,7 +60,10 @@ th{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;backgr
 tr:last-child td{border-bottom:none}
 td.key{font-weight:700;white-space:nowrap}
 td .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:13.5px;cursor:help}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px 3px 3px;font-size:13.5px;cursor:help;display:inline-flex;align-items:center;gap:6px}
+.chip .ic{width:22px;height:22px}
+.ic{border-radius:4px;flex:none;background:var(--line);vertical-align:middle}
+.kn{display:inline-flex;align-items:center;gap:8px}
 .legend{display:flex;gap:8px;flex-wrap:wrap}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
 </style>
@@ -179,6 +182,17 @@ const Y={
  smolder:[["milio","射程延長でスタックを稼ぎやすい"],["lulu","スケールまで守り切れる"],["taric","Rで集団戦を生き残らせる"]]
 };
 
+// Data Dragon のチャンピオンID（アイコン画像のファイル名）
+const ID={thresh:"Thresh",blitz:"Blitzcrank",pyke:"Pyke",bard:"Bard",naut:"Nautilus",leona:"Leona",rell:"Rell",ali:"Alistar",rakan:"Rakan",
+ braum:"Braum",taric:"Taric",tahm:"TahmKench",mao:"Maokai",lulu:"Lulu",janna:"Janna",nami:"Nami",soraka:"Soraka",yuumi:"Yuumi",
+ karma:"Karma",milio:"Milio",renata:"Renata",sona:"Sona",sera:"Seraphine",senna:"Senna",brand:"Brand",zyra:"Zyra",xerath:"Xerath",
+ vel:"Velkoz",morg:"Morgana",lux:"Lux",
+ kaisa:"Kaisa",jinx:"Jinx",lucian:"Lucian",draven:"Draven",ezreal:"Ezreal",kalista:"Kalista",xayah:"Xayah",vayne:"Vayne",cait:"Caitlyn",
+ ashe:"Ashe",jhin:"Jhin",twitch:"Twitch",mf:"MissFortune",samira:"Samira",zeri:"Zeri",aphelios:"Aphelios",trist:"Tristana",sivir:"Sivir",
+ varus:"Varus",kog:"KogMaw",nilah:"Nilah",smolder:"Smolder"};
+let DD="16.20.1"; // 最新版の取得に失敗したときの予備
+const ic=k=>`<img class="ic" src="https://ddragon.leagueoflegends.com/cdn/${DD}/img/champion/${ID[k]}.png" alt="" width="28" height="28" loading="lazy" onerror="this.style.visibility='hidden'">`;
+
 const $=id=>document.getElementById(id);
 const tag=k=>`<span class="tag t-${S[k][1]}">${TYPES[S[k][1]]}</span>`;
 const opt=(map,label,isSup)=>`<option value="">${label}</option>`+Object.keys(map).sort((a,b)=>(isSup?map[a][0]:map[a]).localeCompare(isSup?map[b][0]:map[b],"ja")).map(k=>`<option value="${k}">${isSup?map[k][0]:map[k]}</option>`).join("");
@@ -187,7 +201,7 @@ $("mine").innerHTML=opt(S,"選択しない",true);
 $("adc").innerHTML=opt(A,"選択しない",false);
 $("legend").innerHTML=Object.keys(TYPES).map(t=>`<span class="tag t-${t}">${TYPES[t]}</span>`).join("");
 
-const li=(k,why,extra="")=>`<li><span class="name">${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
+const li=(k,why,extra="")=>`<li><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}</span><span class="why">${why}</span></li>`;
 const card=(title,body,best)=>`<div class="card${best?" best":""}"><h3>${title}</h3>${body}</div>`;
 const empty=t=>`<p class="empty">${t}</p>`;
 
@@ -218,23 +232,26 @@ function render(){
   $("results").innerHTML=out.join("");
 }
 
-const chip=(k,w)=>`<span class="chip" title="${w}">${S[k][0]}</span>`;
+const chip=(k,w)=>`<span class="chip" title="${w}">${ic(k)}${S[k][0]}</span>`;
 function ctable(q=""){
   $("ctable").innerHTML=Object.keys(C).filter(k=>!q||S[k][0].includes(q)||C[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>S[a][1].localeCompare(S[b][1])||S[a][0].localeCompare(S[b][0],"ja"))
-   .map(k=>`<tr><td class="key">${S[k][0]}</td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${S[k][0]}</span></td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="3">該当なし</td></tr>`;
 }
 function stable(q=""){
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-   .map(k=>`<tr><td class="key">${A[k]}</td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="2">該当なし</td></tr>`;
 }
 ["enemy","adc","mine"].forEach(id=>$(id).addEventListener("change",render));
 $("cq").addEventListener("input",e=>ctable(e.target.value.trim()));
 $("sq").addEventListener("input",e=>stable(e.target.value.trim()));
-render();ctable();stable();
+const drawAll=()=>{render();ctable($("cq").value.trim());stable($("sq").value.trim());};
+drawAll();
+// 最新パッチのアイコンに差し替え
+fetch("https://ddragon.leagueoflegends.com/api/versions.json").then(r=>r.json()).then(v=>{if(v[0]&&v[0]!==DD){DD=v[0];drawAll();}}).catch(()=>{});
 </script>
 
 </body>
