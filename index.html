@@ -234,8 +234,6 @@ function stable(q=""){
 ["enemy","adc","mine"].forEach(id=>$(id).addEventListener("change",render));
 $("cq").addEventListener("input",e=>ctable(e.target.value.trim()));
 $("sq").addEventListener("input",e=>stable(e.target.value.trim()));
-// 初期表示は使用例として選択済みにしておく
-$("enemy").value="blitz";$("adc").value="jinx";
 render();ctable();stable();
 </script>
 
