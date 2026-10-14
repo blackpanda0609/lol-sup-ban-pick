@@ -256,7 +256,7 @@ $("adc").innerHTML=opt(A,"選択しない",false);
 $("legend").innerHTML=Object.keys(TYPES).map(t=>`<span class="tag t-${t}">${TYPES[t]}</span>`).join("");
 
 // 味方の構成で補える役割
-const NEEDS={front:"前衛（硬さ）",engage:"エンゲージ役",ap:"魔法ダメージ",peel:"ADCを守る役",disengage:"ダイブ・突進対策",poke:"ポーク",catch:"キャッチ（ピック）"};
+const NEEDS={front:"フロント",engage:"エンゲージ",ap:"AP",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
 const TR={
  thresh:"front engage peel catch",blitz:"engage catch",pyke:"engage catch",bard:"catch peel",
  naut:"front engage catch",leona:"front engage",rell:"front engage",ali:"front engage disengage",rakan:"engage disengage",
