@@ -72,7 +72,7 @@ def get(host, path, params=None):
     url = f"https://{host}.api.riotgames.com{path}"
     if params:
         url += "?" + urllib.parse.urlencode(params)
-    req = urllib.request.Request(url, headers={"X-Riot-Token": KEY})
+    req = urllib.request.Request(url, headers={"X-Riot-Token": KEY, "User-Agent": "lol-sup-ban-pick/1.0"})
     for attempt in range(5):
         limiter.wait(host)
         try:
@@ -85,6 +85,8 @@ def get(host, path, params=None):
                 time.sleep(wait)
                 continue
             if e.code in (401, 403):
+                body = e.read().decode("utf-8", "replace")[:200]
+                print(f"  HTTP {e.code} {path} -> {body}", flush=True)
                 raise KeyError_(e.code)
             if e.code == 404:
                 return None
@@ -174,6 +176,8 @@ def save(patch, stats, seen):
 def main():
     if not KEY:
         sys.exit("RIOT_API_KEY が設定されていません。")
+    # キーそのものは出さず、形だけ確かめる（正しいキーは RGAPI- で始まる 42 文字）
+    print(f"key check: starts with RGAPI-={KEY.startswith('RGAPI-')}, length={len(KEY)}", flush=True)
     patch = current_patch()
     print(f"patch {patch}, platforms {PLATFORMS}, {MAX_MINUTES} min", flush=True)
     stats = load_json(DATA / "patches" / f"{patch}.json",
