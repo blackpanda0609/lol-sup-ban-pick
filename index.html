@@ -207,7 +207,7 @@ td.extra .chips{flex-wrap:nowrap}
         <h2 id="s-h">ADC相性表</h2>
         <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
       </div>
-      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>おすすめのサポート（組んだときの勝率と組まれる割合で並べ替え・★は定番）</th></tr></thead><tbody id="stable"></tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>おすすめのサポート（組んだときの勝率と組まれる割合で並べ替え・★は定番、それ以外の理由は自動判定）</th></tr></thead><tbody id="stable"></tbody></table></div>
     </section>
   </div>
 </div>
@@ -698,7 +698,28 @@ function duoRank(a){
     return {key,w:o.w,r,share:raw?raw[0]/tot:0,sc};
   }).sort((x,y)=>y.sc-x.sc).slice(0,4);
 }
-const duoChip=(a,o)=>`<span class="chip" tabindex="0" role="button" data-tip-h="${o.w?"★ ":""}${nm(o.key)}" data-tip="${o.w||"データで組まれることが多い組み合わせ"}"${o.r?` data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${A[a]}のサポートの${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}"`:` data-tip-s="まだ${MIN}試合に届いていません"`}>${icK(o.key)}${o.w?"★":""}${nm(o.key)}${o.r?`<span class="wr ${dirOf(o.r)}">${pct(o.r)}</span>`:""}</span>`;
+// 定番にない組み合わせの理由を、ADCの戦い方とサポートの役割から自動で組み立てる
+const ADC_STYLE={
+  follow:new Set("kaisa samira draven mf xayah trist nilah lucian kalista".split(" ")), // 仕掛けに合わせて飛び込む
+  hyper:new Set("jinx vayne kog aphelios smolder twitch zeri".split(" ")),             // 自分で逃げにくい・後半型
+  poke:new Set("ezreal varus cait jhin ziggs ashe hwei karthus".split(" ")),           // 射程が長い
+  cc:new Set("ashe jhin varus cait xayah hwei swain".split(" "))                       // 自分も足止めを持つ
+};
+function autoDuoReason(a,key){
+  const t=traitsOf(key,ST&&ST.lanes.UTILITY),s=nm(key),d=A[a],out=[];
+  if((t.has("engage")||t.has("catch"))&&ADC_STYLE.follow.has(a))out.push(`${s}の仕掛けに${d}がすぐ追撃できる`);
+  if((t.has("peel")||t.has("disengage"))&&ADC_STYLE.hyper.has(a))out.push(`自分で逃げにくい${d}を${s}が守れる`);
+  if(t.has("front")&&ADC_STYLE.hyper.has(a))out.push(`${s}が前に立つので、${d}が安全に攻撃できる`);
+  if(t.has("poke")&&ADC_STYLE.poke.has(a))out.push("どちらも射程が長く、ポークでレーンを押し込める");
+  if(t.has("cc")&&ADC_STYLE.cc.has(a))out.push(`${d}の足止めに${s}のCCを重ねて、長く拘束できる`);
+  if(!out.length){
+    if(t.has("engage")||t.has("catch"))out.push(`${s}がレーンで仕掛けられ、${d}の火力を活かせる`);
+    else if(t.has("peel")||t.has("disengage"))out.push(`${s}の守りで、${d}が安定して戦える`);
+    else if(t.has("poke")||t.has("ap"))out.push(`${s}のダメージでレーンを有利に進められる`);
+  }
+  return out.slice(0,2).join("。")||"役割からは理由を判定できませんでしたが、データ上は成績のよい組み合わせです";
+}
+const duoChip=(a,o)=>`<span class="chip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+"（理由は自動判定）"}" data-tip="${o.w||autoDuoReason(a,o.key)}"${o.r?` data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${A[a]}のサポートの${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}"`:` data-tip-s="まだ${MIN}試合に届いていません"`}>${icK(o.key)}${o.w?"★":""}${nm(o.key)}${o.r?`<span class="wr ${dirOf(o.r)}">${pct(o.r)}</span>`:""}</span>`;
 function stable(){
   if(ST&&Object.keys(CH).length){
     const q=kata($("sq").value.trim());
