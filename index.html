@@ -338,9 +338,8 @@ const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm
 const tierScore=r=>(r[1]+20)/(r[0]+40);
 const tierMin=()=>Math.max(MIN,20);
 // 環境への影響力：勝率点（ならした勝率と50%の差を1.5倍）＋ 人気点（ピック率%の平方根 × 重み）
-// 例（バランス）：勝率53%・ピック率1% → 4.5+1.5=6.0 ／ 勝率50.5%・ピック率15% → 0.75+5.8=6.6
-let PR_W=1.5;
-const PR_WEIGHTS=[["勝率重視",.5],["バランス",1.5],["環境重視",3]];
+// 重みは「環境重視」の3で固定。例：勝率53%・ピック率1% → 4.5+3.0=7.5 ／ 勝率50.5%・ピック率15% → 0.75+11.6=12.4
+const PR_W=3;
 const wrPts=r=>(tierScore(r)-.5)*100*1.5;
 const prPts=r=>PR_W*Math.sqrt(r[0]/ST.matches*100);
 // BAN率：チャンプ単位（レーン共通）。ban を数えた試合が200試合に届くまではスコアに入れない
@@ -565,7 +564,7 @@ function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。人気をどれだけ重く見るかは、上の「Tierの基準」で変えられます。20試合未満のチャンプは「—」です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。20試合未満のチャンプは「—」です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -696,9 +695,7 @@ function drawStatus(p){
   const d=new Date(ST.updated);
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
-    <label for="tier-w">Tierの基準<select id="tier-w">${PR_WEIGHTS.map(([n,w])=>`<option value="${w}"${w===PR_W?" selected":""}>${n}</option>`).join("")}</select></label>
-    <label for="min-g" style="margin-left:0">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
-  $("tier-w").addEventListener("change",e=>{PR_W=+e.target.value;Object.values(lanePanels).forEach(p=>p.table());});
+    <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
   $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();stable();});
 }
 (async()=>{
