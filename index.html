@@ -115,7 +115,7 @@ ul.list li{display:grid;gap:2px}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:520px}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
-th{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
+th{white-space:nowrap;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
 th[data-s]{cursor:pointer;user-select:none}
 th[data-s][aria-sort="descending"]::after{content:" ▼"}
 th[data-s][aria-sort="ascending"]::after{content:" ▲"}
@@ -141,6 +141,8 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .d-p{background:var(--engage)}.d-m{background:var(--catch)}.d-t{background:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 .cls-filter .tg{color:var(--fg)}
+#tip{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 16px));background:var(--fg);color:var(--bg);font-size:13px;line-height:1.5;padding:6px 10px;border-radius:6px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+[data-tip]{cursor:help}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
 .note + .note{border-top:none;padding-top:0}
 </style>
@@ -186,7 +188,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
         <h2 id="s-h">ADC相性表</h2>
         <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
       </div>
-      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート（カーソルで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート（タップで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
     </section>
   </div>
 </div>
@@ -339,7 +341,7 @@ function tierMapOf(L){
   ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
   return map;
 }
-const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" title="スコア ${powerScore(r,key).toFixed(1)}（勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}／人気点 +${prPts(r).toFixed(1)}／BAN点 +${banPts(r,key).toFixed(1)}）">${t}</span>`:`<span class="tier tier-none" title="${tierMin()}試合未満なのでTierなし">—</span>`;
+const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip="スコア ${powerScore(r,key).toFixed(1)}（勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}／人気点 +${prPts(r).toFixed(1)}／BAN点 +${banPts(r,key).toFixed(1)}）">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip="${tierMin()}試合未満なのでTierなし">—</span>`;
 const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -379,6 +381,36 @@ function makePicker(host,labelId,items,onChange){
   return api;
 }
 document.addEventListener("click",e=>pickers.forEach(p=>{if(!p.wrap.contains(e.target))p.close();}));
+
+// ===== 吹き出し（data-tip）：マウスを乗せる・タップする・Tabキーで選ぶ、のどれでも出る =====
+const tip=document.createElement("div");tip.id="tip";tip.setAttribute("role","tooltip");tip.hidden=true;document.body.appendChild(tip);
+let tipFor=null,tipBefore=null,tipHover=false;
+function showTip(el,hover=false){
+  tipFor=el;tipHover=hover;tip.textContent=el.dataset.tip;tip.hidden=false;el.setAttribute("aria-describedby","tip");
+  const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
+  const x=Math.max(8,Math.min(r.left+r.width/2-w/2,innerWidth-w-8));
+  let y=r.top-h-8;if(y<8)y=r.bottom+8;
+  tip.style.left=x+scrollX+"px";tip.style.top=y+scrollY+"px";
+}
+function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tipFor=null;tip.hidden=true;}
+document.addEventListener("pointerover",e=>{if(e.pointerType!=="mouse")return;const el=e.target.closest("[data-tip]");if(el)showTip(el,true);});
+document.addEventListener("pointerout",e=>{if(e.pointerType!=="mouse")return;const el=e.target.closest("[data-tip]");if(el&&!el.contains(e.relatedTarget))hideTip();});
+// マウスを乗せて開いたものは「もう一度タップ」と数えない
+document.addEventListener("pointerdown",()=>{tipBefore=tipHover?null:tipFor;});
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-tip]");
+  if(!el){hideTip();return;}
+  // タッチでは同じものをもう一度タップすると閉じる
+  if(tipBefore===el&&!matchMedia("(hover:hover)").matches)hideTip();else showTip(el);
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape")hideTip();
+  const el=e.target.closest&&e.target.closest("[data-tip]");
+  if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();tipFor===el?hideTip():showTip(el);}
+});
+document.addEventListener("focusin",e=>{const el=e.target.closest("[data-tip]");if(el)showTip(el);});
+document.addEventListener("focusout",e=>{if(tipFor&&tipFor===e.target)hideTip();});
+addEventListener("scroll",()=>{if(tipFor)hideTip();},{passive:true});
 
 // ===== タブ =====
 const lanePanels={};
@@ -507,13 +539,13 @@ function extCells(L,k){
   const e=extOf(L,k);
   if(!e)return `<td class="n">—</td><td><span class="why">—</span></td>`;
   const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
-  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" title="物理 ${f(p)}／魔法 ${f(m)}／確定 ${f(t)}（${e[0]}試合）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
+  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip="物理 ${f(p)}／魔法 ${f(m)}／確定 ${f(t)}（${e[0]}試合）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
 }
 function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc" title="敵にCCを当てた時間（1分あたり）">CC/分</th><th data-s="ap" title="対チャンピオンダメージの内訳：赤=物理、紫=魔法、灰=確定">ダメージ</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。人気をどれだけ重く見るかは、上の「Tierの基準」で変えられます。20試合未満のチャンプは「—」です。Tierにカーソルを合わせると内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。人気をどれだけ重く見るかは、上の「Tierの基準」で変えられます。20試合未満のチャンプは「—」です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -587,7 +619,7 @@ function rank(e,a){
 }
 
 // 勝率の小さな表示（r が null なら何も出さない）
-const wrBadge=(r,label="")=>r?`<span class="wr ${dirOf(r)}" title="${r[0]}試合">${label}${pct(r)}</span>`:"";
+const wrBadge=(r,label="")=>r?`<span class="wr ${dirOf(r)}" tabindex="0" data-tip="${r[0]}試合">${label}${pct(r)}</span>`:"";
 const li=(k,why,extra="",r=null,rl="")=>`<li${unavail.has(k)?' class="off"':""}><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}${wrBadge(r,rl)}</span><span class="why">${why}${r?`（${rl}${r[0]}試合）`:""}</span></li>`;
 function renderSup(){
   const e=supE.value,a=supA.value,m=supM.value,out=[];
@@ -624,8 +656,8 @@ function renderSup(){
 }
 
 // アイコンだけのチップ（名前と理由はカーソルで表示）
-const iconChip=(k,w,r=null)=>`<span class="chip ichip" title="${S[k][0]}：${w}${r?`（${pct(r)}・${r[0]}試合）`:""}" aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
-const chip=(k,w,r=null)=>`<span class="chip" title="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+const iconChip=(k,w,r=null)=>`<span class="chip ichip" tabindex="0" role="button" data-tip="${S[k][0]}：${w}${r?`（${pct(r)}・${r[0]}試合）`:""}" aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+const chip=(k,w,r=null)=>`<span class="chip" tabindex="0" role="button" data-tip="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 function stable(){
   const q=kata($("sq").value.trim());
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
@@ -670,7 +702,7 @@ function drawStatus(p){
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
   if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
     lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
-      head:"有利なピック（定番・カーソルで名前と理由）",
+      head:"有利なピック（定番・タップで名前と理由）",
       cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(c,s))).join("")}</div>`:"";}
     })};}
   pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
