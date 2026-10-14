@@ -141,7 +141,20 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .d-p{background:var(--engage)}.d-m{background:var(--catch)}.d-t{background:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 .cls-filter .tg{color:var(--fg)}
-#tip{position:absolute;z-index:50;max-width:min(320px,calc(100vw - 16px));background:var(--fg);color:var(--bg);font-size:13px;line-height:1.5;padding:6px 10px;border-radius:6px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+#tip{position:absolute;z-index:50;max-width:min(300px,calc(100vw - 16px));display:grid;gap:4px;
+  background:var(--surface);color:var(--fg);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;
+  font-size:13px;line-height:1.55;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 0 4px var(--accent-soft)}
+#tip::after{content:"";position:absolute;left:var(--ax,50%);width:10px;height:10px;background:var(--surface);border:1px solid var(--accent);transform:translateX(-50%) rotate(45deg)}
+#tip[data-side="top"]::after{bottom:-6px;border-top:none;border-left:none}
+#tip[data-side="bottom"]::after{top:-6px;border-bottom:none;border-right:none}
+#tip.in{animation:tipin .12s ease-out}
+@keyframes tipin{from{opacity:0;transform:translateY(var(--tdy,4px))}to{opacity:1;transform:none}}
+#tip[data-side="bottom"]{--tdy:-4px}
+@media (prefers-reduced-motion:reduce){#tip.in{animation:none}}
+.tip-h{font-weight:700;font-size:14px;color:var(--fg)}
+.tip-b{color:var(--fg)}
+.tip-s{font-family:var(--mono);font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
+.tip-s.up{color:var(--good)}.tip-s.down{color:var(--bad)}
 [data-tip]{cursor:help}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
 .note + .note{border-top:none;padding-top:0}
@@ -188,7 +201,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
         <h2 id="s-h">ADC相性表</h2>
         <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
       </div>
-      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート（タップで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート・数字は組んだときの勝率（タップで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
     </section>
   </div>
 </div>
@@ -341,7 +354,7 @@ function tierMapOf(L){
   ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
   return map;
 }
-const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip="スコア ${powerScore(r,key).toFixed(1)}（勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}／人気点 +${prPts(r).toFixed(1)}／BAN点 +${banPts(r,key).toFixed(1)}）">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip="${tierMin()}試合未満なのでTierなし">—</span>`;
+const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
 const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -386,11 +399,18 @@ document.addEventListener("click",e=>pickers.forEach(p=>{if(!p.wrap.contains(e.t
 const tip=document.createElement("div");tip.id="tip";tip.setAttribute("role","tooltip");tip.hidden=true;document.body.appendChild(tip);
 let tipFor=null,tipBefore=null,tipHover=false;
 function showTip(el,hover=false){
-  tipFor=el;tipHover=hover;tip.textContent=el.dataset.tip;tip.hidden=false;el.setAttribute("aria-describedby","tip");
+  tipFor=el;tipHover=hover;
+  tip.replaceChildren();
+  const add=(cls,txt)=>{if(!txt)return;const d=document.createElement("div");d.className=cls;d.textContent=txt;tip.appendChild(d);};
+  add("tip-h",el.dataset.tipH);add("tip-b",el.dataset.tip);add("tip-s "+(el.dataset.tipD||""),el.dataset.tipS);
+  tip.hidden=false;el.setAttribute("aria-describedby","tip");
   const r=el.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
   const x=Math.max(8,Math.min(r.left+r.width/2-w/2,innerWidth-w-8));
-  let y=r.top-h-8;if(y<8)y=r.bottom+8;
+  let y=r.top-h-12,side="top";if(y<8){y=r.bottom+12;side="bottom";}
+  tip.dataset.side=side;
+  tip.style.setProperty("--ax",Math.max(14,Math.min(w-14,r.left+r.width/2-x))+"px");
   tip.style.left=x+scrollX+"px";tip.style.top=y+scrollY+"px";
+  tip.classList.remove("in");void tip.offsetWidth;tip.classList.add("in");
 }
 function hideTip(){if(tipFor)tipFor.removeAttribute("aria-describedby");tipFor=null;tip.hidden=true;}
 document.addEventListener("pointerover",e=>{if(e.pointerType!=="mouse")return;const el=e.target.closest("[data-tip]");if(el)showTip(el,true);});
@@ -539,7 +559,7 @@ function extCells(L,k){
   const e=extOf(L,k);
   if(!e)return `<td class="n">—</td><td><span class="why">—</span></td>`;
   const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
-  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip="物理 ${f(p)}／魔法 ${f(m)}／確定 ${f(t)}（${e[0]}試合）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
+  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip-h="ダメージの内訳" data-tip="物理 ${f(p)} ／ 魔法 ${f(m)} ／ 確定 ${f(t)}" data-tip-s="${e[0]}試合の合計から"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
 }
 function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
@@ -656,13 +676,13 @@ function renderSup(){
 }
 
 // アイコンだけのチップ（名前と理由はカーソルで表示）
-const iconChip=(k,w,r=null)=>`<span class="chip ichip" tabindex="0" role="button" data-tip="${S[k][0]}：${w}${r?`（${pct(r)}・${r[0]}試合）`:""}" aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
-const chip=(k,w,r=null)=>`<span class="chip" tabindex="0" role="button" data-tip="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+const iconChip=(k,w,r=null,vs="")=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${vs}相手の対面勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""} aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+const chip=(k,w,r=null,st="")=>`<span class="chip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${st} ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""}>${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 function stable(){
   const q=kata($("sq").value.trim());
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w,duoOf(k,c))).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w,duoOf(k,c),`${A[k]}と組んだときの勝率`)).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="2">該当なし</td></tr>`;
 }
 
@@ -702,8 +722,8 @@ function drawStatus(p){
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
   if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
     lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
-      head:"有利なピック（定番・タップで名前と理由）",
-      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(c,s))).join("")}</div>`:"";}
+      head:"有利なピック（定番）・数字はそのピックの対面勝率",
+      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(c,s),S[s][0])).join("")}</div>`:"";}
     })};}
   pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
 })();
