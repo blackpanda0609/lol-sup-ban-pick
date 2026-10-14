@@ -97,7 +97,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
   <h2 id="bp-h">BPアシスト</h2>
   <div class="pickers">
     <div class="field"><span class="flabel" id="enemy-l">敵サポート <span>相手が先に出したら</span></span><select id="enemy" hidden></select></div>
-    <div class="field"><span class="flabel" id="adc-l">味方ADC <span>隣のADC</span></span><select id="adc" hidden></select></div>
+    <div class="field"><span class="flabel" id="adc-l">味方ADC <span>隣のADC・APC</span></span><select id="adc" hidden></select></div>
     <div class="field"><span class="flabel" id="mine-l">自分の得意チャンプ <span>ban候補を出す</span></span><select id="mine" hidden></select></div>
   </div>
   <div class="results" id="results"></div>
@@ -115,7 +115,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 <section aria-labelledby="s-h">
   <div class="tablebar">
     <h2 id="s-h">ADC相性表</h2>
-    <input id="sq" type="search" placeholder="ADC名で絞り込み" aria-label="ADC相性表を絞り込み">
+    <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
   </div>
   <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート（カーソルで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
 </section>
@@ -169,7 +169,7 @@ const C={
 const A={
  kaisa:"カイサ",jinx:"ジンクス",lucian:"ルシアン",draven:"ドレイヴン",ezreal:"エズリアル",kalista:"カリスタ",xayah:"ザヤ",vayne:"ヴェイン",
  cait:"ケイトリン",ashe:"アッシュ",jhin:"ジン",twitch:"トゥイッチ",mf:"ミス・フォーチュン",samira:"サミーラ",zeri:"ゼリ",aphelios:"アフェリオス",
- trist:"トリスターナ",sivir:"シヴィア",varus:"ヴァルス",kog:"コグ＝マウ",nilah:"ニーラ",smolder:"スモルダー"
+ trist:"トリスターナ",sivir:"シヴィア",varus:"ヴァルス",kog:"コグ＝マウ",nilah:"ニーラ",smolder:"スモルダー",ziggs:"ジグス",swain:"スウェイン",hwei:"フェイ",karthus:"カーサス"
 };
 // 味方ADC → 相性のいいサポート
 const Y={
@@ -194,7 +194,11 @@ const Y={
  varus:[["naut","CCとRの拘束を重ねて固め続ける"],["leona","入った相手にRで追撃"],["karma","ポークの射程を合わせられる"]],
  kog:[["lulu","攻撃速度と巨大化でハイパーキャリーを守る"],["milio","射程延長でWがさらに伸びる"],["braum","前に立って射線を守る"]],
  nilah:[["taric","パッシブで回復とシールドを共有できる"],["soraka","大量回復をパッシブで受け取れる"],["nami","泡と回復で一緒に入れる"]],
- smolder:[["milio","射程延長でスタックを稼ぎやすい"],["lulu","スケールまで守り切れる"],["taric","Rで集団戦を生き残らせる"]]
+ smolder:[["milio","射程延長でスタックを稼ぎやすい"],["lulu","スケールまで守り切れる"],["taric","Rで集団戦を生き残らせる"]],
+ ziggs:[["karma","ポークと押し込みを合わせ、序盤からタワーを折る"],["lux","スネアにQ・Rを重ねて確定で当てる"],["braum","機動力のないジグスを前に立って守る"]],
+ swain:[["naut","CCに合わせてEで引き、Rで長く戦える"],["leona","固めた相手にEとRを当てやすい"],["taric","スタンとRの無敵でスウェインのRを長く維持"]],
+ hwei:[["lux","スネアに合わせてスキルを確定で当てる"],["morg","Qの拘束からコンボがつながる"],["naut","固めた相手にスキルを全部当てられる"]],
+ karthus:[["morg","スネアでQが確定ヒットする"],["naut","固めた相手にQとEを当て続ける"],["rell","まとめて止めた相手にQを重ねる"]]
 };
 
 // Data Dragon のチャンピオンID（アイコン画像のファイル名）
@@ -204,7 +208,9 @@ const ID={thresh:"Thresh",blitz:"Blitzcrank",pyke:"Pyke",bard:"Bard",naut:"Nauti
  vel:"Velkoz",morg:"Morgana",lux:"Lux",
  kaisa:"Kaisa",jinx:"Jinx",lucian:"Lucian",draven:"Draven",ezreal:"Ezreal",kalista:"Kalista",xayah:"Xayah",vayne:"Vayne",cait:"Caitlyn",
  ashe:"Ashe",jhin:"Jhin",twitch:"Twitch",mf:"MissFortune",samira:"Samira",zeri:"Zeri",aphelios:"Aphelios",trist:"Tristana",sivir:"Sivir",
- varus:"Varus",kog:"KogMaw",nilah:"Nilah",smolder:"Smolder"};
+ varus:"Varus",kog:"KogMaw",nilah:"Nilah",smolder:"Smolder",ziggs:"Ziggs",swain:"Swain",hwei:"Hwei",karthus:"Karthus"};
+const APC=new Set(["ziggs","swain","hwei","karthus"]);
+const apcTag=`<span class="tag t-mage">APC</span>`;
 let DD="16.20.1"; // 最新版の取得に失敗したときの予備
 const ic=k=>`<img class="ic" src="https://ddragon.leagueoflegends.com/cdn/${DD}/img/champion/${ID[k]}.png" alt="" width="28" height="28" loading="lazy" onerror="this.style.visibility='hidden'">`;
 
@@ -257,7 +263,7 @@ function ctable(q=""){
 function stable(q=""){
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
+   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w)).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="2">該当なし</td></tr>`;
 }
 ["enemy","adc","mine"].forEach(id=>$(id).addEventListener("change",render));
@@ -281,7 +287,7 @@ function makePicker(id){
     const t=kata(q.value.trim());
     items=[...sel.options].map(o=>o.value).filter(k=>!t||(k&&label(k).includes(t)));
     active=Math.max(0,items.indexOf(sel.value));
-    ul.innerHTML=items.map((k,i)=>`<li role="option" data-k="${k}" aria-selected="${k===sel.value}" class="${i===active?"active":""}">${face(k)}<span>${label(k)}</span>${k&&isSup?tag(k):""}</li>`).join("")||`<li class="none-hit">見つかりません</li>`;
+    ul.innerHTML=items.map((k,i)=>`<li role="option" data-k="${k}" aria-selected="${k===sel.value}" class="${i===active?"active":""}">${face(k)}<span>${label(k)}</span>${k&&isSup?tag(k):""}${!isSup&&APC.has(k)?apcTag:""}</li>`).join("")||`<li class="none-hit">見つかりません</li>`;
   };
   const setActive=i=>{if(!items.length)return;active=(i+items.length)%items.length;[...ul.children].forEach((li,j)=>li.classList.toggle("active",j===active));ul.children[active].scrollIntoView({block:"nearest"});};
   const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();q.focus();ul.children[active]?.scrollIntoView({block:"nearest"});};
