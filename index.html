@@ -32,7 +32,7 @@
   --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65}
-.wrap{max-width:1000px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
 h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,40px);line-height:1.2;margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:balance}
 h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
@@ -114,9 +114,14 @@ ul.list li{display:grid;gap:2px}
 .tablebar input{max-width:260px}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:520px}
-th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{white-space:nowrap;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
 th[data-s]{cursor:pointer;user-select:none}
+th.wrap{white-space:normal}
+td.extra{min-width:0}
+td .tag{letter-spacing:.02em}
+th:first-child,td:first-child{padding-left:12px}
+td.extra .chips{gap:4px}
 th[data-s][aria-sort="descending"]::after{content:" ▼"}
 th[data-s][aria-sort="ascending"]::after{content:" ▲"}
 tr:last-child td{border-bottom:none}
@@ -126,8 +131,9 @@ td.key{font-weight:700;white-space:nowrap}
 td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:3px 8px 3px 3px;font-size:13.5px;cursor:help;display:inline-flex;align-items:center;gap:6px}
 .chip .ic{width:22px;height:22px}
-.ichip{padding:3px}
-.ichip .wr{padding-right:5px}
+.ichip{padding:3px;flex-direction:column;gap:1px;min-width:34px}
+.ichip .wr{font-size:10.5px;margin:0;line-height:1.2}
+td.extra .chips{flex-wrap:nowrap}
 .tag{white-space:nowrap}
 .tier{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:6px;font-family:var(--display);font-size:14px;border:1px solid currentColor}
 .tier-S{color:var(--accent);background:var(--accent-soft)}
@@ -136,7 +142,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
 .tier-C{color:var(--mage)}
 .tier-D{color:var(--bad)}
 .tier-none{color:var(--muted);border-style:dashed}
-.dmg{display:flex;width:72px;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
+.dmg{display:flex;width:56px;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
 .dmg i{display:block;height:100%}
 .d-p{background:var(--engage)}.d-m{background:var(--catch)}.d-t{background:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
@@ -201,7 +207,7 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
         <h2 id="s-h">ADC相性表</h2>
         <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
       </div>
-      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>相性のいいサポート・数字は組んだときの勝率（タップで理由）</th></tr></thead><tbody id="stable"></tbody></table></div>
+      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>おすすめのサポート（組んだときの勝率と組まれる割合で並べ替え・★は定番）</th></tr></thead><tbody id="stable"></tbody></table></div>
     </section>
   </div>
 </div>
@@ -563,8 +569,8 @@ function extCells(L,k){
 function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。20試合未満のチャンプは「—」です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extra?`<th class="wrap">${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。20試合未満のチャンプは「—」です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。SUPの「苦手な対面」は定番の苦手な相手で、数字はその行のサポート側から見た対面勝率です。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -582,7 +588,7 @@ function laneTable(host,L,label,extra=null){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0])-powerScore(a[1],a[0]);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extra?`<td>${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?10:9}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extra?`<td class="extra">${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?10:9}">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
@@ -675,9 +681,31 @@ function renderSup(){
 }
 
 // アイコンだけのチップ（名前と理由はカーソルで表示）
-const iconChip=(k,w,r=null,vs="")=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${vs}相手の対面勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""} aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+const iconChip=(k,w,r=null,st="")=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${st} ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""} aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
 const chip=(k,w,r=null,st="")=>`<span class="chip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${st} ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""}>${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
+// ADCと組むサポートの順位：勝率点（ならした勝率）＋ 人気点（そのADCと組まれる割合）＋ 定番なら +1
+// 定番でも、データ上で勝率が低ければ下がる。データだけで上位の組み合わせも入る
+function duoRank(a){
+  const ak=kKey(a),D=(ST&&ak&&(ST.duo||{})[ak])||{};
+  const tot=Object.values(D).reduce((s,r)=>s+r[0],0)||1;
+  const cand=new Map();
+  Y[a].forEach(([s,w])=>{const key=kKey(s);if(key)cand.set(key,{s,w});});
+  Object.entries(D).forEach(([key,r])=>{if(r[0]>=MIN&&!cand.has(key))cand.set(key,{});});
+  return [...cand].map(([key,o])=>{
+    const raw=D[key],r=raw&&raw[0]>=MIN?raw:null;
+    let sc=o.w?1:0;
+    if(r)sc+=wrPts(r)+PR_W*.5*Math.sqrt(r[0]/tot*100);
+    return {key,w:o.w,r,share:raw?raw[0]/tot:0,sc};
+  }).sort((x,y)=>y.sc-x.sc).slice(0,4);
+}
+const duoChip=(a,o)=>`<span class="chip" tabindex="0" role="button" data-tip-h="${o.w?"★ ":""}${nm(o.key)}" data-tip="${o.w||"データで組まれることが多い組み合わせ"}"${o.r?` data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${A[a]}のサポートの${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}"`:` data-tip-s="まだ${MIN}試合に届いていません"`}>${icK(o.key)}${o.w?"★":""}${nm(o.key)}${o.r?`<span class="wr ${dirOf(o.r)}">${pct(o.r)}</span>`:""}</span>`;
 function stable(){
+  if(ST&&Object.keys(CH).length){
+    const q=kata($("sq").value.trim());
+    $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)).sort((a,b)=>A[a].localeCompare(A[b],"ja"))
+      .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${duoRank(k).map(o=>duoChip(k,o)).join("")}</div></td></tr>`).join("")||`<tr><td colspan="2">該当なし</td></tr>`;
+    return;
+  }
   const q=kata($("sq").value.trim());
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
    .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
@@ -719,8 +747,8 @@ function drawStatus(p){
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
   if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
     lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
-      head:"有利なピック（定番）・数字はそのピックの対面勝率",
-      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(c,s),S[s][0])).join("")}</div>`:"";}
+      head:"苦手な対面（定番）",
+      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(s,c),`${S[s][0]}側の勝率`)).join("")}</div>`:"";}
     })};}
   pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
 })();
