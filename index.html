@@ -175,13 +175,6 @@ td .chips{display:flex;flex-wrap:wrap;gap:6px}
       <div class="legend" id="legend"></div>
     </section>
     <section id="sup-table" hidden></section>
-    <section aria-labelledby="c-h">
-      <div class="tablebar">
-        <h2 id="c-h">カウンター早見表</h2>
-        <input id="cq" type="search" placeholder="チャンプ名で絞り込み" aria-label="カウンター早見表を絞り込み">
-      </div>
-      <div class="tbl"><table><thead><tr><th>敵サポート</th><th>タイプ</th><th>有利なピック（カーソルで理由）</th></tr></thead><tbody id="ctable"></tbody></table></div>
-    </section>
     <section aria-labelledby="s-h">
       <div class="tablebar">
         <h2 id="s-h">ADC相性表</h2>
@@ -472,10 +465,10 @@ function buildLane(id,pos,label){
 }
 
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）
-function laneTable(host,L,label){
+function laneTable(host,L,label,extra=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th></tr></thead><tbody></tbody></table></div>
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th>${extra?`<th>${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
     <p class="why" style="margin:0">Tierは、勝率に20勝20敗ぶんを足して50%寄りにならした値で、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。試合数が多いほど実際の勝率がそのまま効くので、たくさん使われていて勝率が低いチャンプは下がります。20試合未満のチャンプは、たまたまの勝ち負けが大きいので「—」にしています。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
@@ -494,7 +487,7 @@ function laneTable(host,L,label){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?tierScore(r):-1+r[0]/1e6):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||tierScore(b[1])-tierScore(a[1]);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td></tr>`).join("")||`<tr><td colspan="6">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td>${extra?`<td>${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?7:6}">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
@@ -587,13 +580,6 @@ function renderSup(){
 }
 
 const chip=(k,w,r=null)=>`<span class="chip" title="${w}${r?`（${pct(r)}・${r[0]}試合）`:""}">${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
-function ctable(){
-  const q=kata($("cq").value.trim());
-  $("ctable").innerHTML=Object.keys(C).filter(k=>!q||S[k][0].includes(q)||C[k].some(([c])=>S[c][0].includes(q)))
-   .sort((a,b)=>S[a][1].localeCompare(S[b][1])||S[a][0].localeCompare(S[b][0],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${S[k][0]}</span></td><td>${tag(k)}</td><td><div class="chips">${C[k].map(([c,w])=>chip(c,w,supVs(c,k))).join("")}</div></td></tr>`).join("")
-   ||`<tr><td colspan="3">該当なし</td></tr>`;
-}
 function stable(){
   const q=kata($("sq").value.trim());
   $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
@@ -601,9 +587,9 @@ function stable(){
    .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w,duoOf(k,c))).join("")}</div></td></tr>`).join("")
    ||`<tr><td colspan="2">該当なし</td></tr>`;
 }
-$("cq").addEventListener("input",ctable);
+
 $("sq").addEventListener("input",stable);
-drawUnavail();renderSup();ctable();stable();
+drawUnavail();renderSup();stable();
 
 // ===== データの読み込み =====
 const getJSON=(url,opt)=>fetch(url,opt).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
@@ -613,7 +599,7 @@ function drawStatus(p){
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
     <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
-  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();ctable();stable();});
+  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();stable();});
 }
 (async()=>{
   try{const v=await getJSON("https://ddragon.leagueoflegends.com/api/versions.json");if(v[0])DD=v[0];}catch(e){}
@@ -634,8 +620,12 @@ function drawStatus(p){
   if(ST)MIN=ST.matches<2000?3:ST.matches<10000?5:10;
   drawStatus();
   LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
-  if(ST){$("sup-table").hidden=false;lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP")};}
-  pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();ctable();stable();
+  if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
+    lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
+      head:"このサポートに有利なピック（定番・カーソルで理由）",
+      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>chip(c,w,supVs(c,s))).join("")}</div>`:"";}
+    })};}
+  pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
 })();
 </script>
 </body>
