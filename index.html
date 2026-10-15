@@ -168,6 +168,8 @@ td.extra .chips{flex-wrap:nowrap}
 .step-h p{margin:2px 0 0;color:var(--muted);font-size:13px}
 .step .card{background:var(--bg)}
 .s-sub{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.nm-link{font:inherit;font-weight:700;color:var(--fg);background:none;border:none;padding:0;cursor:pointer;text-align:left}
+.nm-link:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .tags2{display:flex;flex-wrap:wrap;gap:4px}
 /* 自分のピック：ステップ2の主役 */
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
@@ -501,6 +503,18 @@ const queueHeads=syncHeads;
 addEventListener("scroll",queueHeads,{passive:true});
 addEventListener("resize",queueHeads);
 
+// ===== URL（#タブ-チャンプ）とチャンプの対応 =====
+const champSlug=k=>BYKEY[k]?BYKEY[k].id.toLowerCase():String(k);
+const slugKey=s=>{const c=Object.values(BYKEY).find(x=>x.id.toLowerCase()===s);return c?CH[c.id].key:"";};
+// URL の内容に合わせてタブと自分のピックを開く（最初の読み込みと、ブラウザの戻る・進む）
+function applyHash(){
+  const [tab,slug]=location.hash.slice(1).split("-");
+  if(!LANES.some(([t])=>t===tab))return;
+  showTab(tab);
+  if(lanePanels[tab]&&lanePanels[tab].open)lanePanels[tab].open(slug?slugKey(slug):"",false);
+}
+addEventListener("popstate",applyHash);
+
 // ===== タブ =====
 const lanePanels={};
 $("tabs").innerHTML=LANES.map(([id,,label])=>`<button type="button" class="tab" role="tab" id="t-${id}" aria-controls="p-${id}" aria-selected="false">${label}</button>`).join("");
@@ -508,13 +522,14 @@ LANES.forEach(([id])=>$("p-"+id).setAttribute("aria-labelledby","t-"+id));
 function showTab(id){
   LANES.forEach(([t])=>{const on=t===id;$("t-"+t).setAttribute("aria-selected",on);$("p-"+t).hidden=!on;});
   try{localStorage.setItem("bp-tab",id);}catch(e){}
-  if(location.hash!=="#"+id)history.replaceState(null,"","#"+id);
+  if(location.hash.slice(1).split("-")[0]!==id)history.replaceState(null,"","#"+id);
   queueHeads();
 }
 $("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.id.slice(2));});
 let first="sup";
 try{first=localStorage.getItem("bp-tab")||first;}catch(e){}
-if(LANES.some(([t])=>"#"+t===location.hash))first=location.hash.slice(1);
+const hashTab=location.hash.slice(1).split("-")[0];
+if(LANES.some(([t])=>t===hashTab))first=hashTab;
 showTab(first);
 
 // ===== 全チャンプの役割（レーンタブ用）=====
@@ -603,7 +618,7 @@ function buildLane(id,pos,label){
   const pa=partner?makePicker(root.querySelector(`#${id}-a-l`).parentElement,`${id}-a-l`,itemsOf(ST.lanes[partner[0]]||{champs:{}}),draw):null;
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
   const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),recs=root.querySelector(".recs");
-  let lastM=null;
+  let lastM="";
   const tk=t=>t?`・★${t}`:"";
   // 組んだときの成績：ADC→SUP の向きで持っているので、どちらのレーンからでも引けるように
   const duoR=(me,ally)=>pos==="UTILITY"?((ST.duo||{})[ally]||{})[me]:((ST.duo||{})[me]||{})[ally];
@@ -654,7 +669,11 @@ function buildLane(id,pos,label){
     }
     s2b.innerHTML=!sub.length?"":M?`<div class="results">${sub.join("")}</div>`:sub.join("");
     // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
-    if(M!==lastM){recs.open=!M;lastM=M;}
+    if(M!==lastM){
+      recs.open=!M;lastM=M;
+      const want=M?`#${id}-${champSlug(M)}`:`#${id}`;
+      if(!root.hidden&&location.hash!==want)history.replaceState(null,"",want);
+    }
     // --- ステップ3・4 ---
     if(!M){s3.innerHTML=s4.innerHTML=empty("ステップ2でピックを決めると表示されます。");}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
@@ -663,9 +682,16 @@ function buildLane(id,pos,label){
   const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
   if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
   if(pos==="UTILITY")extras.push({head:"相性のいいADC",cell:k=>pairCell(k,false)});
-  const table=laneTable(root.querySelector(".lt"),L,label,extras);
+  // 一覧の名前を押したら：自分のピックに入れて、ステップ2へ。URL も変えるので「戻る」で一覧に戻れる
+  const open=(k,push)=>{
+    // 先に履歴を足してから描き直す（描き直しで URL を上書きしないように）
+    if(push)history.pushState(null,"",k?`#${id}-${champSlug(k)}`:`#${id}`);
+    pm.set(k||"");draw();
+    if(k)root.querySelector(`[data-step="2"]`).scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
+  };
+  const table=laneTable(root.querySelector(".lt"),L,label,extras,k=>open(k,true));
   draw();
-  lanePanels[id]={draw,table};
+  lanePanels[id]={draw,table,open};
 }
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。
 // そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
@@ -683,7 +709,7 @@ function extCells(L,k){
   const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
   return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip-h="ダメージの内訳" data-tip="物理 ${f(p)} ／ 魔法 ${f(m)} ／ 確定 ${f(t)}" data-tip-s="1分あたり ${Math.round(dmgPerMin(e).reduce((a,b)=>a+b,0))}ダメージ（${e[0]}試合の平均）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
 }
-function laneTable(host,L,label,extras=[]){
+function laneTable(host,L,label,extras=[],onOpen=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧（環境を見る）</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
@@ -705,12 +731,13 @@ function laneTable(host,L,label,extras=[]){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
   tq.addEventListener("input",table);
+  if(onOpen)tb.addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)onOpen(b.dataset.open);});
   table();
   return table;
 }
@@ -882,6 +909,7 @@ function drawStatus(p){
   drawStatus();
   buildMaps();
   LANES.forEach(([id,pos,label])=>buildLane(id,pos,label));
+  if(location.hash.includes("-"))applyHash();
   pickers.forEach(p=>p.drawBtn());
 })();
 </script>
