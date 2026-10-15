@@ -89,6 +89,10 @@ ul.list li{display:grid;gap:2px}
 .wr.up{color:var(--good)}.wr.down{color:var(--bad)}
 .sl{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center}
 .sl .bar{grid-column:1/-1}
+/* おすすめカード：名前と勝率を1行目、説明を2行目に全幅で */
+.rank .sl{grid-template-columns:minmax(0,1fr) auto}
+.rank .sl .why{grid-column:1/-1;grid-row:2}
+.rank .sl .bar{grid-row:3}
 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;display:block}
 .bar i{display:block;height:100%;background:var(--accent)}
 .bar.up i{background:var(--good)}.bar.down i{background:var(--bad)}
@@ -494,16 +498,18 @@ function buildLane(id,pos,label){
       out.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${r[0]<MIN?"（試合数が少ないので参考程度）":""}</p>`:empty("この対面の試合はまだありません。"),true));
     }
     if(needs.size||AL){
-      // 点数：ほしい役割1つにつき +1.5 / 敵を選んでいればその対面の勝率で ±2、なければ全体勝率で ±1
-      //       SUP で味方ADCを選んでいれば、組んだときの勝率で ±2（組んだデータがない候補は、構成の条件がないときは外す）
-      const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=MIN&&k!==E).map(([k,r])=>{
+      // 候補は勝率一覧に出ているチャンプだけ（そのロールでのピック率が低いチャンプは出さない）
+      // 点数：ほしい役割1つにつき +3 ／ Tierのスコア（勝率・ピック率・BAN率）の 0.2倍
+      //       敵を選んでいればその対面の勝率で ±2 ／ SUP で味方ADCを選んでいれば組んだときの勝率で ±2
+      //       （組んだデータがない候補は、ほしいものを選んでいないときは外す）
+      const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&k!==E).map(([k,r])=>{
         const tr=traitsOf(k,L),hit=[...needs].filter(n=>tr.has(n));
         if(needs.size&&!hit.length)return null;
-        let s=hit.length*1.5,shown=r;const notes=[];
+        let s=hit.length*3+powerScore(r,k,L)*.2,shown=r;const notes=[];
         if(hit.length)notes.push(`${hit.map(n=>LANE_NEEDS[n]).join("・")}を持っている`);
         const vr=E&&(L.vs[k]||{})[E];
         if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);notes.push(`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`);shown=vr;}
-        else{s+=clamp((smooth(r)-.5)*20,1);notes.push(`全体勝率${pct(r)}（${r[0]}試合）${E?`・${nm(E)}との対面データなし`:""}`);}
+        else notes.push(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`);
         if(AL){
           const dr=((ST.duo||{})[AL]||{})[k];
           if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}
