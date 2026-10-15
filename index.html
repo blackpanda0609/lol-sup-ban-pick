@@ -94,27 +94,13 @@ ul.list li{display:grid;gap:2px}
 .tg{font:inherit;font-size:13.5px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .tg[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:700}
 .tg .ic{width:22px;height:22px}
-#unavail .tg{padding:3px 10px 3px 3px}
-#unavail .tg[aria-pressed="true"]{background:var(--bg);border-color:var(--engage);color:var(--muted);text-decoration:line-through}
-#unavail .tg[aria-pressed="true"] .ic{filter:grayscale(1);opacity:.5}
-.unavail{display:grid;gap:10px}
-.unavail summary{cursor:pointer;font-weight:700;font-size:13px}
-.unavail summary span{color:var(--engage);margin-left:6px}
-.linkbtn{justify-self:start;font:inherit;font-size:13px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
 .rank{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px 24px}
 .rank li{display:grid;gap:4px;min-width:0}
-.pros,.cons{margin:0;padding:0;list-style:none;font-size:13.5px;display:grid;gap:2px}
-.pros li::before{content:"＋ ";color:var(--good);font-weight:700}
-.cons li::before{content:"－ ";color:var(--bad);font-weight:700}
-.cons{color:var(--bad)}
-.off{opacity:.45}
-.off .name::after{content:"使えない";font-size:11px;color:var(--engage);border:1px solid currentColor;border-radius:999px;padding:0 6px}
-.legend{display:flex;gap:8px;flex-wrap:wrap}
 .tablebar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
 .tablebar input{max-width:260px}
 .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;min-width:520px}
-th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{white-space:nowrap;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
 th[data-s]{cursor:pointer;user-select:none}
 th.wrap{white-space:normal}
@@ -170,7 +156,7 @@ td.extra .chips{flex-wrap:nowrap}
 <div class="wrap">
 <header>
   <h1>BPノート</h1>
-  <p>JP・KRのエメラルド以上のソロランクから集めた勝率と、サポートのカウンター早見表をまとめたBP支援ツールです。</p>
+  <p>JP・KRのエメラルド以上のソロランクから集めた勝率をもとにした、全レーンのBP支援ツールです。</p>
   <div class="status" id="status"><span>データを読み込み中…</span></div>
 </header>
 
@@ -181,38 +167,10 @@ td.extra .chips{flex-wrap:nowrap}
   <div class="tabpanel" id="p-jungle" role="tabpanel" hidden></div>
   <div class="tabpanel" id="p-mid" role="tabpanel" hidden></div>
   <div class="tabpanel" id="p-adc" role="tabpanel" hidden></div>
-  <div class="tabpanel" id="p-sup" role="tabpanel" hidden>
-    <section aria-labelledby="bp-h">
-      <h2 id="bp-h">サポートBPアシスト</h2>
-      <div class="pickers">
-        <div class="field" id="f-enemy"><span class="flabel" id="enemy-l">敵サポート <span>相手が先に出したら</span></span></div>
-        <div class="field" id="f-adc"><span class="flabel" id="adc-l">味方ADC <span>隣のADC・APC</span></span></div>
-        <div class="field" id="f-mine"><span class="flabel" id="mine-l">自分の得意チャンプ <span>ban候補を出す</span></span></div>
-      </div>
-      <div class="field">
-        <span class="flabel" id="needs-l">味方の構成で足りないもの <span>トップ・ジャングル・ミッドを見て、当てはまるものを選ぶ</span></span>
-        <div class="toggles" id="needs" role="group" aria-labelledby="needs-l"></div>
-      </div>
-      <details class="unavail">
-        <summary>使えないチャンプ（ban・ピック済み）<span id="unavail-count"></span></summary>
-        <div class="toggles" id="unavail" role="group" aria-label="使えないチャンプ"></div>
-        <button type="button" class="linkbtn" id="unavail-clear">すべて解除</button>
-      </details>
-      <div class="results" id="results"></div>
-      <div class="legend" id="legend"></div>
-    </section>
-    <section id="sup-table" hidden></section>
-    <section aria-labelledby="s-h">
-      <div class="tablebar">
-        <h2 id="s-h">ADC相性表</h2>
-        <input id="sq" type="search" placeholder="ADC・APC名で絞り込み" aria-label="ADC相性表を絞り込み">
-      </div>
-      <div class="tbl"><table><thead><tr><th>味方ADC</th><th>おすすめのサポート（組んだときの勝率と組まれる割合で並べ替え・★は定番、それ以外の理由は自動判定）</th></tr></thead><tbody id="stable"></tbody></table></div>
-    </section>
-  </div>
+  <div class="tabpanel" id="p-sup" role="tabpanel" hidden></div>
 </div>
 
-<p class="note">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。「理由」付きの候補は定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
+<p class="note">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。★の付いた理由は、手書きの定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
 <p class="note">BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
 </div>
 
@@ -234,7 +192,7 @@ const C={
  naut:[["morg","Eでアンカーと通常攻撃のスネアを防ぐ"],["janna","Qで突進後の追撃を割る"],["braum","受けてからのパッシブスタンで返す"]],
  leona:[["morg","Eでスタンを無効化し、逆にQで捕まえる"],["janna","Qのノックアップでダイブを止める"],["braum","Eで突進を受けてパッシブで反撃"]],
  pyke:[["braum","硬さと反撃スタンで処刑ラインに入りにくい"],["leona","硬く、Eに合わせてカウンターエンゲージできる"],["ali","ヒールと硬さでキル圏を外せる"]],
- rell:[["janna","突っ込んだレルをQ・Rで押し返す"],["morg","Eで味方へのスタンを防ぐ"],["lulu","Rの打ち上げ・Wでダイブを受け止める"]],
+ rell:[["janna","突っ込んだレルをQ・Rで押し返す"],["zyra","足の遅いレルを植物とスネアで寄せつけずに削れる"],["lulu","Rの打ち上げ・Wでダイブを受け止める"]],
  ali:[["janna","WQ後の追撃をQで割り、ADCを逃がす"],["morg","Eで味方へのCCを防ぐ"],["lulu","Rの打ち上げで2回目の入りを止める"]],
  rakan:[["leona","対象指定のEとQで捕まえやすい"],["naut","パッシブとRで確実に止める"],["janna","Qで突進を割り込める"]],
  lulu:[["naut","序盤のオールインに弱く、硬いエンゲージで押し切れる"],["leona","レベル2先行からのダイブが刺さる"],["blitz","Wの射程外からグラブで捕まえる"]],
@@ -249,7 +207,7 @@ const C={
  zyra:[["leona","植物を無視して本体に入れる"],["naut","対象指定のRで確実に捕まえる"],["rakan","スネアを避けつつ入れる"]],
  xerath:[["leona","機動力のない相手にダイブ"],["naut","射程を詰めれば無力"],["blitz","細い体を捕まえて落とす"]],
  vel:[["leona","ノックアップ前に入れる"],["naut","スキル空振り後を狙える"],["pyke","キルラインを取りやすい"]],
- morg:[["brand","シールドに関係ない範囲ポーク"],["xerath","Eの届かない射程から削る"],["zyra","植物でシールドを無駄撃ちさせる"]],
+ morg:[["rell","QでEのシールドを割ってから、Eのスタンで捕まえられる"],["brand","シールドに関係ない範囲ポーク"],["xerath","Eの届かない射程から削る"],["zyra","植物でシールドを無駄撃ちさせる"]],
  lux:[["naut","逃げ手段がなく、オールインに弱い"],["leona","スキル空振りの隙に入る"],["blitz","細い体を捕まえやすい"]],
  bard:[["leona","バードがレーンを離れた隙に2対1"],["naut","序盤のトレードで押し勝てる"],["ali","硬さで序盤レーンを支配"]],
  braum:[["zyra","Eの盾で防げない植物ポーク"],["brand","範囲ダメージで盾を無視"],["karma","射程外から削れる"]],
@@ -303,15 +261,7 @@ const ID={thresh:"Thresh",blitz:"Blitzcrank",pyke:"Pyke",bard:"Bard",naut:"Nauti
  ashe:"Ashe",jhin:"Jhin",twitch:"Twitch",mf:"MissFortune",samira:"Samira",zeri:"Zeri",aphelios:"Aphelios",trist:"Tristana",sivir:"Sivir",
  varus:"Varus",kog:"KogMaw",nilah:"Nilah",smolder:"Smolder",ziggs:"Ziggs",swain:"Swain",hwei:"Hwei",karthus:"Karthus"};
 const APC=new Set(["ziggs","swain","hwei","karthus"]);
-const NEEDS={front:"フロント",engage:"エンゲージ",cc:"CC",ap:"AP",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
-const TR={
- thresh:"front engage peel catch",blitz:"engage catch",pyke:"engage catch",bard:"catch peel",
- naut:"front engage catch",leona:"front engage",rell:"front engage",ali:"front engage disengage",rakan:"engage disengage",
- braum:"front peel disengage",taric:"front peel",tahm:"front peel disengage",mao:"front engage disengage",
- lulu:"peel disengage",janna:"peel disengage",nami:"peel ap",soraka:"peel",yuumi:"peel",karma:"peel poke ap",
- milio:"peel disengage",renata:"peel disengage",sona:"peel ap poke",sera:"ap poke peel",
- senna:"poke",brand:"ap poke",zyra:"ap poke disengage",xerath:"ap poke",vel:"ap poke",morg:"ap catch peel",lux:"ap poke catch peel"
-};
+
 
 // ===== 共通 =====
 const DATA_BASES=["data/","https://raw.githubusercontent.com/blackpanda0609/lol-sup-ban-pick/main/data/"];
@@ -339,10 +289,10 @@ const CLS={Fighter:["ファイター","fighter"],Tank:["タンク","tank"],Mage:
 const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join("／")}</span>`:"";};
 const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
 // Tier：勝率に「20勝20敗」を足して50%寄りにならした値で並べる（試合数が多いほど実際の勝率に近づく）。
-// 20試合（最低試合数のほうが多ければそちら）に届いたチャンプだけを対象に、レーン内の順位で
+// 50試合（最低試合数のほうが多ければそちら）に届いたチャンプだけを対象に、レーン内の順位で
 // 上位10%=S / 次の20%=A / 35%=B / 20%=C / 残り=D
 const tierScore=r=>(r[1]+20)/(r[0]+40);
-const tierMin=()=>Math.max(MIN,20);
+const tierMin=()=>Math.max(MIN,50);
 // 環境への影響力：勝率点（ならした勝率と50%の差を1.5倍）＋ 人気点（ピック率%の平方根 × 重み）
 // 重みは「環境重視」の3で固定。例：勝率53%・ピック率1% → 4.5+3.0=7.5 ／ 勝率50.5%・ピック率15% → 0.75+11.6=12.4
 const PR_W=3;
@@ -360,7 +310,7 @@ function tierMapOf(L){
   return map;
 }
 const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
-const statList=rows=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r)).join("")}</ul>`:fewMsg();
+const statList=(rows,noteFn=null)=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r,noteFn?noteFn(k):"")).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
 const pickers=[];
@@ -501,6 +451,7 @@ function buildLane(id,pos,label){
     <div class="pickers">
       <div class="field"><span class="flabel" id="${id}-e-l">敵の${label} <span>相手のピックを選ぶ</span></span></div>
       <div class="field"><span class="flabel" id="${id}-m-l">自分のチャンプ <span>苦手な相手（ban候補）を出す</span></span></div>
+      ${pos==="UTILITY"?`<div class="field"><span class="flabel" id="${id}-a-l">味方ADC <span>隣のADC・APC</span></span></div>`:""}
     </div>
     <div class="field">
       <span class="flabel" id="${id}-n-l">味方の構成で足りないもの <span>ほかのレーンのピックを見て、当てはまるものを選ぶ（役割はチャンプの特徴から判定した目安）</span></span>
@@ -509,51 +460,69 @@ function buildLane(id,pos,label){
     <div class="results"></div></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field"),res=root.querySelector(".results");
-  const items=()=>Object.keys(L.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${L.champs[k][0]}試合</span>`}));
+  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
+  const items=itemsOf(L);
   const pe=makePicker(fields[0],`${id}-e-l`,items,draw);
   const pm=makePicker(fields[1],`${id}-m-l`,items,draw);
+  // SUP だけ：味方ADC（BOT のチャンプから選ぶ）
+  const pa=pos==="UTILITY"?makePicker(fields[2],`${id}-a-l`,itemsOf(ST.lanes.BOTTOM||{champs:{}}),draw):null;
+  // SUP では定番の理由を補足に出す
+  const tk=t=>t?`・★${t}`:"";
   const needs=new Set();
   root.querySelector(".lane-needs").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;needs.has(n)?needs.delete(n):needs.add(n);b.setAttribute("aria-pressed",needs.has(n));draw();});
   const clamp=(x,m)=>Math.max(-m,Math.min(m,x));
   function draw(){
-    const E=pe.value,M=pm.value,out=[];
+    const E=pe.value,M=pm.value,AL=pa?pa.value:"",out=[];
     if(E&&M){
       const r=(L.vs[M]||{})[E];
       out.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${r[0]<MIN?"（試合数が少ないので参考程度）":""}</p>`:empty("この対面の試合はまだありません。"),true));
     }
-    if(needs.size){
+    if(needs.size||AL){
       // 点数：足りない役割1つにつき +1.5 / 敵を選んでいればその対面の勝率で ±2、なければ全体勝率で ±1
+      //       SUP で味方ADCを選んでいれば、組んだときの勝率で ±2（組んだデータがない候補は、構成の条件がないときは外す）
       const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=MIN&&k!==E).map(([k,r])=>{
         const tr=traitsOf(k,L),hit=[...needs].filter(n=>tr.has(n));
-        if(!hit.length)return null;
-        let s=hit.length*1.5,note;
+        if(needs.size&&!hit.length)return null;
+        let s=hit.length*1.5,shown=r;const notes=[];
+        if(hit.length)notes.push(`${hit.map(n=>LANE_NEEDS[n]).join("・")}を補える`);
         const vr=E&&(L.vs[k]||{})[E];
-        if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);note=`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`;}
-        else{s+=clamp((smooth(r)-.5)*20,1);note=`全体勝率${pct(r)}（${r[0]}試合）${E?`・${nm(E)}との対面データなし`:""}`;}
-        return {k,s,hit,note,r:vr&&vr[0]>=MIN?vr:r};
+        if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);notes.push(`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`);shown=vr;}
+        else{s+=clamp((smooth(r)-.5)*20,1);notes.push(`全体勝率${pct(r)}（${r[0]}試合）${E?`・${nm(E)}との対面データなし`:""}`);}
+        if(AL){
+          const dr=((ST.duo||{})[AL]||{})[k];
+          if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}
+          else if(!needs.size)return null;
+        }
+        const teiki=[E&&teikiCounter(k,E),AL&&teikiDuo(AL,k)].filter(Boolean);
+        return {k,s,notes,teiki,r:shown};
       }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,8);
-      const title=`構成を補えるピック：${[...needs].map(n=>LANE_NEEDS[n]).join("・")}${E?` × ${nm(E)}に勝ちやすい`:""}`;
-      out.push(card(title,rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}<span class="score">${x.s.toFixed(1)}点</span></span><span class="why">${x.hit.map(n=>LANE_NEEDS[n]).join("・")}を補える／${x.note}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg(),true));
+      const conds=[needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}を補う`,E&&`${nm(E)}に勝ちやすい`,AL&&`${nm(AL)}と相性がいい`].filter(Boolean).join(" × ");
+      out.push(card(`おすすめ：${conds}`,rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}<span class="score">${x.s.toFixed(1)}点</span></span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg(),true));
     }
     if(E){
       const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
-      out.push(card(`${nm(E)}に勝ちやすいピック`,statList(list.slice(0,8))));
+      out.push(card(`${nm(E)}に勝ちやすいピック`,statList(list.slice(0,8),x=>tk(teikiCounter(x,E)))));
       if(list.length>8)out.push(card(`${nm(E)}相手に避けたいピック`,statList(list.slice(8).reverse().slice(0,5))));
     }
     if(M){
       const mine=Object.entries(L.vs[M]||{}).filter(([,r])=>r[0]>=MIN);
       const tot=L.champs[M];
-      out.push(card(`${nm(M)}の苦手な相手（ban候補）`,(tot?`<p class="why" style="margin:0">${nm(M)}の全体勝率 ${pct(tot)}（${tot[0]}試合）</p>`:"")+statList(mine.slice().sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,6))));
+      out.push(card(`${nm(M)}の苦手な相手（ban候補）`,(tot?`<p class="why" style="margin:0">${nm(M)}の全体勝率 ${pct(tot)}（${tot[0]}試合）</p>`:"")+statList(mine.slice().sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,6),o=>tk(teikiCounter(o,M)))));
       out.push(card(`${nm(M)}の得意な相手`,statList(mine.slice().sort((p,q)=>smooth(q[1])-smooth(p[1])).slice(0,6))));
-      if(pos==="BOTTOM"){
-        const duo=Object.entries((ST.duo||{})[M]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
-        out.push(card(`${nm(M)}と勝率が高いサポート`,statList(duo.slice(0,6))));
-      }
+      if(pos==="BOTTOM"){const ps=pairRank(M,true).slice(0,6);out.push(card(`${nm(M)}と相性のいいサポート`,statList(ps.map(o=>[o.key,o.r]),k=>tk(teikiDuo(M,k)))));}
+      if(pos==="UTILITY"){const ps=pairRank(M,false).slice(0,6);out.push(card(`${nm(M)}と相性のいいADC`,statList(ps.map(o=>[o.key,o.r]),k=>tk(teikiDuo(k,M)))));}
     }
-    if(!out.length)out.push(card("使い方",empty(`敵の${label}を選ぶと、そのチャンプに勝率が高いピックが出ます。自分のチャンプを選ぶと、苦手な相手（ban候補）と得意な相手が出ます。${pos==="BOTTOM"?"ADCを選ぶと、勝率が高いサポートも出ます。":""}`)));
+    if(AL){
+      const ps=pairRank(AL,true).slice(0,6);
+      out.push(card(`${nm(AL)}と相性のいいサポート`,statList(ps.map(o=>[o.key,o.r]),k=>tk(teikiDuo(AL,k)))));
+    }
+    if(!out.length)out.push(card("使い方",empty(`敵の${label}を選ぶと、そのチャンプに勝率が高いピックが出ます。自分のチャンプを選ぶと、苦手な相手（ban候補）と得意な相手が出ます。${pos==="BOTTOM"?"自分のADCを選ぶと、相性のいいサポートも出ます。":""}${pos==="UTILITY"?"味方ADCを選ぶと、組んだときの勝率が高いサポートが出ます。★は手書きの定番の理由です。":""}`)));
     res.innerHTML=out.join("");
   }
-  const table=laneTable(root.querySelector(".lt"),L,label,{head:"苦手な対面（データ）",cell:k=>worstChips(L,k)});
+  const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
+  if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
+  if(pos==="UTILITY")extras.push({head:"相性のいいADC",cell:k=>pairCell(k,false)});
+  const table=laneTable(root.querySelector(".lt"),L,label,extras);
   draw();
   lanePanels[id]={draw,table};
 }
@@ -561,9 +530,9 @@ function buildLane(id,pos,label){
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。そのロールで10試合未満のチャンプは出さない
 const ROLE_MIN=10;
 // データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）
-function worstChips(L,k){
+function worstChips(L,k,pos){
   const rows=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,3);
-  return rows.length?`<div class="chips">${rows.map(([o,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(o)}" data-tip="データ上の苦手な対面" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(o)}">${icK(o)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div>`:`<span class="why">—</span>`;
+  return rows.length?`<div class="chips">${rows.map(([o,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${pos==="UTILITY"&&teikiCounter(o,k)?"★ ":""}${nm(o)}" data-tip="${(pos==="UTILITY"&&teikiCounter(o,k))||"データ上の苦手な対面"}" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(o)}">${icK(o)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div>`:`<span class="why">—</span>`;
 }
 // CC/分 とダメージ内訳のセル
 function extCells(L,k){
@@ -572,11 +541,11 @@ function extCells(L,k){
   const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
   return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip-h="ダメージの内訳" data-tip="物理 ${f(p)} ／ 魔法 ${f(m)} ／ 確定 ${f(t)}" data-tip-s="${e[0]}試合の合計から"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
 }
-function laneTable(host,L,label,extra=null){
+function laneTable(host,L,label,extras=[]){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extra?`<th class="wrap">${extra.head}</th>`:""}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールで10試合未満のチャンプは一覧に出さず、10〜19試合のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。SUPは定番の苦手な相手を優先し、定番がないサポートだけデータから出します。数字はどれも、その行のチャンプ側から見た対面勝率です。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="wrap">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールで10試合未満のチャンプは一覧に出さず、10〜49試合のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -594,7 +563,7 @@ function laneTable(host,L,label,extra=null){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0])-powerScore(a[1],a[0]);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extra?`<td class="extra">${extra.cell(k)}</td>`:""}</tr>`).join("")||`<tr><td colspan="${extra?10:9}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
@@ -603,107 +572,17 @@ function laneTable(host,L,label,extra=null){
   return table;
 }
 
-// ===== サポートタブ =====
-const supAll=k=>{const r=ST&&((ST.lanes.UTILITY||{}).champs||{})[kKey(k)];return r&&r[0]>=MIN?r:null;};
-const supItems=()=>Object.keys(S).sort((a,b)=>S[a][0].localeCompare(S[b][0],"ja")).map(k=>({v:k,name:S[k][0],icon:ic(k),extra:`${tag(k)}<span class="gc">${supAll(k)?pct(supAll(k)):""}</span>`}));
-const adcItems=()=>Object.keys(A).sort((a,b)=>A[a].localeCompare(A[b],"ja")).map(k=>({v:k,name:A[k],icon:ic(k),extra:APC.has(k)?apcTag:""}));
-const supE=makePicker($("f-enemy"),"enemy-l",supItems,()=>renderSup());
-const supA=makePicker($("f-adc"),"adc-l",adcItems,()=>renderSup());
-const supM=makePicker($("f-mine"),"mine-l",supItems,()=>renderSup());
-$("legend").innerHTML=Object.keys(TYPES).map(t=>`<span class="tag t-${t}">${TYPES[t]}</span>`).join("");
-
-const needs=new Set(),unavail=new Set();
-$("needs").innerHTML=Object.keys(NEEDS).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${NEEDS[n]}</button>`).join("");
-const drawUnavail=()=>{
-  $("unavail").innerHTML=Object.keys(S).sort((a,b)=>S[a][0].localeCompare(S[b][0],"ja")).map(k=>`<button type="button" class="tg" data-k="${k}" aria-pressed="${unavail.has(k)}">${ic(k)}${S[k][0]}</button>`).join("");
-  $("unavail-count").textContent=unavail.size?`${unavail.size}体`:"";
-};
-$("needs").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;needs.has(n)?needs.delete(n):needs.add(n);b.setAttribute("aria-pressed",needs.has(n));renderSup();});
-$("unavail").addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;const k=b.dataset.k;unavail.has(k)?unavail.delete(k):unavail.add(k);b.setAttribute("aria-pressed",unavail.has(k));$("unavail-count").textContent=unavail.size?`${unavail.size}体`:"";renderSup();});
-$("unavail-clear").addEventListener("click",()=>{unavail.clear();drawUnavail();renderSup();});
-
-// 実データの勝率（試合数が足りなければ null）
-const supVs=(k,e)=>{const r=ST&&((ST.lanes.UTILITY||{}).vs||{})[kKey(k)];const x=r&&r[kKey(e)];return x&&x[0]>=MIN?x:null;};
-const duoOf=(a,k)=>{const r=ST&&(ST.duo||{})[kKey(a)];const x=r&&r[kKey(k)];return x&&x[0]>=MIN?x:null;};
-
-// 点数：敵に有利 +3 / 敵が苦手 −3 / ADCと好相性 +2（同系統 +1）/ 足りない役割1つにつき +1.5 / 実データの勝率 ±2まで
-function rank(e,a){
-  const yt=a?new Set(Y[a].map(([k])=>S[k][1])):new Set();
-  return Object.keys(S).filter(k=>k!==e&&!unavail.has(k)).map(k=>{
-    let s=0;const pros=[],cons=[];
-    if(e){
-      const c=C[e].find(([x])=>x===k); if(c){s+=3;pros.push(`${S[e][0]}に有利：${c[1]}`);}
-      const w=(C[k]||[]).find(([x])=>x===e); if(w){s-=3;cons.push(`${S[e][0]}が苦手：${w[1]}`);}
-      const r=supVs(k,e); if(r){const b=Math.max(-2,Math.min(2,(smooth(r)-.5)*40));s+=b;(b>=0?pros:cons).push(`データ：${S[e][0]}相手に勝率${pct(r)}（${r[0]}試合）`);}
-    }
-    if(a){
-      const y=Y[a].find(([x])=>x===k);
-      if(y){s+=2;pros.push(`${A[a]}と好相性：${y[1]}`);}
-      else if(yt.has(S[k][1])){s+=1;pros.push(`${A[a]}と相性のいい${TYPES[S[k][1]]}系`);}
-      const r=duoOf(a,k); if(r){const b=Math.max(-2,Math.min(2,(smooth(r)-.5)*40));s+=b;(b>=0?pros:cons).push(`データ：${A[a]}と組んで勝率${pct(r)}（${r[0]}試合）`);}
-    }
-    const hit=[...needs].filter(n=>n==="cc"?(ST&&kKey(k)?traitsOf(kKey(k),ST.lanes.UTILITY).has("cc"):/engage|catch/.test(TR[k])):TR[k].split(" ").includes(n));
-    if(hit.length){s+=1.5*hit.length;pros.push(`構成を補える：${hit.map(n=>NEEDS[n]).join("・")}`);}
-    if(needs.size&&!hit.length){s-=1;cons.push("足りない役割を補えない");}
-    return {k,s,pros,cons};
-  }).filter(r=>r.pros.length).sort((x,y)=>y.s-x.s||S[x.k][0].localeCompare(S[y.k][0],"ja")).slice(0,6);
+// ===== 定番データ（手書き）と実データの橋渡し =====
+const K2S={},K2A={};
+function buildMaps(){
+  Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
+  Object.keys(A).forEach(a=>{const k=kKey(a);if(k)K2A[k]=a;});
 }
+// x が target に有利、という定番の理由（なければ ""）
+const teikiCounter=(x,target)=>{const t=K2S[target],s=K2S[x];if(!t||!s||!C[t])return "";const f=C[t].find(([c])=>c===s);return f?f[1]:"";};
+// ADC とサポートの組み合わせの定番の理由（なければ ""）
+const teikiDuo=(adc,sup)=>{const a=K2A[adc],s=K2S[sup];if(!a||!s||!Y[a])return "";const f=Y[a].find(([c])=>c===s);return f?f[1]:"";};
 
-// 勝率の小さな表示（r が null なら何も出さない）
-const wrBadge=(r,label="")=>r?`<span class="wr ${dirOf(r)}" tabindex="0" data-tip="${r[0]}試合">${label}${pct(r)}</span>`:"";
-const li=(k,why,extra="",r=null,rl="")=>`<li${unavail.has(k)?' class="off"':""}><span class="name">${ic(k)}${S[k][0]} ${tag(k)}${extra}${wrBadge(r,rl)}</span><span class="why">${why}${r?`（${rl}${r[0]}試合）`:""}</span></li>`;
-function renderSup(){
-  const e=supE.value,a=supA.value,m=supM.value,out=[];
-  const U=ST&&ST.lanes.UTILITY;
-  if(e||a||needs.size){
-    const rs=rank(e,a),top=rs.length?Math.max(...rs.map(r=>r.s),1):1;
-    const conds=[e&&`${S[e][0]}に有利`,a&&`${A[a]}と好相性`,needs.size&&`${[...needs].map(n=>NEEDS[n]).join("・")}を補う`].filter(Boolean).join(" × ");
-    const body=rs.length?`<ul class="rank">${rs.map(r=>`<li><span class="name">${ic(r.k)}${S[r.k][0]} ${tag(r.k)}<span class="score">${r.s.toFixed(1)}点</span></span>
-      <span class="bar"><i style="width:${Math.max(4,r.s/top*100)}%"></i></span>
-      <ul class="pros">${r.pros.map(p=>`<li>${p}</li>`).join("")}</ul>${r.cons.length?`<ul class="cons">${r.cons.map(p=>`<li>${p}</li>`).join("")}</ul>`:""}</li>`).join("")}</ul>`
-      :empty("条件に合う候補が見つかりません。「使えないチャンプ」を減らすか、条件をゆるめてください。");
-    out.push(card(`総合おすすめ：${conds}`,body,true));
-  }
-  if(e){
-    out.push(card(`${S[e][0]}に有利なピック<span class="src">定番</span>`,`<ul class="list">${C[e].map(([k,w])=>li(k,w,"",supVs(k,e),"対面 ")).join("")}</ul>`));
-    if(U){const E=kKey(e);const list=Object.keys(U.vs).map(x=>[x,U.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
-      out.push(card(`${S[e][0]}に勝率が高いサポート<span class="src">データ</span>`,statList(list.slice(0,6))));}
-  }
-  if(a){
-    out.push(card(`${A[a]}と相性のいいサポート<span class="src">定番</span>`,`<ul class="list">${Y[a].map(([k,w])=>li(k,w,"",duoOf(a,k),"組んで ")).join("")}</ul>`));
-    if(ST){const d=Object.entries((ST.duo||{})[kKey(a)]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(q[1])-smooth(p[1]));
-      out.push(card(`${A[a]}と組んで勝率が高いサポート<span class="src">データ</span>`,statList(d.slice(0,6))));}
-  }
-  if(m){
-    const bans=C[m]||[];
-    const goodVs=Object.keys(C).filter(k=>C[k].some(([c])=>c===m));
-    out.push(card(`${S[m][0]}を使うならban候補<span class="src">定番</span>`,`<ul class="list">${bans.map(([k,w])=>li(k,`${S[m][0]}への対策：${w}`,"",supVs(k,m),"対面 ")).join("")}</ul>`+
-      (goodVs.length?`<p class="why" style="margin:0">得意な相手：${goodVs.map(k=>S[k][0]).join("、")}</p>`:"")));
-    if(U){const mine=Object.entries(U.vs[kKey(m)]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1]));
-      out.push(card(`${S[m][0]}が苦手なサポート<span class="src">データ</span>`,statList(mine.slice(0,6))));}
-  }
-  if(!out.length)out.push(card("使い方",empty("敵サポート・味方ADC・味方の構成で足りないものを選ぶと、条件を合わせて点数の高い順に候補が出ます。「定番」は相性の理由つきの目安、「データ」は実際の試合の勝率です。banやピックで使えないチャンプは「使えないチャンプ」で外せます。")));
-  $("results").innerHTML=out.join("");
-}
-
-// アイコンだけのチップ（名前と理由はカーソルで表示）
-const iconChip=(k,w,r=null,st="")=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${st} ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""} aria-label="${S[k][0]}">${ic(k)}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
-const chip=(k,w,r=null,st="")=>`<span class="chip" tabindex="0" role="button" data-tip-h="${S[k][0]}" data-tip="${w}"${r?` data-tip-s="${st} ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}"`:""}>${ic(k)}${S[k][0]}${r?`<span class="wr ${dirOf(r)}">${pct(r)}</span>`:""}</span>`;
-// ADCと組むサポートの順位：勝率点（ならした勝率）＋ 人気点（そのADCと組まれる割合）＋ 定番なら +1
-// 定番でも、データ上で勝率が低ければ下がる。データだけで上位の組み合わせも入る
-function duoRank(a){
-  const ak=kKey(a),D=(ST&&ak&&(ST.duo||{})[ak])||{};
-  const tot=Object.values(D).reduce((s,r)=>s+r[0],0)||1;
-  const cand=new Map();
-  Y[a].forEach(([s,w])=>{const key=kKey(s);if(key)cand.set(key,{s,w});});
-  Object.entries(D).forEach(([key,r])=>{if(r[0]>=MIN&&!cand.has(key))cand.set(key,{});});
-  return [...cand].map(([key,o])=>{
-    const raw=D[key],r=raw&&raw[0]>=MIN?raw:null;
-    let sc=o.w?1:0;
-    if(r)sc+=wrPts(r)+PR_W*.5*Math.sqrt(r[0]/tot*100);
-    return {key,w:o.w,r,share:raw?raw[0]/tot:0,sc};
-  }).sort((x,y)=>y.sc-x.sc).slice(0,4);
-}
 // 定番にない組み合わせの理由を、ADCの戦い方とサポートの役割から自動で組み立てる
 const ADC_STYLE={
   follow:new Set("kaisa samira draven mf xayah trist nilah lucian kalista".split(" ")), // 仕掛けに合わせて飛び込む
@@ -711,8 +590,8 @@ const ADC_STYLE={
   poke:new Set("ezreal varus cait jhin ziggs ashe hwei karthus".split(" ")),           // 射程が長い
   cc:new Set("ashe jhin varus cait xayah hwei swain".split(" "))                       // 自分も足止めを持つ
 };
-function autoDuoReason(a,key){
-  const t=traitsOf(key,ST&&ST.lanes.UTILITY),s=nm(key),d=A[a],out=[];
+function autoDuoReason(adc,sup){
+  const a=K2A[adc]||"",t=traitsOf(sup,ST&&ST.lanes.UTILITY),s=nm(sup),d=nm(adc),out=[];
   if((t.has("engage")||t.has("catch"))&&ADC_STYLE.follow.has(a))out.push(`${s}の仕掛けに${d}がすぐ追撃できる`);
   if((t.has("peel")||t.has("disengage"))&&ADC_STYLE.hyper.has(a))out.push(`自分で逃げにくい${d}を${s}が守れる`);
   if(t.has("front")&&ADC_STYLE.hyper.has(a))out.push(`${s}が前に立つので、${d}が安全に攻撃できる`);
@@ -725,33 +604,30 @@ function autoDuoReason(a,key){
   }
   return out.slice(0,2).join("。")||"役割からは理由を判定できませんでしたが、データ上は成績のよい組み合わせです";
 }
-const duoChip=(a,o)=>`<span class="chip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+"（理由は自動判定）"}" data-tip="${o.w||autoDuoReason(a,o.key)}"${o.r?` data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${A[a]}のサポートの${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}"`:` data-tip-s="まだ${MIN}試合に届いていません"`}>${icK(o.key)}${o.w?"★":""}${nm(o.key)}${o.r?`<span class="wr ${dirOf(o.r)}">${pct(o.r)}</span>`:""}</span>`;
-function stable(){
-  if(ST&&Object.keys(CH).length){
-    const q=kata($("sq").value.trim());
-    $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)).sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-      .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${duoRank(k).map(o=>duoChip(k,o)).join("")}</div></td></tr>`).join("")||`<tr><td colspan="2">該当なし</td></tr>`;
-    return;
-  }
-  const q=kata($("sq").value.trim());
-  $("stable").innerHTML=Object.keys(Y).filter(k=>!q||A[k].includes(q)||Y[k].some(([c])=>S[c][0].includes(q)))
-   .sort((a,b)=>A[a].localeCompare(A[b],"ja"))
-   .map(k=>`<tr><td class="key"><span class="kn">${ic(k)}${A[k]}${APC.has(k)?apcTag:""}</span></td><td><div class="chips">${Y[k].map(([c,w])=>chip(c,w,duoOf(k,c),`${A[k]}と組んだときの勝率`)).join("")}</div></td></tr>`).join("")
-   ||`<tr><td colspan="2">該当なし</td></tr>`;
+
+// ADC とサポートの組み合わせの順位：勝率点（ならした勝率）＋ 人気点（その行のチャンプの相方のうち何割か）＋ 定番なら +1
+// rowKey が ADC なら相方のサポートを、サポートなら相方の ADC を返す
+function pairRank(rowKey,isAdcRow){
+  const pairs=[];
+  if(isAdcRow)Object.entries((ST.duo||{})[rowKey]||{}).forEach(([s,r])=>pairs.push([s,r]));
+  else Object.entries(ST.duo||{}).forEach(([a,m])=>{if(m[rowKey])pairs.push([a,m[rowKey]]);});
+  const tot=pairs.reduce((n,[,r])=>n+r[0],0)||1;
+  return pairs.filter(([p,r])=>BYKEY[p]&&r[0]>=MIN).map(([p,r])=>{
+    const adc=isAdcRow?rowKey:p,sup=isAdcRow?p:rowKey,w=teikiDuo(adc,sup);
+    return {key:p,adc,sup,r,share:r[0]/tot,w,sc:(w?1:0)+wrPts(r)+PR_W*.5*Math.sqrt(r[0]/tot*100)};
+  }).sort((x,y)=>y.sc-x.sc);
 }
-
-$("sq").addEventListener("input",stable);
-drawUnavail();renderSup();stable();
-
+const pairChip=(o,rowKey)=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+"（理由は自動判定）"}" data-tip="${o.w||autoDuoReason(o.adc,o.sup)}" data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${nm(rowKey)}の相方の${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}" aria-label="${nm(o.key)}">${icK(o.key)}<span class="wr ${dirOf(o.r)}">${o.w?"★":""}${pct(o.r)}</span></span>`;
+const pairCell=(rowKey,isAdcRow)=>{const ps=pairRank(rowKey,isAdcRow).slice(0,3);return ps.length?`<div class="chips">${ps.map(o=>pairChip(o,rowKey)).join("")}</div>`:`<span class="why">—</span>`;};
 // ===== データの読み込み =====
 const getJSON=(url,opt)=>fetch(url,opt).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
 function drawStatus(p){
-  if(!ST){$("status").innerHTML=`<span class="warn">勝率データを読み込めませんでした。サポートタブの「定番」データは使えます。</span>`;return;}
+  if(!ST){$("status").innerHTML=`<span class="warn">勝率データを読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。</span>`;return;}
   const d=new Date(ST.updated);
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
     <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
-  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});renderSup();stable();});
+  $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});});
 }
 (async()=>{
   try{const v=await getJSON("https://ddragon.leagueoflegends.com/api/versions.json");if(v[0])DD=v[0];}catch(e){}
@@ -771,13 +647,9 @@ function drawStatus(p){
   // データが少ないうちは最低試合数を下げておく
   if(ST)MIN=ST.matches<2000?3:ST.matches<10000?5:10;
   drawStatus();
-  LANES.filter(([id])=>id!=="sup").forEach(([id,pos,label])=>buildLane(id,pos,label));
-  if(ST){$("sup-table").hidden=false;const K2S={};Object.keys(S).forEach(s=>{const k=kKey(s);if(k)K2S[k]=s;});
-    lanePanels.sup={draw(){},table:laneTable($("sup-table"),ST.lanes.UTILITY||{champs:{},vs:{}},"SUP",{
-      head:"苦手な対面（定番がないサポートはデータ）",
-      cell:key=>{const s=K2S[key];return s&&C[s]?`<div class="chips">${C[s].map(([c,w])=>iconChip(c,w,supVs(s,c),`${S[s][0]}側の勝率`)).join("")}</div>`:worstChips(ST.lanes.UTILITY||{},key);}
-    })};}
-  pickers.forEach(p=>p.drawBtn());drawUnavail();renderSup();stable();
+  buildMaps();
+  LANES.forEach(([id,pos,label])=>buildLane(id,pos,label));
+  pickers.forEach(p=>p.drawBtn());
 })();
 </script>
 </body>
