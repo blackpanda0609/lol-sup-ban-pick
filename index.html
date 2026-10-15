@@ -174,6 +174,32 @@ td.extra .chips{flex-wrap:nowrap}
 .nm-link{font:inherit;font-weight:700;color:var(--fg);background:none;border:none;padding:0;cursor:pointer;text-align:left}
 .nm-link:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .tags2{display:flex;flex-wrap:wrap;gap:4px}
+/* ドラフト盤面 */
+.board{display:grid;gap:8px}
+.bline{display:grid;grid-template-columns:40px repeat(5,minmax(0,1fr));gap:6px;align-items:end}
+.side{font-size:12px;font-weight:700;padding-bottom:10px}
+.bline.ally .side{color:var(--tank)}.bline.enemy .side{color:var(--bad)}
+.slot{display:grid;gap:3px;min-width:0;position:relative}
+.slot-l{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.slot .pbtn{padding:5px 6px;font-size:12.5px;gap:6px}
+.slot .pbtn::after{display:none}
+.slot .pbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .pbtn .ic{width:26px;height:26px}
+.slot .panel{min-width:240px;right:auto}
+.bline .slot:nth-child(n+5) .panel{left:auto;right:0}
+.me-mirror{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px dashed var(--accent);border-radius:6px;font-size:12.5px;font-weight:700;color:var(--accent);min-height:28px}
+.me-mirror .ic{width:26px;height:26px}
+.me-mirror span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linkbtn{justify-self:start;font:inherit;font-size:12px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
+.comp{display:grid;gap:6px}
+.comp-row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12.5px}
+.comp-h{font-weight:700;color:var(--muted);min-width:9em}
+.comp-t{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.cpill{border:1px solid var(--line);border-radius:999px;padding:0 8px;font-size:12px}
+.cpill.zero{color:var(--bad);border-color:var(--bad)}
+.later summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
+.later[open] summary{margin-bottom:10px}
+@media (max-width:560px){.slot .pbtn span,.me-mirror span{display:none}.bline{grid-template-columns:30px repeat(5,minmax(0,1fr))}.comp-h{min-width:0;flex-basis:100%}}
 /* 自分のピック：ステップ2の主役 */
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
@@ -586,6 +612,40 @@ function traitsOf(key,L){
 }
 
 // ===== レーンタブ（実データ） =====
+// ===== ドラフト（味方5人・敵5人）：全タブで共有する =====
+const ROLES=["TOP","JUNGLE","MIDDLE","BOTTOM","UTILITY"];
+const DRAFT={ally:{},enemy:{}};
+const redrawAll=()=>Object.values(lanePanels).forEach(p=>p.draw());
+// チームの構成：ダメージの物理・魔法の割合（1分あたりの実データ。なければ推定で400）と、DPS・フロント・CC・エンゲージの人数
+function compOf(side,skipPos){
+  const c={n:0,ph:0,mg:0,dps:0,front:0,cc:0,engage:0};
+  for(const r of ROLES){
+    if(r===skipPos)continue;
+    const k=DRAFT[side][r];if(!k)continue;
+    const L=ST.lanes[r]||{},t=traitsOf(k,L),e=extOf(L,k);
+    c.n++;
+    ["dps","front","cc","engage"].forEach(x=>{if(t.has(x))c[x]++;});
+    if(e){const d=dmgPerMin(e);c.ph+=d[0];c.mg+=d[1];}
+    else if(t.has("ap"))c.mg+=400;else if(t.has("ad"))c.ph+=400;
+  }
+  c.ap=c.ph+c.mg?c.mg/(c.ph+c.mg):null;
+  return c;
+}
+// 足りないもの：味方が2人以上入ってから判定する
+function autoNeeds(c){
+  const s=new Set();
+  if(c.n<2)return s;
+  if(c.ap!==null){if(c.ap<.3)s.add("ap");else if(c.ap>.7)s.add("ad");}
+  ["dps","front","engage"].forEach(x=>{if(!c[x])s.add(x);});
+  if(c.cc<=1)s.add("cc");
+  return s;
+}
+function compHtml(c,title){
+  if(!c.n)return `<div class="comp-row"><span class="comp-h">${title}</span><span class="why">まだ入っていません</span></div>`;
+  const ap=c.ap;
+  return `<div class="comp-row"><span class="comp-h">${title}</span>${ap!==null?`<span class="dmg" tabindex="0" data-tip-h="${title}のダメージ" data-tip="物理 ${Math.round((1-ap)*100)}% ／ 魔法 ${Math.round(ap*100)}%" data-tip-s="1分あたりのダメージ量（実データ）から"><i class="d-p" style="width:${((1-ap)*100).toFixed(0)}%"></i><i class="d-m" style="width:${(ap*100).toFixed(0)}%"></i></span><span class="comp-t">AD ${Math.round((1-ap)*100)}%・AP ${Math.round(ap*100)}%</span>`:""}${["dps","front","cc","engage"].map(x=>`<span class="cpill${c[x]?"":" zero"}">${LANE_NEEDS[x]} ${c[x]}</span>`).join("")}</div>`;
+}
+
 function buildLane(id,pos,label){
   const root=$("p-"+id);
   if(!ST){root.innerHTML=card("データを読み込めませんでした",empty("通信状態を確認して、ページを再読み込みしてください。"));return;}
@@ -594,13 +654,14 @@ function buildLane(id,pos,label){
   const partner=pos==="UTILITY"?["BOTTOM","味方ADC"]:pos==="BOTTOM"?["UTILITY","味方SUP"]:null;
   const step=(n,h,p,body)=>`<li class="step" data-step="${n}"><div class="step-h"><span class="sn">${n}</span><div><h3>${h}</h3><p>${p}</p></div></div>${body}</li>`;
   root.innerHTML=`<section class="flow"><h2>${label}のBP</h2><ol class="steps">
-    ${step(1,"相手と味方を見る","ピック画面で見えている相手と味方を入れる",`
-      <div class="pickers">
-        <div class="field"><span class="flabel" id="${id}-e-l">敵の${label}</span></div>
-        ${partner?`<div class="field"><span class="flabel" id="${id}-a-l">${partner[1]}</span></div>`:""}
+    ${step(1,"相手と味方を見る","ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）",`
+      <div class="board">
+        ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?"味方":"敵"}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
+        <button type="button" class="linkbtn draft-reset">ドラフトを全部消す</button>
       </div>
+      <div class="comp"></div>
       <div class="field">
-        <span class="flabel" id="${id}-n-l">チームにほしいもの <span>味方に足りていないものを選ぶ。DPSは集団戦で殴り続けられる継続火力（バーストは含めない）、フロントは前に立って攻撃を受けられる硬さ</span></span>
+        <span class="flabel" id="${id}-n-l">チームにほしいもの <span class="needs-note"></span></span>
         <div class="needs-row lane-needs" role="group" aria-labelledby="${id}-n-l">
           <div class="ngroup"><span>ダメージ</span>${DMG_NEEDS.map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
           <div class="ngroup"><span>役割</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
@@ -611,14 +672,19 @@ function buildLane(id,pos,label){
       <div class="s2b"></div>
       <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><div class="s2"></div></details>`)}
     ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
-    ${step(4,"ゲーム開始後","スタートアイテム、スキルの上げ方、アイテムの順番",`<div class="s4"></div>`)}
+    ${step(4,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
     </ol></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field");
   // プルダウンも一覧と同じく、そのロールでのピック率が低いチャンプは出さない
   const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]&&LL.champs[k][0]>=roleMin(LL)).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
-  const pe=makePicker(root.querySelector(`#${id}-e-l`).parentElement,`${id}-e-l`,itemsOf(L),draw);
-  const pa=partner?makePicker(root.querySelector(`#${id}-a-l`).parentElement,`${id}-a-l`,itemsOf(ST.lanes[partner[0]]||{champs:{}}),draw):null;
+  const slots=[...root.querySelectorAll(".slot[data-side]")].map(el=>{
+    const side=el.dataset.side,r=el.dataset.pos;
+    const p=makePicker(el,`${id}-${side}-${r}`,itemsOf(ST.lanes[r]||{champs:{}}),v=>{DRAFT[side][r]=v;redrawAll();});
+    return {side,r,p};
+  });
+  const mirror=root.querySelector(".me-mirror"),compEl=root.querySelector(".comp"),needsNote=root.querySelector(".needs-note");
+  root.querySelector(".draft-reset").addEventListener("click",()=>{ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});Object.values(lanePanels).forEach(p=>p.resetNeeds&&p.resetNeeds());redrawAll();});
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
   const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),recs=root.querySelector(".recs");
   let lastM="";
@@ -627,8 +693,12 @@ function buildLane(id,pos,label){
   const duoR=(me,ally)=>pos==="UTILITY"?((ST.duo||{})[ally]||{})[me]:((ST.duo||{})[me]||{})[ally];
   const duoTeiki=(me,ally)=>pos==="UTILITY"?teikiDuo(ally,me):teikiDuo(me,ally);
   const needs=new Set();
+  let touched=false;
+  const syncToggles=()=>root.querySelectorAll(".lane-needs [data-n]").forEach(x=>x.setAttribute("aria-pressed",needs.has(x.dataset.n)));
+  needsNote.addEventListener("click",e=>{if(e.target.closest("[data-auto]")){touched=false;draw();}});
   root.querySelector(".lane-needs").addEventListener("click",e=>{
     const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;
+    touched=true;
     if(needs.has(n))needs.delete(n);
     else{if(DMG_NEEDS.includes(n))DMG_NEEDS.forEach(x=>needs.delete(x));needs.add(n);} // AD と AP はどちらか一方
     root.querySelectorAll(".lane-needs [data-n]").forEach(x=>x.setAttribute("aria-pressed",needs.has(x.dataset.n)));
@@ -638,11 +708,22 @@ function buildLane(id,pos,label){
   s2.addEventListener("click",e=>{const b=e.target.closest("[data-pick]");if(!b)return;pm.set(b.dataset.pick);draw();root.querySelector('[data-step="3"]').scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});});
   const clamp=(x,m)=>Math.max(-m,Math.min(m,x));
   function draw(){
-    const E=pe.value,M=pm.value,AL=pa?pa.value:"";
+    const M=pm.value,E=DRAFT.enemy[pos]||"",AL=partner?DRAFT.ally[partner[0]]||"":"";
+    // 盤面の表示を合わせる
+    slots.forEach(({side,r,p})=>{const v=DRAFT[side][r]||"";if(p.value!==v)p.set(v);});
+    mirror.innerHTML=M?`${icK(M)}<span>${nm(M)}</span>`:`<span>あなた</span>`;
+    // 構成と、ほしいもの（手で触っていなければ自動）
+    const allyC=compOf("ally",pos),enemyC=compOf("enemy",null);
+    if(!touched){needs.clear();autoNeeds(allyC).forEach(x=>needs.add(x));}
+    syncToggles();
+    compEl.innerHTML=compHtml(allyC,"味方（あなた以外）")+compHtml(enemyC,"敵");
+    needsNote.innerHTML=touched?`手で選んでいます <button type="button" class="linkbtn" data-auto>自動に戻す</button>`:allyC.n>=2?"味方の構成から、足りないものを自動で選んでいます（押して変えられます）":"味方を2人以上入れると、足りないものを自動で選びます";
+    // すでに選ばれているチャンプは候補にしない
+    const taken=new Set([...Object.values(DRAFT.ally),...Object.values(DRAFT.enemy)].filter(Boolean));
     // --- ステップ2：おすすめ ---
     // 候補は勝率一覧に出ているチャンプだけ。点数：Tierのスコア（勝率・ピック率・BAN率）の 0.2倍
     //   ＋ ほしい役割1つにつき +3 ＋ 敵を選んでいればその対面の勝率で ±2 ＋ 隣の味方を選んでいれば組んだときの勝率で ±2
-    const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&k!==E).map(([k,r])=>{
+    const rs=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&!taken.has(k)).map(([k,r])=>{
       const tr=traitsOf(k,L),hit=[...needs].filter(n=>tr.has(n));
       if(needs.size&&!hit.length)return null;
       let s=hit.length*3+powerScore(r,k,L)*.2,shown=r;const notes=[];
@@ -694,7 +775,7 @@ function buildLane(id,pos,label){
   };
   const table=laneTable(root.querySelector(".lt"),L,label,extras,k=>open(k,true));
   draw();
-  lanePanels[id]={draw,table,open};
+  lanePanels[id]={draw,table,open,resetNeeds:()=>{touched=false;}};
 }
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。
 // そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
