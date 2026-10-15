@@ -68,7 +68,7 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 .ic.none{display:inline-block;background:transparent;border:1px dashed var(--line);box-sizing:border-box}
 .panel{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 28px rgba(0,0,0,.25);padding:8px;display:grid;gap:8px}
 .panel input{padding:8px 10px}
-.panel ul{list-style:none;margin:0;padding:0;max-height:300px;overflow-y:auto;display:grid;gap:2px}
+.panel ul{list-style:none;margin:0;padding:0;max-height:300px;overflow-y:auto;overflow-x:hidden;display:grid;gap:2px}
 .panel li{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;cursor:pointer}
 .panel li.active{background:var(--bg)}
 .panel li[aria-selected="true"]{color:var(--accent);font-weight:700}
@@ -185,7 +185,13 @@ td.extra .chips{flex-wrap:nowrap}
 .slot .pbtn::after{display:none}
 .slot .pbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .slot .pbtn .ic{width:26px;height:26px}
-.slot .panel{min-width:240px;right:auto}
+/* 盤面の枠のリスト：アイコンと名前だけを1行で（タグと試合数は出さない） */
+.slot .panel{min-width:220px;right:auto}
+.slot .panel ul{overflow-x:hidden}
+.slot .panel li{gap:8px;padding:4px 6px}
+.slot .panel li span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .panel li .tag,.slot .panel li .gc{display:none}
+.slot .panel .ic{width:26px;height:26px}
 .bline .slot:nth-child(n+5) .panel{left:auto;right:0}
 .me-mirror{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px dashed var(--accent);border-radius:6px;font-size:12.5px;font-weight:700;color:var(--accent);min-height:28px}
 .me-mirror .ic{width:26px;height:26px}
