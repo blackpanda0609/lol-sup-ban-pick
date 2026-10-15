@@ -280,6 +280,8 @@ const kKey=k=>CH[ID[k]]?CH[ID[k]].key:null;
 const kata=s=>s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
 const wrOf=r=>r[1]/r[0];
 const smooth=r=>(r[1]+5)/(r[0]+10);
+// 95%の信頼区間（ウィルソン法）
+const ciText=r=>{const n=r[0],p=r[1]/n,z=1.96,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return `${((c-h)*100).toFixed(1)}%〜${((c+h)*100).toFixed(1)}%`;};
 const pct=r=>(wrOf(r)*100).toFixed(1)+"%";
 const dirOf=r=>wrOf(r)>=.52?"up":wrOf(r)<=.48?"down":"";
 const tag=k=>`<span class="tag t-${S[k][1]}">${TYPES[S[k][1]]}</span>`;
@@ -301,19 +303,23 @@ const tierMin=()=>Math.max(MIN,50);
 // 重みは「環境重視」の3で固定。例：勝率53%・ピック率1% → 4.5+3.0=7.5 ／ 勝率50.5%・ピック率15% → 0.75+11.6=12.4
 const PR_W=3;
 const wrPts=r=>(tierScore(r)-.5)*100*1.5;
-const prPts=r=>PR_W*Math.sqrt(r[0]/ST.matches*100);
+// ピック率の分母はそのレーンを数えた試合数（古いデータにはないので全試合数）
+const laneN=L=>(L&&L.n)||ST.matches;
+const prPts=(r,L)=>PR_W*Math.sqrt(r[0]/laneN(L)*100);
 // BAN率：チャンプ単位（レーン共通）。ban を数えた試合が200試合に届くまではスコアに入れない
 const BAN_MIN=200;
 const banRate=key=>ST&&ST.ban_matches>=1?((ST.bans||{})[key]||0)/ST.ban_matches:null;
-const banPts=(r,key)=>ST&&ST.ban_matches>=BAN_MIN?PR_W*.7*Math.sqrt(banRate(key)*100):0;
-const powerScore=(r,key)=>wrPts(r)+prPts(r)+banPts(r,key);
+// ban はチャンプ単位なので、そのレーンで使われている割合だけ加点する（MIDで多くbanされるチャンプのSUPが得をしないように）
+const champGames=key=>Object.values(ST.lanes).reduce((n,L)=>n+(((L.champs||{})[key]||[0])[0]),0)||1;
+const banPts=(r,key)=>ST&&ST.ban_matches>=BAN_MIN?PR_W*.7*Math.sqrt(banRate(key)*100)*(r[0]/champGames(key)):0;
+const powerScore=(r,key,L)=>wrPts(r)+prPts(r,L)+banPts(r,key);
 function tierMapOf(L){
-  const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>powerScore(b[1],b[0])-powerScore(a[1],a[0]));
+  const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L));
   const map={};
   ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
   return map;
 }
-const tierBadge=(t,r,key)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
+const tierBadge=(t,r,key,L)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key,L).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r,L).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
 const statList=(rows,noteFn=null)=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r,noteFn?noteFn(k):"")).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -564,10 +570,10 @@ function laneTable(host,L,label,extras=[]){
   function table(){
     const t=kata(tq.value.trim());
     const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=ROLE_MIN&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
-    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
-    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0])-powerScore(a[1],a[0]);});
+    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
+    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/ST.matches*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
