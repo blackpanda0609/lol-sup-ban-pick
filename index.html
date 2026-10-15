@@ -41,6 +41,9 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:
 h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
 header{display:grid;gap:10px}
 header p{color:var(--muted);margin:0;max-width:62ch}
+/* 説明文は意味のかたまりごとに折り返す（言葉の途中で改行しない） */
+.lead{word-break:auto-phrase}
+.lead span{display:inline-block}
 .status{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
 .status b{color:var(--fg);font-family:var(--mono);font-weight:500}
 .status .warn{color:var(--bad)}
@@ -232,7 +235,7 @@ td.extra .chips{flex-wrap:nowrap}
 <div class="wrap">
 <header>
   <h1>BPノート</h1>
-  <p>JP・KRのエメラルド以上のソロランクから集めた勝率をもとにした、全レーンのBP支援ツールです。</p>
+  <p class="lead"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p>
   <div class="status" id="status"><span>データを読み込み中…</span></div>
 </header>
 
