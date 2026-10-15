@@ -475,8 +475,8 @@ function buildLane(id,pos,label){
     <div class="results"></div></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field"),res=root.querySelector(".results");
-  // プルダウンも一覧と同じく、そのロールで10試合未満のチャンプは出さない
-  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]&&LL.champs[k][0]>=ROLE_MIN).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
+  // プルダウンも一覧と同じく、そのロールでのピック率が低いチャンプは出さない
+  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]&&LL.champs[k][0]>=roleMin(LL)).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
   const items=itemsOf(L);
   const pe=makePicker(fields[0],`${id}-e-l`,items,draw);
   const pm=makePicker(fields[1],`${id}-m-l`,items,draw);
@@ -543,8 +543,10 @@ function buildLane(id,pos,label){
   lanePanels[id]={draw,table};
 }
 
-// レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。そのロールで10試合未満のチャンプは出さない
-const ROLE_MIN=10;
+// レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。
+// そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
+let SHOW_PR=.005;
+const roleMin=L=>Math.max(10,Math.ceil(laneN(L)*SHOW_PR));
 // データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）
 function worstChips(L,k,pos){
   const rows=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,3);
@@ -561,7 +563,7 @@ function laneTable(host,L,label,extras=[]){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールで10試合未満のチャンプは一覧に出さず、10〜49試合のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.5%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -575,7 +577,7 @@ function laneTable(host,L,label,extras=[]){
   const order=Object.keys(CLS);
   function table(){
     const t=kata(tq.value.trim());
-    const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=ROLE_MIN&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
+    const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
@@ -642,7 +644,10 @@ function drawStatus(p){
   const d=new Date(ST.updated);
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
   $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
-    <label for="min-g">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
+    <label for="show-pr">表示する最低ピック率<select id="show-pr">${[.001,.003,.005,.01,.02].map(v=>`<option value="${v}"${v===SHOW_PR?" selected":""}>${(v*100).toFixed(1)}%</option>`).join("")}</select></label>
+    <label for="min-g" style="margin-left:0">最低試合数<select id="min-g">${[3,5,10,20,50,100].map(n=>`<option value="${n}"${n===MIN?" selected":""}>${n}</option>`).join("")}</select></label>`;
+  // 表示する最低ピック率を変えたら、一覧とプルダウンを描き直す
+  $("show-pr").addEventListener("change",e=>{SHOW_PR=+e.target.value;Object.values(lanePanels).forEach(p=>p.table());pickers.forEach(p=>p.drawBtn());});
   $("min-g").addEventListener("change",e=>{MIN=+e.target.value;Object.values(lanePanels).forEach(p=>{p.draw();p.table();});});
 }
 (async()=>{
