@@ -105,7 +105,9 @@ ul.list li{display:grid;gap:2px}
 .rank li{display:grid;gap:4px;min-width:0}
 .tablebar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
 .tablebar input{max-width:260px}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+/* 表は高さの上限を付けて箱の中でスクロールさせ、見出し行を箱の上端に固定する */
+.tbl{overflow:auto;max-height:min(78vh,900px);overscroll-behavior:contain;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+thead th{position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 var(--line)}
 table{border-collapse:collapse;width:100%;min-width:520px}
 th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{white-space:nowrap;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
@@ -399,7 +401,7 @@ document.addEventListener("keydown",e=>{
 });
 document.addEventListener("focusin",e=>{const el=e.target.closest("[data-tip]");if(el)showTip(el);});
 document.addEventListener("focusout",e=>{if(tipFor&&tipFor===e.target)hideTip();});
-addEventListener("scroll",()=>{if(tipFor)hideTip();},{passive:true});
+addEventListener("scroll",()=>{if(tipFor)hideTip();},{passive:true,capture:true});
 
 // ===== タブ =====
 const lanePanels={};
