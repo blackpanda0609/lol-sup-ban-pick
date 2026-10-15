@@ -173,6 +173,8 @@ td.extra .chips{flex-wrap:nowrap}
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
 .mypick .pbtn .ic{width:32px;height:32px}
+.avoid{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.avoid-h{font-size:12px;font-weight:700;color:var(--muted)}
 /* おすすめ：補助なので折りたためる */
 .recs{border-top:1px solid var(--line);padding-top:10px}
 .recs summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);list-style-position:inside}
@@ -647,9 +649,10 @@ function buildLane(id,pos,label){
       if(partner&&!AL){const ps=pairRank(M,pos==="BOTTOM").slice(0,5);sub.push(card(`${nm(M)}と相性のいい${partner[1].replace("味方","")}`,statList(ps.map(o=>[o.key,o.r]),k=>tk(pos==="BOTTOM"?teikiDuo(M,k):teikiDuo(k,M)))));}
     }else if(E){
       const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
-      if(list.length)sub.push(card(`${nm(E)}相手に避けたいピック`,statList(list)));
+      // ピック前は場所を取らないよう、アイコンと勝率だけを1行で
+      if(list.length)sub.push(`<div class="avoid"><span class="avoid-h">${nm(E)}相手に避けたいピック</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${nm(E)}相手に勝率が低いピック" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
     }
-    s2b.innerHTML=sub.length?`<div class="results">${sub.join("")}</div>`:"";
+    s2b.innerHTML=!sub.length?"":M?`<div class="results">${sub.join("")}</div>`:sub.join("");
     // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
     if(M!==lastM){recs.open=!M;lastM=M;}
     // --- ステップ3・4 ---
