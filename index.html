@@ -470,7 +470,8 @@ function buildLane(id,pos,label){
     <div class="results"></div></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field"),res=root.querySelector(".results");
-  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
+  // プルダウンも一覧と同じく、そのロールで10試合未満のチャンプは出さない
+  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]&&LL.champs[k][0]>=ROLE_MIN).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
   const items=itemsOf(L);
   const pe=makePicker(fields[0],`${id}-e-l`,items,draw);
   const pm=makePicker(fields[1],`${id}-m-l`,items,draw);
