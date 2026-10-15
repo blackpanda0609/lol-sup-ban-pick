@@ -105,9 +105,10 @@ ul.list li{display:grid;gap:2px}
 .rank li{display:grid;gap:4px;min-width:0}
 .tablebar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;justify-content:space-between}
 .tablebar input{max-width:260px}
-/* 表は高さの上限を付けて箱の中でスクロールさせ、見出し行を箱の上端に固定する */
-.tbl{overflow:auto;max-height:min(78vh,900px);overscroll-behavior:contain;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
-thead th{position:sticky;top:0;z-index:2;box-shadow:inset 0 -1px 0 var(--line)}
+/* 表はページと一緒にスクロールし、横にはみ出すときだけ横スクロールする。
+   見出し行は、ページをスクロールしたら画面の上に残るようにスクリプトでずらす（syncHeads） */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+thead th{position:relative;z-index:2;box-shadow:inset 0 -1px 0 var(--line);will-change:transform}
 table{border-collapse:collapse;width:100%;min-width:520px}
 th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);vertical-align:middle}
 th{white-space:nowrap;font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:700;background:var(--bg)}
@@ -440,6 +441,21 @@ document.addEventListener("focusin",e=>{const el=e.target.closest("[data-tip]");
 document.addEventListener("focusout",e=>{if(tipFor&&tipFor===e.target)hideTip();});
 addEventListener("scroll",()=>{if(tipFor)hideTip();},{passive:true,capture:true});
 
+// ===== 勝率一覧の見出しを画面の上に残す =====
+// 表の箱は横スクロールのために overflow を持つので CSS の sticky が効かない。代わりに見出しのセルを下へずらす
+function syncHeads(){
+  const top=parseFloat(getComputedStyle(document.documentElement).paddingTop)||0;
+  document.querySelectorAll(".tabpanel:not([hidden]) .tbl").forEach(box=>{
+    const th=box.querySelectorAll("thead th");if(!th.length)return;
+    const r=box.getBoundingClientRect(),h=th[0].offsetHeight;
+    const y=Math.max(0,Math.min(top-r.top,r.height-h*2));
+    th.forEach(c=>{c.style.transform=y>0?`translateY(${y}px)`:"";});
+  });
+}
+const queueHeads=syncHeads;
+addEventListener("scroll",queueHeads,{passive:true});
+addEventListener("resize",queueHeads);
+
 // ===== タブ =====
 const lanePanels={};
 $("tabs").innerHTML=LANES.map(([id,,label])=>`<button type="button" class="tab" role="tab" id="t-${id}" aria-controls="p-${id}" aria-selected="false">${label}</button>`).join("");
@@ -448,6 +464,7 @@ function showTab(id){
   LANES.forEach(([t])=>{const on=t===id;$("t-"+t).setAttribute("aria-selected",on);$("p-"+t).hidden=!on;});
   try{localStorage.setItem("bp-tab",id);}catch(e){}
   if(location.hash!=="#"+id)history.replaceState(null,"","#"+id);
+  queueHeads();
 }
 $("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.id.slice(2));});
 let first="sup";
@@ -639,6 +656,7 @@ function laneTable(host,L,label,extras=[]){
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
     tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
