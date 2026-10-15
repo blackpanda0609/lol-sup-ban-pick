@@ -169,6 +169,17 @@ td.extra .chips{flex-wrap:nowrap}
 .step .card{background:var(--bg)}
 .s-sub{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:700}
 .tags2{display:flex;flex-wrap:wrap;gap:4px}
+/* 自分のピック：ステップ2の主役 */
+.mypick .flabel{font-size:14px;color:var(--fg)}
+.mypick .pbtn{font-size:17px;padding:10px 14px 10px 10px;border:2px solid var(--accent);background:var(--accent-soft)}
+.mypick .pbtn .ic{width:40px;height:40px}
+/* おすすめ：補助なので折りたためる */
+.recs{border-top:1px solid var(--line);padding-top:10px}
+.recs summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);list-style-position:inside}
+.recs[open] summary{margin-bottom:10px}
+.recs .s-sub{font-size:11.5px}
+.recs .rank .name{font-size:14px}
+.recs .rank .ic{width:24px;height:24px}
 .needs-row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
 .ngroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ngroup>span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-right:4px}
@@ -575,10 +586,10 @@ function buildLane(id,pos,label){
           <div class="ngroup"><span>役割</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
         </div>
       </div>`)}
-    ${step(2,"ピックを決める","おすすめから「これにする」を押すか、使うチャンプを直接選ぶ",`
-      <div class="s2"></div>
-      <div class="pickers"><div class="field"><span class="flabel" id="${id}-m-l">自分のピック</span></div></div>
-      <div class="s2b"></div>`)}
+    ${step(2,"ピックを決める","使うチャンプを選ぶ。迷ったら下のおすすめから",`
+      <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">自分のピック</span></div></div>
+      <div class="s2b"></div>
+      <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><div class="s2"></div></details>`)}
     ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
     ${step(4,"ゲーム開始後","スタートアイテム、スキルの上げ方、アイテムの順番",`<div class="s4"></div>`)}
     </ol></section>
@@ -589,7 +600,8 @@ function buildLane(id,pos,label){
   const pe=makePicker(root.querySelector(`#${id}-e-l`).parentElement,`${id}-e-l`,itemsOf(L),draw);
   const pa=partner?makePicker(root.querySelector(`#${id}-a-l`).parentElement,`${id}-a-l`,itemsOf(ST.lanes[partner[0]]||{champs:{}}),draw):null;
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
-  const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4");
+  const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),recs=root.querySelector(".recs");
+  let lastM=null;
   const tk=t=>t?`・★${t}`:"";
   // 組んだときの成績：ADC→SUP の向きで持っているので、どちらのレーンからでも引けるように
   const duoR=(me,ally)=>pos==="UTILITY"?((ST.duo||{})[ally]||{})[me]:((ST.duo||{})[me]||{})[ally];
@@ -638,6 +650,8 @@ function buildLane(id,pos,label){
       if(list.length)sub.push(card(`${nm(E)}相手に避けたいピック`,statList(list)));
     }
     s2b.innerHTML=sub.length?`<div class="results">${sub.join("")}</div>`:"";
+    // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
+    if(M!==lastM){recs.open=!M;lastM=M;}
     // --- ステップ3・4 ---
     if(!M){s3.innerHTML=s4.innerHTML=empty("ステップ2でピックを決めると表示されます。");}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
