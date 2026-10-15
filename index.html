@@ -158,6 +158,26 @@ td.extra .chips{flex-wrap:nowrap}
 .tip-s{font-family:var(--mono);font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
 .tip-s.up{color:var(--good)}.tip-s.down{color:var(--bad)}
 [data-tip]{cursor:help}
+/* ビルド */
+.build{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px 28px}
+.bsec{display:grid;gap:4px;min-width:0}
+.bsec h4{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 2px;font-weight:700}
+.brow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 0;border-top:1px solid var(--line)}
+.brow:first-of-type{border-top:none}
+.brow .meta{margin-left:auto;display:flex;gap:12px;align-items:center;font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.brow .meta .wr{margin:0}
+.gcount{color:var(--muted)}
+.bi{width:30px;height:30px;border-radius:5px;background:var(--line);flex:none}
+.bi.rs{width:24px;height:24px;border-radius:50%;background:var(--bg)}
+.bi.st{width:20px;height:20px;background:none}
+.bi.key{width:36px;height:36px;border-radius:50%;background:var(--bg)}
+.rune-main,.rune-sub{display:inline-flex;align-items:center;gap:4px}
+.rune-sub{padding-left:8px;border-left:1px solid var(--line)}
+.shards{font-size:11.5px;color:var(--muted);flex-basis:100%}
+.arrow{color:var(--muted);font-weight:700}
+.kc{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 8px 0 2px;border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-weight:700;background:var(--bg)}
+.kc img{width:24px;height:24px;border-radius:4px}
+.kc:not(:has(img)){padding:0 9px}
 .note{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin:0}
 .note + .note{border-top:none;padding-top:0}
 </style>
@@ -275,6 +295,7 @@ const APC=new Set(["ziggs","swain","hwei","karthus"]);
 
 // ===== 共通 =====
 const DATA_BASES=["data/","https://raw.githubusercontent.com/blackpanda0609/lol-sup-ban-pick/main/data/"];
+const POSLABEL={TOP:"TOP",JUNGLE:"JG",MIDDLE:"MID",BOTTOM:"BOT",UTILITY:"SUP"};
 const LANES=[["top","TOP","TOP"],["jungle","JUNGLE","JG"],["mid","MIDDLE","MID"],["adc","BOTTOM","BOT"],["sup","UTILITY","SUP"]];
 let DD="16.20.1",CH={},BYKEY={},ST=null,MIN=10;
 const $=id=>document.getElementById(id);
@@ -529,6 +550,7 @@ function buildLane(id,pos,label){
       if(list.length>8)out.push(card(`${nm(E)}相手に避けたいピック`,statList(list.slice(8).reverse().slice(0,5))));
     }
     if(M){
+      out.push(buildCard(pos,M));
       const mine=Object.entries(L.vs[M]||{}).filter(([,r])=>r[0]>=MIN);
       const tot=L.champs[M];
       out.push(card(`${nm(M)}の苦手な相手（ban候補）`,(tot?`<p class="why" style="margin:0">${nm(M)}の全体勝率 ${pct(tot)}（${tot[0]}試合）</p>`:"")+statList(mine.slice().sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,6),o=>tk(teikiCounter(o,M)))));
@@ -540,7 +562,7 @@ function buildLane(id,pos,label){
       const ps=pairRank(AL,true).slice(0,6);
       out.push(card(`${nm(AL)}と相性のいいサポート`,statList(ps.map(o=>[o.key,o.r]),k=>tk(teikiDuo(AL,k)))));
     }
-    if(!out.length)out.push(card("使い方",empty(`敵の${label}を選ぶと、そのチャンプに勝率が高いピックが出ます。自分のチャンプを選ぶと、苦手な相手（ban候補）と得意な相手が出ます。${pos==="BOTTOM"?"自分のADCを選ぶと、相性のいいサポートも出ます。":""}${pos==="UTILITY"?"味方ADCを選ぶと、組んだときの勝率が高いサポートが出ます。★は手書きの定番の理由です。":""}`)));
+    if(!out.length)out.push(card("使い方",empty(`敵の${label}を選ぶと、そのチャンプに勝率が高いピックが出ます。自分のチャンプを選ぶと、そのロールでのビルド（ルーン・スペル・スキル順・アイテム）と、苦手な相手（ban候補）・得意な相手が出ます。${pos==="BOTTOM"?"自分のADCを選ぶと、相性のいいサポートも出ます。":""}${pos==="UTILITY"?"味方ADCを選ぶと、組んだときの勝率が高いサポートが出ます。★は手書きの定番の理由です。":""}`)));
     res.innerHTML=out.join("");
   }
   const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
@@ -645,6 +667,70 @@ function pairRank(rowKey,isAdcRow){
 }
 const pairChip=(o,rowKey)=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+"（理由は自動判定）"}" data-tip="${o.w||autoDuoReason(o.adc,o.sup)}" data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${nm(rowKey)}の相方の${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}" aria-label="${nm(o.key)}">${icK(o.key)}<span class="wr ${dirOf(o.r)}">${o.w?"★":""}${pct(o.r)}</span></span>`;
 const pairCell=(rowKey,isAdcRow)=>{const ps=pairRank(rowKey,isAdcRow).slice(0,3);return ps.length?`<div class="chips">${ps.map(o=>pairChip(o,rowKey)).join("")}</div>`:`<span class="why">—</span>`;};
+// ===== ビルド（ルーン・スペル・アイテム・スキル順） =====
+// data/builds/{パッチ}.json は大きいので、自分のチャンプを選んだときに初めて読み込む
+let BUILDS=null,BUILDS_STATE="idle";
+const RUNES={},STYLES={},SPELLS={},ITEMS={},CHSP={};
+const SHARD={5008:"アダプティブフォース",5005:"攻撃速度",5007:"スキルヘイスト",5010:"移動速度",5001:"体力（レベルで増加）",5011:"体力",5013:"行動妨害・スロウ耐性",5002:"物理防御",5003:"魔法防御"};
+const DDC="https://ddragon.leagueoflegends.com/cdn";
+const plain=s=>String(s||"").replace(/<[^>]+>/g,"").replace(/"/g,"”");
+async function loadBuilds(){
+  if(BUILDS_STATE!=="idle")return;
+  BUILDS_STATE="loading";
+  try{
+    const [rr,sm,it]=await Promise.all([getJSON(`${DDC}/${DD}/data/ja_JP/runesReforged.json`),getJSON(`${DDC}/${DD}/data/ja_JP/summoner.json`),getJSON(`${DDC}/${DD}/data/ja_JP/item.json`)]);
+    rr.forEach(st=>{STYLES[st.id]={name:st.name,icon:st.icon};st.slots.forEach(sl=>sl.runes.forEach(r=>{RUNES[r.id]={name:r.name,icon:r.icon,desc:plain(r.shortDesc)};}));});
+    Object.values(sm.data).forEach(s=>{SPELLS[s.key]={id:s.id,name:s.name,desc:plain(s.description)};});
+    Object.entries(it.data).forEach(([id,x])=>{ITEMS[id]={name:x.name,desc:plain(x.plaintext)};});
+    for(const base of DATA_BASES){try{BUILDS=await getJSON(base+`builds/${ST.patch}.json`,{cache:"no-cache"});break;}catch(e){}}
+  }catch(e){}
+  BUILDS_STATE="done";
+  Object.values(lanePanels).forEach(p=>p.draw());
+}
+// スキルのアイコンと名前（チャンプごとに初めて必要になったときに読み込む）
+function loadChampSpells(key){
+  const c=BYKEY[key];if(!c||CHSP[key])return;
+  CHSP[key]="loading";
+  getJSON(`${DDC}/${DD}/data/ja_JP/champion/${c.id}.json`).then(d=>{
+    const sp=d.data[c.id].spells;
+    CHSP[key]={Q:sp[0],W:sp[1],E:sp[2]};
+    Object.values(lanePanels).forEach(p=>p.draw());
+  }).catch(()=>{CHSP[key]=null;});
+}
+const runeImg=(id,cls="rs")=>{const r=RUNES[id]||STYLES[id];return r?`<img class="bi ${cls}" src="${DDC}/img/${r.icon}" alt="" tabindex="0" data-tip-h="${r.name}" data-tip="${r.desc||"ルーンのパス"}" loading="lazy">`:"";};
+const itemImg=id=>{const x=ITEMS[id];return `<img class="bi" src="${DDC}/${DD}/img/item/${id}.png" alt="" tabindex="0" data-tip-h="${x?x.name:"アイテム"}" data-tip="${x?x.desc||x.name:""}" loading="lazy">`;};
+const spellImg=key=>{const s=SPELLS[key];return s?`<img class="bi" src="${DDC}/${DD}/img/spell/${s.id}.png" alt="" tabindex="0" data-tip-h="${s.name}" data-tip="${s.desc}" loading="lazy">`:"";};
+const keycap=(k,champ)=>{const s=CHSP[champ];const sp=s&&typeof s==="object"?s[k]:null;return sp?`<span class="kc" tabindex="0" data-tip-h="${k}：${sp.name}" data-tip="${plain(sp.description)}"><img src="${DDC}/${DD}/img/spell/${sp.image.full}" alt="">${k}</span>`:`<span class="kc">${k}</span>`;};
+// 使用率と勝率（base は母数の試合数）
+const bmeta=(r,base)=>`<span class="meta"><span title="使われた割合">${(r[0]/base*100).toFixed(1)}%</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="gcount">${r[0]}試合</span></span>`;
+const topOf=(d,n)=>Object.entries(d||{}).sort((x,y)=>y[1][0]-x[1][0]).slice(0,n);
+function buildCard(pos,M){
+  const title=`${nm(M)}のビルド`;
+  if(BUILDS_STATE!=="done"){loadBuilds();return card(title,empty("ビルドのデータを読み込み中…"),true);}
+  const b=BUILDS&&BUILDS[pos]&&BUILDS[pos][M];
+  if(!b||b.g<5)return card(title,empty("このロールのビルドデータはまだたまっていません。ビルドは集め始めたばかりなので、数日で出るようになります。"),true);
+  loadChampSpells(M);
+  const tl=b.tl||0,sec=(h,body)=>`<div class="bsec"><h4>${h}</h4>${body}</div>`;
+  const runeRow=([key,r])=>{
+    const [pri,sub,sh]=key.split("|"),[ps,pp]=pri.split(":"),[ss,sp]=sub.split(":"),pk=pp.split(","),sk=sp.split(",");
+    return `<div class="brow"><span class="rune-main">${runeImg(ps,"st")}${runeImg(pk[0],"key")}${pk.slice(1).map(x=>runeImg(x)).join("")}</span><span class="rune-sub">${runeImg(ss,"st")}${sk.map(x=>runeImg(x)).join("")}</span>${bmeta(r,b.g)}<span class="shards">${sh.split(",").map(x=>SHARD[x]||x).join("・")}</span></div>`;
+  };
+  const rows=(d,n,fn,base)=>{const t=topOf(d,n);return t.length?t.map(([k,r])=>`<div class="brow">${fn(k)}${bmeta(r,base)}</div>`).join(""):`<p class="why" style="margin:0">まだデータがありません</p>`;};
+  const order=k=>k.split("").map(x=>keycap(x,M)).join(`<span class="arrow">›</span>`);
+  const body=`<p class="why" style="margin:0">ルーン・スペル・最終アイテムは${b.g}試合、スキル順・購入順は${tl}試合から（タイムラインは一部の試合だけ取得しています）。数字は「使われた割合／その勝率／試合数」です。</p>
+    <div class="build">
+      ${sec("ルーン",topOf(b.runes,2).map(runeRow).join("")||`<p class="why" style="margin:0">まだデータがありません</p>`)}
+      ${sec("サモナースペル",rows(b.spells,2,k=>k.split(",").map(spellImg).join(""),b.g))}
+      ${sec("スキルの最大上げ順",rows(b.order,2,order,tl))}
+      ${sec("最初の3レベル",rows(b.early,2,k=>k.split("").map(x=>keycap(x,M)).join(""),tl))}
+      ${sec("スタートアイテム",rows(b.start,2,k=>k.split(",").map(itemImg).join(""),tl))}
+      ${sec("コアアイテム（買った順）",rows(b.core,3,k=>k.split(",").map(itemImg).join(`<span class="arrow">›</span>`),tl))}
+      ${sec("靴",rows(b.boots,2,itemImg,b.g))}
+      ${sec("よく完成させるアイテム",rows(b.items,6,itemImg,b.g))}
+    </div>`;
+  return card(`${title}（${POSLABEL[pos]||""}）`,body,true);
+}
+
 // ===== データの読み込み =====
 const getJSON=(url,opt)=>fetch(url,opt).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
 function drawStatus(p){
