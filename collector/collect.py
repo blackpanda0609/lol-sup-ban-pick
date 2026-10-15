@@ -9,6 +9,7 @@
   DAYS          何日前までの試合を見るか（既定: 3）
   PAGES         ダイヤ・エメの各ディビジョンから読むページ数（既定: 1、1ページ約200人）
   RATE_2MIN     2分あたりのリクエスト上限（既定: 95。Production Key なら上げてよい）
+  TIMELINE_RATE スキル順・購入順のためにタイムラインも取る試合の割合（既定: 0.3）
 """
 import json
 import os
@@ -30,6 +31,11 @@ DAYS = int(os.environ.get("DAYS", "3"))
 PAGES = int(os.environ.get("PAGES", "1"))
 RATE_2MIN = int(os.environ.get("RATE_2MIN", "95"))
 DATA = Path(os.environ.get("DATA_DIR", "data"))
+TIMELINE_RATE = float(os.environ.get("TIMELINE_RATE", "0.3"))
+SKILL = {1: "Q", 2: "W", 3: "E"}
+# ビルドの集計で残す件数（多すぎるとファイルが大きくなるので、試合数の多い順にこれだけ残す）
+KEEP = {"runes": 15, "spells": 6, "items": 25, "boots": 8, "core": 15, "start": 8, "order": 6, "early": 8}
+LEGEND, BOOTS = set(), set()
 
 POS = ["TOP", "JUNGLE", "MIDDLE", "BOTTOM", "UTILITY"]
 APEX = ["challengerleagues", "grandmasterleagues", "masterleagues"]
@@ -100,10 +106,24 @@ def get(host, path, params=None):
     return None
 
 
-def current_patch():
+def current_version():
     with urllib.request.urlopen("https://ddragon.leagueoflegends.com/api/versions.json", timeout=30) as r:
-        v = json.load(r)[0]
-    return ".".join(v.split(".")[:2])
+        return json.load(r)[0]
+
+
+def load_items(version):
+    """完成アイテム（これ以上アップグレードしない2200G以上のもの）と靴を Data Dragon から調べる。"""
+    url = f"https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/item.json"
+    with urllib.request.urlopen(url, timeout=30) as r:
+        data = json.load(r)["data"]
+    for iid, it in data.items():
+        gold = it.get("gold", {})
+        if not gold.get("purchasable") or not it.get("maps", {}).get("11", False):
+            continue
+        if "Boots" in it.get("tags", []) and gold.get("total", 0) >= 900:
+            BOOTS.add(int(iid))
+        elif not it.get("into") and gold.get("total", 0) >= 2200:
+            LEGEND.add(int(iid))
 
 
 def load_json(path, default):
@@ -119,22 +139,99 @@ def add(d, key, win):
     rec[1] += int(bool(win))
 
 
-def count_match(m, patch, stats, seed=None):
+def count_build(b, p, win):
+    """試合データだけでわかるもの：ルーン、サモナースペル、最終的に持っていた完成アイテムと靴。"""
+    b["g"] += 1
+    perks = p.get("perks") or {}
+    st = perks.get("styles") or []
+    if len(st) >= 2:
+        sh = perks.get("statPerks") or {}
+        pri = ",".join(str(s.get("perk")) for s in st[0].get("selections", []))
+        sub = ",".join(str(s.get("perk")) for s in st[1].get("selections", []))
+        key = f"{st[0].get('style')}:{pri}|{st[1].get('style')}:{sub}|{sh.get('offense')},{sh.get('flex')},{sh.get('defense')}"
+        add(b.setdefault("runes", {}), key, win)
+    sp = sorted([p.get("summoner1Id", 0), p.get("summoner2Id", 0)])
+    add(b.setdefault("spells", {}), f"{sp[0]},{sp[1]}", win)
+    for it in {p.get(f"item{i}", 0) for i in range(6)}:
+        if it in LEGEND:
+            add(b.setdefault("items", {}), it, win)
+        elif it in BOOTS:
+            add(b.setdefault("boots", {}), it, win)
+
+
+def max_order(seq):
+    """スキルを上げた順（1=Q,2=W,3=E,4=R）から、最大まで上げた順番（例 "QEW"）を出す。"""
+    lv, reach, first = {1: 0, 2: 0, 3: 0}, {}, {}
+    for i, x in enumerate(seq):
+        if x not in lv:
+            continue
+        lv[x] += 1
+        first.setdefault(x, i)
+        if lv[x] == 5:
+            reach.setdefault(x, i)
+    if len([x for x in seq if x in lv]) < 9:
+        return ""
+    return "".join(SKILL[x] for x in sorted(lv, key=lambda x: (reach.get(x, 999), -lv[x], first.get(x, 999))))
+
+
+def count_timeline(tl, targets):
+    """タイムラインでわかるもの：スキルの上げ順、最初の3レベル、スタートアイテム、完成アイテムを買った順（コア3つ）。"""
+    seq = {pid: [] for pid in targets}
+    buys = {pid: [] for pid in targets}
+    for fr in ((tl or {}).get("info") or {}).get("frames", []):
+        for ev in fr.get("events", []):
+            pid = ev.get("participantId")
+            if pid not in targets:
+                continue
+            t = ev.get("type")
+            if t == "SKILL_LEVEL_UP" and ev.get("levelUpType") == "NORMAL":
+                seq[pid].append(ev.get("skillSlot"))
+            elif t == "ITEM_PURCHASED":
+                buys[pid].append((ev.get("timestamp", 0), ev.get("itemId")))
+            elif t == "ITEM_UNDO":  # 買い直しは取り消す
+                for i in range(len(buys[pid]) - 1, -1, -1):
+                    if buys[pid][i][1] == ev.get("beforeId"):
+                        buys[pid].pop(i)
+                        break
+    for pid, (b, win) in targets.items():
+        b["tl"] = b.get("tl", 0) + 1
+        s = [x for x in seq[pid] if x in SKILL]
+        if len(s) >= 3:
+            add(b.setdefault("early", {}), "".join(SKILL[x] for x in s[:3]), win)
+        o = max_order(seq[pid])
+        if o:
+            add(b.setdefault("order", {}), o, win)
+        start = sorted(i for ts, i in buys[pid] if ts <= 60000 and i)
+        if start:
+            add(b.setdefault("start", {}), ",".join(map(str, start)), win)
+        core = []
+        for ts, i in buys[pid]:
+            if i in LEGEND and i not in core:
+                core.append(i)
+            if len(core) == 3:
+                break
+        if len(core) == 3:
+            add(b.setdefault("core", {}), ",".join(map(str, core)), win)
+
+
+def count_match(m, patch, stats, seed=None, builds=None):
     """seed: この試合を見つけたプレイヤーの puuid。
     今エメラルド以上にいる人の最近の試合は勝ちが多い（勝ったから今そのランクにいる）ので、
     その人のレーン（とbotなら両チームのADC×サポート）は数えない。残りの8人は選び方と関係がないので偏らない。"""
+    """数えたら、タイムライン用に {participantId: (ビルド集計先, 勝ったか)} を返す。数えなかったら None。"""
     info = (m or {}).get("info") or {}
     if info.get("queueId") != QUEUE:
-        return False
+        return None
     if not str(info.get("gameVersion", "")).startswith(patch + "."):
-        return False
+        return None
     if info.get("gameDuration", 0) < 300:  # リメイクを除外
-        return False
+        return None
     lane = {}
     for p in info.get("participants", []):
         lane[(p.get("teamId"), p.get("teamPosition"))] = p
     if any((t, pos) not in lane for t in (100, 200) for pos in POS):
-        return False
+        return None
+    targets = {}
     dur = int(info.get("gameDuration", 0))
     seed_pos = next((p.get("teamPosition") for p in info.get("participants", []) if seed and p.get("puuid") == seed), None)
     for pos in POS:
@@ -155,6 +252,10 @@ def count_match(m, patch, stats, seed=None):
             e[3] += int(me.get("physicalDamageDealtToChampions", 0) or 0)
             e[4] += int(me.get("magicDamageDealtToChampions", 0) or 0)
             e[5] += int(me.get("trueDamageDealtToChampions", 0) or 0)
+            if builds is not None:
+                b = builds.setdefault(pos, {}).setdefault(str(me["championId"]), {"g": 0, "tl": 0})
+                count_build(b, me, me["win"])
+                targets[me.get("participantId")] = (b, me["win"])
     for t in (100, 200):
         if seed_pos in ("BOTTOM", "UTILITY"):
             break
@@ -167,7 +268,7 @@ def count_match(m, patch, stats, seed=None):
             stats["bans"][str(c)] = stats["bans"].get(str(c), 0) + 1
     stats["ban_matches"] += 1
     stats["matches"] += 1
-    return True
+    return targets
 
 
 def players(platform):
@@ -183,13 +284,26 @@ def players(platform):
     return out
 
 
-def save(patch, stats, seen):
+def prune(builds):
+    for champs in builds.values():
+        for b in champs.values():
+            for k, n in KEEP.items():
+                if k in b and len(b[k]) > n:
+                    b[k] = dict(sorted(b[k].items(), key=lambda kv: -kv[1][0])[:n])
+
+
+def save(patch, stats, seen, builds=None):
     (DATA / "patches").mkdir(parents=True, exist_ok=True)
     (DATA / "seen").mkdir(parents=True, exist_ok=True)
     stats["updated"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     (DATA / "patches" / f"{patch}.json").write_text(
         json.dumps(stats, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     (DATA / "seen" / f"{patch}.txt").write_text("\n".join(sorted(seen)), encoding="utf-8")
+    if builds is not None:
+        (DATA / "builds").mkdir(parents=True, exist_ok=True)
+        prune(builds)
+        (DATA / "builds" / f"{patch}.json").write_text(
+            json.dumps(builds, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     idx = load_json(DATA / "index.json", {"patches": []})
     idx["patches"] = [p for p in idx["patches"] if p["patch"] != patch]
     idx["patches"].append({"patch": patch, "matches": stats["matches"], "updated": stats["updated"]})
@@ -203,7 +317,10 @@ def main():
         sys.exit("RIOT_API_KEY が設定されていません。")
     # キーそのものは出さず、形だけ確かめる（正しいキーは RGAPI- で始まる 42 文字）
     print(f"key check: starts with RGAPI-={KEY.startswith('RGAPI-')}, length={len(KEY)}", flush=True)
-    patch = current_patch()
+    version = current_version()
+    patch = ".".join(version.split(".")[:2])
+    load_items(version)
+    print(f"items: {len(LEGEND)} completed, {len(BOOTS)} boots", flush=True)
     print(f"patch {patch}, platforms {PLATFORMS}, {MAX_MINUTES} min", flush=True)
     stats = load_json(DATA / "patches" / f"{patch}.json",
                       {"patch": patch, "matches": 0, "lanes": {}, "duo": {}})
@@ -213,6 +330,7 @@ def main():
     # これまでの試合は全レーンを数えていたので、レーンごとの分母は試合数と同じ
     for L in stats["lanes"].values():
         L.setdefault("n", stats["matches"])
+    builds = load_json(DATA / "builds" / f"{patch}.json", {})
     seen_path = DATA / "seen" / f"{patch}.txt"
     seen = set(seen_path.read_text(encoding="utf-8").split()) if seen_path.exists() else set()
     before = stats["matches"]
@@ -231,16 +349,21 @@ def main():
                 if mid in seen or time_left() < 60:
                     continue
                 seen.add(mid)
-                if count_match(get(ROUTING, f"/lol/match/v5/matches/{mid}"), patch, stats, seed=puuid):
+                targets = count_match(get(ROUTING, f"/lol/match/v5/matches/{mid}"), patch, stats, seed=puuid, builds=builds)
+                if targets is not None:
                     new += 1
+                    if targets and random.random() < TIMELINE_RATE:
+                        tl = get(ROUTING, f"/lol/match/v5/matches/{mid}/timeline")
+                        if tl:
+                            count_timeline(tl, targets)
                     if new % 100 == 0:
-                        save(patch, stats, seen)
+                        save(patch, stats, seen, builds)
                         print(f"  +{new} matches (players {i + 1}/{len(pool)}, {time_left() / 60:.0f} min left)", flush=True)
     except KeyError_ as e:
-        save(patch, stats, seen)
+        save(patch, stats, seen, builds)
         sys.exit(f"APIキーが無効か期限切れです (HTTP {e}). GitHub の Settings → Secrets で RIOT_API_KEY を更新してください。"
                  f" ここまでの {stats['matches'] - before} 試合は保存しました。")
-    save(patch, stats, seen)
+    save(patch, stats, seen, builds)
     print(f"done: +{stats['matches'] - before} matches, total {stats['matches']} for patch {patch}", flush=True)
 
 
