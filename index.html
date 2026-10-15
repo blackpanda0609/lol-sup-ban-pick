@@ -183,7 +183,11 @@ td.extra .chips{flex-wrap:nowrap}
 .slot-l{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
 .slot .pbtn{padding:5px 6px;font-size:12.5px;gap:6px}
 .slot .pbtn::after{display:none}
-.slot .pbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .pbtn .pn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .pbtn{min-height:40px}
+/* 空の枠は「＋」を出して、押せる場所だとわかるように */
+.slot .pbtn .ic.none{display:inline-grid;place-items:center;border-color:var(--muted)}
+.slot .pbtn .ic.none::before{content:"+";color:var(--muted);font-weight:700;font-size:16px;line-height:1}
 .slot .pbtn .ic{width:26px;height:26px}
 /* 盤面の枠のリスト：アイコンと名前だけを1行で（タグと試合数は出さない） */
 .slot .panel{min-width:220px;right:auto}
@@ -205,7 +209,7 @@ td.extra .chips{flex-wrap:nowrap}
 .cpill.zero{color:var(--bad);border-color:var(--bad)}
 .later summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
 .later[open] summary{margin-bottom:10px}
-@media (max-width:560px){.slot .pbtn span,.me-mirror span{display:none}.bline{grid-template-columns:30px repeat(5,minmax(0,1fr))}.comp-h{min-width:0;flex-basis:100%}}
+@media (max-width:560px){.slot .pbtn .pn,.me-mirror span{display:none}.slot .pbtn{justify-content:center;padding:6px 2px}.me-mirror{justify-content:center;min-height:40px}.bline{grid-template-columns:30px repeat(5,minmax(0,1fr))}.comp-h{min-width:0;flex-basis:100%}}
 /* 自分のピック：ステップ2の主役 */
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
@@ -460,7 +464,7 @@ function makePicker(host,labelId,items,onChange){
   const btn=wrap.querySelector(".pbtn"),panel=wrap.querySelector(".panel"),q=wrap.querySelector("input"),ul=wrap.querySelector("ul");
   let list=[],active=0;
   const all=()=>[{v:"",name:"選択しない",icon:icon(null),extra:""},...items()];
-  const drawBtn=()=>{const it=all().find(i=>i.v===value)||all()[0];btn.innerHTML=`${it.icon}<span>${it.name}</span>`;};
+  const drawBtn=()=>{const it=all().find(i=>i.v===value)||all()[0];btn.innerHTML=`${it.icon}<span class="pn">${it.name}</span>`;};
   const drawList=()=>{
     const t=kata(q.value.trim());
     list=all().filter(i=>!t||(i.v&&kata(i.name).includes(t)));
