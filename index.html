@@ -168,6 +168,9 @@ td.extra .chips{flex-wrap:nowrap}
 .step-h p{margin:2px 0 0;color:var(--muted);font-size:13px}
 .step .card{background:var(--bg)}
 .s-sub{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.needs-row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
+.ngroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ngroup>span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-right:4px}
 .pick-btn{font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:4px}
 .pick-btn.on{color:var(--bg);background:var(--accent);cursor:default}
 .rank li.chosen{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
@@ -454,7 +457,9 @@ showTab(first);
 
 // ===== 全チャンプの役割（レーンタブ用）=====
 // フロント：Data Dragon の Tank タグ / AP・AD：手入力リストか magic と attack の比較 / それ以外：手入力リスト（Data Dragon のID）
-const LANE_NEEDS={front:"フロント",engage:"エンゲージ",cc:"CC",ap:"AP",ad:"AD",peel:"ピール",disengage:"ディスエンゲージ",poke:"ポーク",catch:"キャッチ（ピック）"};
+// ピックのときに考えること：ダメージの種類（AD・APのどちらか）、継続火力（DPS）、フロント、CC、エンゲージ
+const LANE_NEEDS={ad:"AD",ap:"AP",dps:"DPS",front:"フロント",cc:"CC",engage:"エンゲージ"};
+const DMG_NEEDS=["ad","ap"];
 const idSet=s=>new Set(s.split(/\s+/));
 const T_LIST={
  engage:idSet("Malphite Ornn Sejuani Zac Amumu Leona Nautilus Rell Alistar Rakan Maokai JarvanIV Vi MonkeyKing Sion Gragas Rammus Nunu Skarner Diana Galio Kennen Orianna Hecarim Kled Volibear Shen Sett Poppy KSante Camille Annie Seraphine Nocturne Warwick Briar Yone Thresh Blitzcrank Pyke Neeko Lillia Ambessa"),
@@ -463,6 +468,8 @@ const T_LIST={
  disengage:idSet("Janna Gragas Anivia Trundle Poppy Alistar Braum TahmKench Lulu Zilean Maokai Rakan Milio Renata Zyra Lissandra Taliyah Azir Ornn Nunu Singed Rammus Shen Galio"),
  poke:idSet("Xerath Velkoz Ziggs Jayce Varus Ezreal Lux Zoe Hwei Karma Nidalee Corki Caitlyn Jhin Mel Seraphine Zyra Brand Syndra Gangplank Senna Smolder Kennen Viktor Taliyah Aurora Kayle")
 };
+// 継続火力（DPS）：マークスマン、アサシンではないファイター、それに殴り続けるタイプのスカーミッシャーとバトルメイジ
+const DPS_LIST=idSet("Yasuo Yone Irelia Fiora Jax MasterYi Tryndamere Gwen Viego Belveth Kayle Riven Sett Aatrox Cassiopeia Ryze Swain Vladimir Viktor Azir Anivia Karthus Brand Rumble Mordekaiser Singed Lillia Teemo Zyra Malzahar Kogmaw Kindred Graves Nilah Smolder Udyr Warwick Shyvana Volibear Trundle Olaf Darius Garen Illaoi Yorick Nasus Ambessa");
 const AP_LIST=idSet("Gwen Diana Ekko Lillia Mordekaiser Rumble Sylas Gragas Kennen Akali Kayle Teemo Fizz Evelynn Elise Kassadin Katarina Vladimir Swain Nidalee Fiddlesticks Karthus Ahri Singed Malphite Amumu Zac Maokai Sejuani Nunu Rammus Chogath Cassiopeia Aurora Hwei Mel AurelionSol Ziggs Seraphine Brand Zyra Karma Lux Morgana Neeko Lissandra Malzahar Taliyah Anivia Azir Orianna Syndra Viktor Xerath Velkoz Zoe Annie Veigar Vex Ryze Leblanc Galio Heimerdinger Zilean Ivern Brand Sona Nami Lulu Janna Soraka Yuumi Milio Renata Bard Taric Rell Leona");
 // 実データ（レーンごと）：[試合数, 試合時間(秒), 敵にCCを当てた時間(秒), 物理, 魔法, 確定ダメージ]
 const EXT_MIN=10;
@@ -488,6 +495,7 @@ function traitsOf(key,L){
   const c=BYKEY[key];if(!c)return new Set();
   const t=new Set(Object.keys(T_LIST).filter(n=>T_LIST[n].has(c.id)));
   if(c.tags.includes("Tank"))t.add("front");
+  if(DPS_LIST.has(c.id)||c.tags[0]==="Marksman"||(c.tags[0]==="Fighter"&&!c.tags.includes("Assassin")))t.add("dps");
   const e=extOf(L,key);
   if(e){const [p,m]=dmgPerMin(e);if(m>=DMG_MIN)t.add("ap");if(p>=DMG_MIN)t.add("ad");}
   else if(!["Tank","Support"].includes(c.tags[0]))t.add(AP_LIST.has(c.id)||(c.info.magic||0)>(c.info.attack||0)?"ap":"ad");
@@ -512,8 +520,11 @@ function buildLane(id,pos,label){
         ${partner?`<div class="field"><span class="flabel" id="${id}-a-l">${partner[1]}</span></div>`:""}
       </div>
       <div class="field">
-        <span class="flabel" id="${id}-n-l">チームにほしいもの <span>味方の構成を見て選ぶ（役割はチャンプの特徴から判定した目安）</span></span>
-        <div class="toggles lane-needs" role="group" aria-labelledby="${id}-n-l">${Object.keys(LANE_NEEDS).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
+        <span class="flabel" id="${id}-n-l">チームにほしいもの <span>味方に足りていないものを選ぶ。DPSは集団戦で殴り続けられる継続火力（バーストは含めない）、フロントは前に立って攻撃を受けられる硬さ</span></span>
+        <div class="needs-row lane-needs" role="group" aria-labelledby="${id}-n-l">
+          <div class="ngroup"><span>ダメージ</span>${DMG_NEEDS.map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
+          <div class="ngroup"><span>役割</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
+        </div>
       </div>`)}
     ${step(2,"ピックを決める","おすすめから「これにする」を押すか、使うチャンプを直接選ぶ",`
       <div class="s2"></div>
@@ -535,7 +546,13 @@ function buildLane(id,pos,label){
   const duoR=(me,ally)=>pos==="UTILITY"?((ST.duo||{})[ally]||{})[me]:((ST.duo||{})[me]||{})[ally];
   const duoTeiki=(me,ally)=>pos==="UTILITY"?teikiDuo(ally,me):teikiDuo(me,ally);
   const needs=new Set();
-  root.querySelector(".lane-needs").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;needs.has(n)?needs.delete(n):needs.add(n);b.setAttribute("aria-pressed",needs.has(n));draw();});
+  root.querySelector(".lane-needs").addEventListener("click",e=>{
+    const b=e.target.closest("[data-n]");if(!b)return;const n=b.dataset.n;
+    if(needs.has(n))needs.delete(n);
+    else{if(DMG_NEEDS.includes(n))DMG_NEEDS.forEach(x=>needs.delete(x));needs.add(n);} // AD と AP はどちらか一方
+    root.querySelectorAll(".lane-needs [data-n]").forEach(x=>x.setAttribute("aria-pressed",needs.has(x.dataset.n)));
+    draw();
+  });
   // 「これにする」
   s2.addEventListener("click",e=>{const b=e.target.closest("[data-pick]");if(!b)return;pm.set(b.dataset.pick);draw();root.querySelector('[data-step="3"]').scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});});
   const clamp=(x,m)=>Math.max(-m,Math.min(m,x));
