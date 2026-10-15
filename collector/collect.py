@@ -252,6 +252,11 @@ def count_match(m, patch, stats, seed=None, builds=None):
             e[3] += int(me.get("physicalDamageDealtToChampions", 0) or 0)
             e[4] += int(me.get("magicDamageDealtToChampions", 0) or 0)
             e[5] += int(me.get("trueDamageDealtToChampions", 0) or 0)
+            # 試合時間ごとの [試合数, 勝利数]：25分未満 / 25〜30分 / 30〜35分 / 35分以上（アーリー型かレイト型かの判定に使う）
+            tb = L.setdefault("time", {}).setdefault(str(me["championId"]), [[0, 0], [0, 0], [0, 0], [0, 0]])
+            k = 0 if dur < 1500 else 1 if dur < 1800 else 2 if dur < 2100 else 3
+            tb[k][0] += 1
+            tb[k][1] += int(bool(me["win"]))
             if builds is not None:
                 b = builds.setdefault(pos, {}).setdefault(str(me["championId"]), {"g": 0, "tl": 0})
                 count_build(b, me, me["win"])
