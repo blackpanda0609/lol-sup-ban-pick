@@ -119,7 +119,10 @@ def add(d, key, win):
     rec[1] += int(bool(win))
 
 
-def count_match(m, patch, stats):
+def count_match(m, patch, stats, seed=None):
+    """seed: この試合を見つけたプレイヤーの puuid。
+    今エメラルド以上にいる人の最近の試合は勝ちが多い（勝ったから今そのランクにいる）ので、
+    その人のレーン（とbotなら両チームのADC×サポート）は数えない。残りの8人は選び方と関係がないので偏らない。"""
     info = (m or {}).get("info") or {}
     if info.get("queueId") != QUEUE:
         return False
@@ -133,8 +136,12 @@ def count_match(m, patch, stats):
     if any((t, pos) not in lane for t in (100, 200) for pos in POS):
         return False
     dur = int(info.get("gameDuration", 0))
+    seed_pos = next((p.get("teamPosition") for p in info.get("participants", []) if seed and p.get("puuid") == seed), None)
     for pos in POS:
-        L = stats["lanes"].setdefault(pos, {"champs": {}, "vs": {}})
+        L = stats["lanes"].setdefault(pos, {"champs": {}, "vs": {}, "n": 0})
+        if pos == seed_pos:
+            continue
+        L["n"] = L.get("n", 0) + 1  # このレーンを数えた試合数（ピック率の分母）
         ext = L.setdefault("ext", {})
         a, b = lane[(100, pos)], lane[(200, pos)]
         for me, op in ((a, b), (b, a)):
@@ -149,6 +156,8 @@ def count_match(m, patch, stats):
             e[4] += int(me.get("magicDamageDealtToChampions", 0) or 0)
             e[5] += int(me.get("trueDamageDealtToChampions", 0) or 0)
     for t in (100, 200):
+        if seed_pos in ("BOTTOM", "UTILITY"):
+            break
         adc, sup = lane[(t, "BOTTOM")], lane[(t, "UTILITY")]
         add(stats["duo"].setdefault(str(adc["championId"]), {}), sup["championId"], adc["win"])
     # ban：同じ試合で両チームが同じチャンプをbanしても1回と数える
@@ -201,6 +210,9 @@ def main():
     # ban は途中から集計を始めたので、分母（ban を数えた試合数）を別に持つ
     stats.setdefault("bans", {})
     stats.setdefault("ban_matches", 0)
+    # これまでの試合は全レーンを数えていたので、レーンごとの分母は試合数と同じ
+    for L in stats["lanes"].values():
+        L.setdefault("n", stats["matches"])
     seen_path = DATA / "seen" / f"{patch}.txt"
     seen = set(seen_path.read_text(encoding="utf-8").split()) if seen_path.exists() else set()
     before = stats["matches"]
@@ -219,7 +231,7 @@ def main():
                 if mid in seen or time_left() < 60:
                     continue
                 seen.add(mid)
-                if count_match(get(ROUTING, f"/lol/match/v5/matches/{mid}"), patch, stats):
+                if count_match(get(ROUTING, f"/lol/match/v5/matches/{mid}"), patch, stats, seed=puuid):
                     new += 1
                     if new % 100 == 0:
                         save(patch, stats, seen)
