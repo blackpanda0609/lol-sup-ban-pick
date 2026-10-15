@@ -155,7 +155,7 @@ td.extra .chips{flex-wrap:nowrap}
 #tip[data-side="bottom"]{--tdy:-4px}
 @media (prefers-reduced-motion:reduce){#tip.in{animation:none}}
 .tip-h{font-weight:700;font-size:14px;color:var(--fg)}
-.tip-b{color:var(--fg)}
+.tip-b{color:var(--fg);white-space:pre-line}
 .tip-s{font-family:var(--mono);font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:6px;margin-top:2px}
 .tip-s.up{color:var(--good)}.tip-s.down{color:var(--bad)}
 [data-tip]{cursor:help}
@@ -169,6 +169,7 @@ td.extra .chips{flex-wrap:nowrap}
 .step-h p{margin:2px 0 0;color:var(--muted);font-size:13px}
 .step .card{background:var(--bg)}
 .s-sub{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:700}
+.tags2{display:flex;flex-wrap:wrap;gap:4px}
 .needs-row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
 .ngroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ngroup>span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-right:4px}
@@ -177,7 +178,7 @@ td.extra .chips{flex-wrap:nowrap}
 .rank li.chosen{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
 /* ビルド */
 .build{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px 28px}
-.bsec{display:grid;gap:4px;min-width:0}
+.bsec{display:grid;gap:4px;min-width:0;align-content:start}
 .bsec h4{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 2px;font-weight:700}
 .brow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 0;border-top:1px solid var(--line)}
 .brow:first-of-type{border-top:none}
@@ -188,6 +189,20 @@ td.extra .chips{flex-wrap:nowrap}
 .bi.rs{width:24px;height:24px;border-radius:50%;background:var(--bg)}
 .bi.st{width:20px;height:20px;background:none}
 .bi.key{width:36px;height:36px;border-radius:50%;background:var(--bg)}
+/* ルーンのページ（ルーン画面と同じ並び） */
+.rpage-wrap{display:grid;gap:6px;padding-bottom:6px}
+.rpage-wrap + .rpage-wrap{border-top:1px solid var(--line);padding-top:8px}
+.rp-meta{border-top:none;padding:0}
+.rp-rank{font-size:12px;font-weight:700;color:var(--muted)}
+.rpage{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-start}
+.rcol{display:grid;gap:7px;justify-items:center;padding:8px 10px;background:var(--bg);border-radius:8px}
+.rcol h5{display:flex;align-items:center;gap:5px;font-size:12px;margin:0 0 2px;color:var(--fg);font-weight:700}
+.rcol h5 img{width:18px;height:18px}
+.rp-row{display:flex;gap:6px;justify-content:center}
+.rc{width:28px;height:28px;border-radius:50%;filter:grayscale(1);opacity:.28;background:var(--surface)}
+.rc.on{filter:none;opacity:1;box-shadow:0 0 0 2px var(--accent)}
+.rc.ks{width:38px;height:38px}
+.rc.sh{width:22px;height:22px}
 .rune-main,.rune-sub{display:inline-flex;align-items:center;gap:4px}
 .rune-sub{padding-left:8px;border-left:1px solid var(--line)}
 .shards{font-size:11.5px;color:var(--muted);flex-basis:100%}
@@ -364,6 +379,24 @@ function tierMapOf(L){
   return map;
 }
 const tierBadge=(t,r,key,L)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key,L).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r,L).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
+// 強い時間帯：30分未満と30分以上の勝率（それぞれ10勝10敗ぶんを足してならす）の差で、アーリー型かレイト型かを決める
+const TB=["〜25分","25〜30分","30〜35分","35分〜"];
+const TIMING={early:["アーリー","序盤に強く、試合が長引くと勝率が下がる","fighter"],mid:["安定","試合時間で勝率があまり変わらない","tank"],late:["レイト","序盤は控えめで、試合が長引くほど勝率が上がる","catch"]};
+function timingOf(L,k){
+  const t=L&&L.time&&L.time[k];if(!t)return null;
+  const e=[t[0][0]+t[1][0],t[0][1]+t[1][1]],l=[t[2][0]+t[3][0],t[2][1]+t[3][1]];
+  if(e[0]<30||l[0]<30)return {t,type:null};
+  const d=(e[1]+10)/(e[0]+20)-(l[1]+10)/(l[0]+20);
+  return {t,d,type:d>.03?"early":d<-.03?"late":"mid"};
+}
+const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${n}型" data-tip="${desc}" data-tip-s="30分未満と30分以上の勝率の差 ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
+function timingCard(L,k){
+  const x=timingOf(L,k),title=`${nm(k)}の強い時間帯`;
+  if(!x)return card(title,empty("試合時間ごとのデータは、まだたまっていません。"));
+  const rows=x.t.map((r,i)=>r[0]?`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${r[0]}試合</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="bar ${r[0]>=MIN?dirOf(r):""}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`:`<li class="sl"><span class="name">${TB[i]}</span><span class="why">データなし</span></li>`).join("");
+  const head=x.type?`<p class="why" style="margin:0"><b style="color:var(--fg)">${TIMING[x.type][0]}型</b>：${TIMING[x.type][1]}</p>`:`<p class="why" style="margin:0">試合数が少ないので、まだ型は判定していません。</p>`;
+  return card(title,head+`<ul class="list">${rows}</ul>`);
+}
 const statList=(rows,noteFn=null)=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r,noteFn?noteFn(k):"")).join("")}</ul>`:fewMsg();
 
 // ===== アイコン付きプルダウン =====
@@ -591,12 +624,13 @@ function buildLane(id,pos,label){
       return {k,s,notes,teiki,r:shown};
     }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,6);
     const conds=[E&&`${nm(E)}に勝ちやすい`,AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`].filter(Boolean).join(" × ")||"今の環境で強い";
-    s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
+    s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
     if(M){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
+      sub.push(timingCard(L,M));
       const mine=Object.entries(L.vs[M]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       sub.push(card(`${nm(M)}の苦手な相手（次の試合のBAN候補）`,statList(mine,o=>tk(teikiCounter(o,M)))));
       if(partner&&!AL){const ps=pairRank(M,pos==="BOTTOM").slice(0,5);sub.push(card(`${nm(M)}と相性のいい${partner[1].replace("味方","")}`,statList(ps.map(o=>[o.key,o.r]),k=>tk(pos==="BOTTOM"?teikiDuo(M,k):teikiDuo(k,M)))));}
@@ -637,7 +671,7 @@ function laneTable(host,L,label,extras=[]){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧（環境を見る）</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.5%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.5%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -655,7 +689,7 @@ function laneTable(host,L,label,extras=[]){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td>${clsTag(k)}</td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key"><span class="kn">${icK(k)}${nm(k)}</span></td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
@@ -715,18 +749,33 @@ const pairCell=(rowKey,isAdcRow)=>{const ps=pairRank(rowKey,isAdcRow).slice(0,3)
 // ===== ビルド（ルーン・スペル・アイテム・スキル順） =====
 // data/builds/{パッチ}.json は大きいので、自分のチャンプを選んだときに初めて読み込む
 let BUILDS=null,BUILDS_STATE="idle";
-const RUNES={},STYLES={},SPELLS={},ITEMS={},CHSP={};
+const RUNES={},STYLES={},SLOTS={},SPELLS={},ITEMS={},CHSP={};
+// ステータスのかけら：ルーン画面の3段（上から 攻撃・汎用・防御）と、それぞれのアイコン
+const SHARD_ROWS=[[5008,5005,5007],[5008,5010,5001],[5011,5013,5001]];
+const SHARD_ICON={5008:"StatModsAdaptiveForceIcon",5005:"StatModsAttackSpeedIcon",5007:"StatModsCDRScalingIcon",5010:"StatModsMovementSpeedIcon",5001:"StatModsHealthScalingIcon",5011:"StatModsHealthPlusIcon",5013:"StatModsTenacityIcon"};
 const SHARD={5008:"アダプティブフォース",5005:"攻撃速度",5007:"スキルヘイスト",5010:"移動速度",5001:"体力（レベルで増加）",5011:"体力",5013:"行動妨害・スロウ耐性",5002:"物理防御",5003:"魔法防御"};
 const DDC="https://ddragon.leagueoflegends.com/cdn";
 const plain=s=>String(s||"").replace(/<[^>]+>/g,"").replace(/"/g,"”");
+// アイテムの説明：一言説明（plaintext）がないアイテムも多いので、ステータスと効果（description）から作る
+const ITEM_FALLBACK={3865:"サポートアイテム。ミニオンにとどめを刺さなくても、近くの味方や敵チャンピオンへの攻撃でゴールドを得られる。クエストを達成すると段階的にアップグレードし、ワードを置けるようになる。"};
+const ITEM_TAG={Health:"体力",ManaRegen:"マナ自動回復",Vision:"視界",GoldPer:"ゴールド獲得",Lane:"レーン向け",Damage:"攻撃力",SpellDamage:"魔力",AttackSpeed:"攻撃速度",CriticalStrike:"クリティカル",Armor:"物理防御",SpellBlock:"魔法防御",Boots:"移動速度",Consumable:"消耗品",Trinket:"トリンケット",Jungle:"ジャングル向け"};
+const itemText=x=>{
+  const d=String(x.description||"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(passive|active|rarityMythic|rarityLegendary)>/gi,"：").replace(/<[^>]+>/g,"")
+    .replace(/[ \t]+/g," ").replace(/\n\s*\n+/g,"\n").trim();
+  let t=[x.plaintext,d].filter(Boolean).join("\n");
+  // 日本語データで説明が空のアイテムは、手書きの説明か、分類から作った一言を出す
+  if(!t)t=ITEM_FALLBACK[x.image&&x.image.full.replace(".png","")]||((x.tags||[]).map(g=>ITEM_TAG[g]).filter(Boolean).join("・")+(x.tags&&x.tags.length?"のアイテム":""));
+  t=t.replace(/"/g,"”");
+  return t.length>420?t.slice(0,420)+"…":t;
+};
 async function loadBuilds(){
   if(BUILDS_STATE!=="idle")return;
   BUILDS_STATE="loading";
   try{
     const [rr,sm,it]=await Promise.all([getJSON(`${DDC}/${DD}/data/ja_JP/runesReforged.json`),getJSON(`${DDC}/${DD}/data/ja_JP/summoner.json`),getJSON(`${DDC}/${DD}/data/ja_JP/item.json`)]);
-    rr.forEach(st=>{STYLES[st.id]={name:st.name,icon:st.icon};st.slots.forEach(sl=>sl.runes.forEach(r=>{RUNES[r.id]={name:r.name,icon:r.icon,desc:plain(r.shortDesc)};}));});
+    rr.forEach(st=>{STYLES[st.id]={name:st.name,icon:st.icon};SLOTS[st.id]=st.slots.map(sl=>sl.runes.map(r=>r.id));st.slots.forEach(sl=>sl.runes.forEach(r=>{RUNES[r.id]={name:r.name,icon:r.icon,desc:plain(r.shortDesc)};}));});
     Object.values(sm.data).forEach(s=>{SPELLS[s.key]={id:s.id,name:s.name,desc:plain(s.description)};});
-    Object.entries(it.data).forEach(([id,x])=>{ITEMS[id]={name:x.name,desc:plain(x.plaintext)};});
+    Object.entries(it.data).forEach(([id,x])=>{ITEMS[id]={name:x.name,desc:itemText(x),gold:(x.gold||{}).total};});
     for(const base of DATA_BASES){try{BUILDS=await getJSON(base+`builds/${ST.patch}.json`,{cache:"no-cache"});break;}catch(e){}}
   }catch(e){}
   BUILDS_STATE="done";
@@ -743,7 +792,7 @@ function loadChampSpells(key){
   }).catch(()=>{CHSP[key]=null;});
 }
 const runeImg=(id,cls="rs")=>{const r=RUNES[id]||STYLES[id];return r?`<img class="bi ${cls}" src="${DDC}/img/${r.icon}" alt="" tabindex="0" data-tip-h="${r.name}" data-tip="${r.desc||"ルーンのパス"}" loading="lazy">`:"";};
-const itemImg=id=>{const x=ITEMS[id];return `<img class="bi" src="${DDC}/${DD}/img/item/${id}.png" alt="" tabindex="0" data-tip-h="${x?x.name:"アイテム"}" data-tip="${x?x.desc||x.name:""}" loading="lazy">`;};
+const itemImg=id=>{const x=ITEMS[id];return `<img class="bi" src="${DDC}/${DD}/img/item/${id}.png" alt="" tabindex="0" data-tip-h="${x?x.name:"アイテム"}" data-tip="${x?x.desc||x.name:""}"${x&&x.gold?` data-tip-s="合計 ${x.gold}G"`:""} loading="lazy">`;};
 const spellImg=key=>{const s=SPELLS[key];return s?`<img class="bi" src="${DDC}/${DD}/img/spell/${s.id}.png" alt="" tabindex="0" data-tip-h="${s.name}" data-tip="${s.desc}" loading="lazy">`:"";};
 const keycap=(k,champ)=>{const s=CHSP[champ];const sp=s&&typeof s==="object"?s[k]:null;return sp?`<span class="kc" tabindex="0" data-tip-h="${k}：${sp.name}" data-tip="${plain(sp.description)}"><img src="${DDC}/${DD}/img/spell/${sp.image.full}" alt="">${k}</span>`:`<span class="kc">${k}</span>`;};
 // 使用率と勝率（base は母数の試合数）
@@ -757,9 +806,15 @@ function buildSteps(pos,M){
   if(!b||b.g<5)return wait(`${nm(M)}のこのロールでのビルドデータは、まだたまっていません。`);
   loadChampSpells(M);
   const tl=b.tl||0,sec=(h,body)=>`<div class="bsec"><h4>${h}</h4>${body}</div>`,none=`<p class="why" style="margin:0">まだデータがありません</p>`;
-  const runeRow=([key,r])=>{
-    const [pri,sub,sh]=key.split("|"),[ps,pp]=pri.split(":"),[ss,sp]=sub.split(":"),pk=pp.split(","),sk=sp.split(",");
-    return `<div class="brow"><span class="rune-main">${runeImg(ps,"st")}${runeImg(pk[0],"key")}${pk.slice(1).map(x=>runeImg(x)).join("")}</span><span class="rune-sub">${runeImg(ss,"st")}${sk.map(x=>runeImg(x)).join("")}</span>${bmeta(r,b.g)}<span class="shards">${sh.split(",").map(x=>SHARD[x]||x).join("・")}</span></div>`;
+  // ルーン画面と同じ並び：メインのパス（キーストーン＋3段）／サブのパス（3段）／かけら（3段）。選ばれたものだけ色付き
+  const runeRow=([key,r],i)=>{
+    const [pri,sub,sh]=key.split("|"),[ps,pp]=pri.split(":"),[ss,sp]=sub.split(":"),pk=pp.split(","),sk=sp.split(","),shs=sh.split(",");
+    const cell=(id,on,cls="")=>{const x=RUNES[id];return x?`<img class="rc ${cls}${on?" on":""}" src="${DDC}/img/${x.icon}" alt="${on?x.name:""}" tabindex="0" data-tip-h="${x.name}${on?"":"（選ばれていない）"}" data-tip="${x.desc}" loading="lazy">`:"";};
+    const head=id=>{const s=STYLES[id];return s?`<h5><img src="${DDC}/img/${s.icon}" alt="">${s.name}</h5>`:"";};
+    const tree=(style,sel,rows,primary)=>(rows||[]).map((ids,j)=>`<div class="rp-row">${ids.map(id=>cell(id,sel.includes(String(id)),primary&&j===0?"ks":"")).join("")}</div>`).join("");
+    const shard=shs.map((v,j)=>`<div class="rp-row">${SHARD_ROWS[j].map(id=>`<img class="rc sh${String(id)===v?" on":""}" src="${DDC}/img/perk-images/StatMods/${SHARD_ICON[id]}.png" alt="" tabindex="0" data-tip-h="${SHARD[id]}${String(id)===v?"":"（選ばれていない）"}" data-tip="ステータスのかけら" loading="lazy">`).join("")}</div>`).join("");
+    return `<div class="rpage-wrap"><div class="brow rp-meta"><span class="rp-rank">${i+1}位のページ</span>${bmeta(r,b.g)}</div>
+      <div class="rpage"><div class="rcol">${head(ps)}${tree(ps,pk,SLOTS[ps],true)}</div><div class="rcol">${head(ss)}${tree(ss,sk,(SLOTS[ss]||[]).slice(1),false)}</div><div class="rcol"><h5>かけら</h5>${shard}</div></div></div>`;
   };
   const rows=(d,n,fn,base)=>{const t=topOf(d,n);return t.length?t.map(([k,r])=>`<div class="brow">${fn(k)}${bmeta(r,base)}</div>`).join(""):none;};
   const order=k=>k.split("").map(x=>keycap(x,M)).join(`<span class="arrow">›</span>`);
