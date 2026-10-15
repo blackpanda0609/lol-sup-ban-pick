@@ -15,6 +15,7 @@
   --bg:#eef1f5; --surface:#ffffff; --fg:#1b2230; --muted:#5d6779; --line:#d5dbe5;
   --accent:#a8761b; --accent-soft:#f3e7cc;
   --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
+  --dmg-ad:#e5392b; --dmg-ap:#2fa8e8; --dmg-true:#ffffff;
   --good:#2a8a6a; --bad:#c0392b; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
   --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
   --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
@@ -24,11 +25,13 @@
   --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
+  --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
+  --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65}
@@ -130,7 +133,8 @@ td.extra .chips{flex-wrap:nowrap}
 .tier-none{color:var(--muted);border-style:dashed}
 .dmg{display:flex;width:56px;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
 .dmg i{display:block;height:100%}
-.d-p{background:var(--engage)}.d-m{background:var(--catch)}.d-t{background:var(--muted)}
+.d-p{background:var(--dmg-ad)}.d-m{background:var(--dmg-ap)}.d-t{background:var(--dmg-true)}
+.dmg{box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
 .cls-filter .tg{color:var(--fg)}
 #tip{position:absolute;z-index:50;max-width:min(300px,calc(100vw - 16px));display:grid;gap:4px;
@@ -545,7 +549,7 @@ function laneTable(host,L,label,extras=[]){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールで10試合未満のチャンプは一覧に出さず、10〜49試合のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（紫）・確定（灰）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールで10試合未満のチャンプは一覧に出さず、10〜49試合のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
