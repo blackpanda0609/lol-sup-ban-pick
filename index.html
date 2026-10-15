@@ -87,12 +87,11 @@ ul.list li{display:grid;gap:2px}
 .score{font-family:var(--mono);font-size:12px;color:var(--accent)}
 .wr{font-family:var(--mono);font-size:13px;margin-left:auto}
 .wr.up{color:var(--good)}.wr.down{color:var(--bad)}
-.sl{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center}
-.sl .bar{grid-column:1/-1}
-/* おすすめカード：名前と勝率を1行目、説明を2行目に全幅で */
-.rank .sl{grid-template-columns:minmax(0,1fr) auto}
-.rank .sl .why{grid-column:1/-1;grid-row:2}
-.rank .sl .bar{grid-row:3}
+/* 勝率つきの1行：1行目に名前と勝率、2行目に説明を横いっぱいに、3行目に帯 */
+.sl{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+.sl .why{grid-column:1/-1;grid-row:2}
+.sl .bar{grid-column:1/-1;grid-row:3}
+
 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;display:block}
 .bar i{display:block;height:100%;background:var(--accent)}
 .bar.up i{background:var(--good)}.bar.down i{background:var(--bad)}
@@ -739,7 +738,8 @@ function pairRank(rowKey,isAdcRow){
   if(isAdcRow)Object.entries((ST.duo||{})[rowKey]||{}).forEach(([s,r])=>pairs.push([s,r]));
   else Object.entries(ST.duo||{}).forEach(([a,m])=>{if(m[rowKey])pairs.push([a,m[rowKey]]);});
   const tot=pairs.reduce((n,[,r])=>n+r[0],0)||1;
-  return pairs.filter(([p,r])=>BYKEY[p]&&r[0]>=MIN).map(([p,r])=>{
+  const PL=(ST.lanes[isAdcRow?"UTILITY":"BOTTOM"])||{champs:{}};
+  return pairs.filter(([p,r])=>BYKEY[p]&&r[0]>=MIN&&((PL.champs[p]||[0])[0]>=roleMin(PL))).map(([p,r])=>{
     const adc=isAdcRow?rowKey:p,sup=isAdcRow?p:rowKey,w=teikiDuo(adc,sup);
     return {key:p,adc,sup,r,share:r[0]/tot,w,sc:(w?1:0)+wrPts(r)+PR_W*.5*Math.sqrt(r[0]/tot*100)};
   }).sort((x,y)=>y.sc-x.sc);
