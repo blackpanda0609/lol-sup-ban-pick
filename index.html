@@ -256,6 +256,7 @@ td.extra .chips{flex-wrap:nowrap}
 .rc.on{filter:none;opacity:1;box-shadow:0 0 0 2px var(--accent)}
 .rc.ks{width:38px;height:38px}
 .rc.sh{width:22px;height:22px}
+.shard-sep{width:70%;height:1px;background:var(--line);margin:2px 0}
 .rune-main,.rune-sub{display:inline-flex;align-items:center;gap:4px}
 .rune-sub{padding-left:8px;border-left:1px solid var(--line)}
 .shards{font-size:11.5px;color:var(--muted);flex-basis:100%}
@@ -946,7 +947,7 @@ function buildSteps(pos,M){
   if(!b||b.g<5)return wait(`${nm(M)}のこのロールでのビルドデータは、まだたまっていません。`);
   loadChampSpells(M);
   const tl=b.tl||0,sec=(h,body)=>`<div class="bsec"><h4>${h}</h4>${body}</div>`,none=`<p class="why" style="margin:0">まだデータがありません</p>`;
-  // ルーン画面と同じ並び：メインのパス（キーストーン＋3段）／サブのパス（3段）／かけら（3段）。選ばれたものだけ色付き
+  // ルーン画面と同じ並び：メインのパス（キーストーン＋3段）／サブのパス（3段）とその下にかけら（3段）。選ばれたものだけ色付き
   const runeRow=([key,r],i)=>{
     const [pri,sub,sh]=key.split("|"),[ps,pp]=pri.split(":"),[ss,sp]=sub.split(":"),pk=pp.split(","),sk=sp.split(","),shs=sh.split(",");
     const cell=(id,on,cls="")=>{const x=RUNES[id];return x?`<img class="rc ${cls}${on?" on":""}" src="${DDC}/img/${x.icon}" alt="${on?x.name:""}" tabindex="0" data-tip-h="${x.name}${on?"":"（選ばれていない）"}" data-tip="${x.desc}" loading="lazy">`:"";};
@@ -954,7 +955,7 @@ function buildSteps(pos,M){
     const tree=(style,sel,rows,primary)=>(rows||[]).map((ids,j)=>`<div class="rp-row">${ids.map(id=>cell(id,sel.includes(String(id)),primary&&j===0?"ks":"")).join("")}</div>`).join("");
     const shard=shs.map((v,j)=>`<div class="rp-row">${SHARD_ROWS[j].map(id=>`<img class="rc sh${String(id)===v?" on":""}" src="${DDC}/img/perk-images/StatMods/${SHARD_ICON[id]}.png" alt="" tabindex="0" data-tip-h="${SHARD[id]}${String(id)===v?"":"（選ばれていない）"}" data-tip="ステータスのかけら" loading="lazy">`).join("")}</div>`).join("");
     return `<div class="rpage-wrap"><div class="brow rp-meta"><span class="rp-rank">${i+1}位のページ</span>${bmeta(r,b.g)}</div>
-      <div class="rpage"><div class="rcol">${head(ps)}${tree(ps,pk,SLOTS[ps],true)}</div><div class="rcol">${head(ss)}${tree(ss,sk,(SLOTS[ss]||[]).slice(1),false)}</div><div class="rcol"><h5>かけら</h5>${shard}</div></div></div>`;
+      <div class="rpage"><div class="rcol">${head(ps)}${tree(ps,pk,SLOTS[ps],true)}</div><div class="rcol">${head(ss)}${tree(ss,sk,(SLOTS[ss]||[]).slice(1),false)}<div class="shard-sep" aria-hidden="true"></div>${shard}</div></div></div>`;
   };
   const rows=(d,n,fn,base)=>{const t=topOf(d,n);return t.length?t.map(([k,r])=>`<div class="brow">${fn(k)}${bmeta(r,base)}</div>`).join(""):none;};
   const order=k=>k.split("").map(x=>keycap(x,M)).join(`<span class="arrow">›</span>`);
