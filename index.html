@@ -455,7 +455,7 @@ function makePicker(host,labelId,items,onChange){
   const uid="pk"+pickers.length;
   const wrap=document.createElement("div");wrap.className="picker";
   wrap.innerHTML=`<button type="button" class="pbtn" id="${uid}-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${labelId} ${uid}-btn"></button>
-    <div class="panel" hidden><input type="search" id="${uid}-q" placeholder="名前で検索（ひらがなOK）" aria-label="検索" autocomplete="off"><ul role="listbox" aria-labelledby="${labelId}"></ul></div>`;
+    <div class="panel" hidden><input type="search" id="${uid}-q" placeholder="名前で検索（ひらがなOK）" aria-label="検索" autocomplete="off"><ul role="listbox" tabindex="-1" aria-labelledby="${labelId}"></ul></div>`;
   host.appendChild(wrap);
   const btn=wrap.querySelector(".pbtn"),panel=wrap.querySelector(".panel"),q=wrap.querySelector("input"),ul=wrap.querySelector("ul");
   let list=[],active=0;
@@ -468,7 +468,9 @@ function makePicker(host,labelId,items,onChange){
     ul.innerHTML=list.map((i,n)=>`<li role="option" data-v="${i.v}" aria-selected="${i.v===value}" class="${n===active?"active":""}">${i.icon}<span>${i.name}</span>${i.extra}</li>`).join("")||`<li class="none-hit">見つかりません</li>`;
   };
   const setActive=n=>{if(!list.length)return;active=(n+list.length)%list.length;[...ul.children].forEach((li,j)=>li.classList.toggle("active",j===active));ul.children[active].scrollIntoView({block:"nearest"});};
-  const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();q.focus();if(ul.children[active])ul.children[active].scrollIntoView({block:"nearest"});};
+  const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();
+    // マウスの端末だけ検索欄にカーソルを入れる（スマホでいきなりキーボードが出ないように）
+    if(matchMedia("(hover:hover) and (pointer:fine)").matches)q.focus();else ul.focus();if(ul.children[active])ul.children[active].scrollIntoView({block:"nearest"});};
   const close=()=>{panel.hidden=true;btn.setAttribute("aria-expanded","false");};
   const choose=v=>{value=v;drawBtn();close();btn.focus();onChange(v);};
   btn.addEventListener("click",()=>panel.hidden?open():close());
