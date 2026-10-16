@@ -200,6 +200,10 @@ td.extra .chips{flex-wrap:nowrap}
 .me-mirror{display:flex;align-items:center;gap:6px;padding:5px 6px;border:1px dashed var(--accent);border-radius:6px;font-size:12.5px;font-weight:700;color:var(--accent);min-height:28px}
 .me-mirror .ic{width:26px;height:26px}
 .me-mirror span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ドラフトを全部消す：枠付きのボタンにして見つけやすく（色は控えめに） */
+.draft-reset{justify-self:end;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
+.draft-reset span{color:var(--bad);font-size:14px;line-height:1}
+.draft-reset:hover{border-color:var(--bad);color:var(--bad)}
 .linkbtn{justify-self:start;font:inherit;font-size:12px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
 .comp{display:grid;gap:6px}
 .comp-row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12.5px}
@@ -670,7 +674,7 @@ function buildLane(id,pos,label){
     ${step(1,"相手と味方を見る","ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）",`
       <div class="board">
         ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?"味方":"敵"}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
-        <button type="button" class="linkbtn draft-reset">ドラフトを全部消す</button>
+        <button type="button" class="draft-reset"><span aria-hidden="true">↺</span>ドラフトを全部消す</button>
       </div>
       <div class="comp"></div>
       <div class="field">
@@ -938,6 +942,16 @@ const spellImg=key=>{const s=SPELLS[key];return s?`<img class="bi" src="${DDC}/$
 const keycap=(k,champ)=>{const s=CHSP[champ];const sp=s&&typeof s==="object"?s[k]:null;return sp?`<span class="kc" tabindex="0" data-tip-h="${k}：${sp.name}" data-tip="${plain(sp.description)}"><img src="${DDC}/${DD}/img/spell/${sp.image.full}" alt="">${k}</span>`:`<span class="kc">${k}</span>`;};
 // 使用率と勝率（base は母数の試合数）
 const bmeta=(r,base)=>`<span class="meta"><span title="使われた割合">${(r[0]/base*100).toFixed(1)}%</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="gcount">${r[0]}試合</span></span>`;
+// サブのパスの2つは選んだ順で記録されているので、順番違いの同じページをまとめる
+function canonRunes(d){
+  const out={};
+  for(const [k,r] of Object.entries(d||{})){
+    const [p,s,sh]=k.split("|"),[ss,sel]=s.split(":");
+    const c=`${p}|${ss}:${sel.split(",").sort().join(",")}|${sh}`;
+    const o=out[c]||(out[c]=[0,0]);o[0]+=r[0];o[1]+=r[1];
+  }
+  return out;
+}
 const topOf=(d,n)=>Object.entries(d||{}).sort((x,y)=>y[1][0]-x[1][0]).slice(0,n);
 // ステップ3（ルーン・スペル）とステップ4（ゲーム開始後）の中身を返す
 function buildSteps(pos,M){
@@ -960,7 +974,7 @@ function buildSteps(pos,M){
   const rows=(d,n,fn,base)=>{const t=topOf(d,n);return t.length?t.map(([k,r])=>`<div class="brow">${fn(k)}${bmeta(r,base)}</div>`).join(""):none;};
   const order=k=>k.split("").map(x=>keycap(x,M)).join(`<span class="arrow">›</span>`);
   const s3=`<div class="build">
-      ${sec("ルーン",topOf(b.runes,2).map(runeRow).join("")||none)}
+      ${sec("ルーン",topOf(canonRunes(b.runes),2).map(runeRow).join("")||none)}
       ${sec("サモナースペル",rows(b.spells,2,k=>k.split(",").map(spellImg).join(""),b.g))}
     </div><p class="why" style="margin:0">${b.g}試合から。数字は「使われた割合／その勝率／試合数」です。</p>`;
   const s4=`<div class="build">
