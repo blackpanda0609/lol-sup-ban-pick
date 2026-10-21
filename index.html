@@ -210,6 +210,8 @@ td.extra .chips{flex-wrap:nowrap}
 .link-tg input{width:auto;accent-color:var(--accent)}
 .link-st{font-size:12px;color:var(--bad)}
 .link-st.ok{color:var(--good)}
+.link-dl{margin-left:auto;font-size:12px;color:var(--muted)}
+.link-dl:hover{color:var(--accent)}
 .bans{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bans .side{padding:0;color:var(--muted)}
 .ban .ic{width:24px;height:24px;filter:grayscale(1);opacity:.6;border-radius:4px}
@@ -661,7 +663,7 @@ function linkStatus(text,ok){document.querySelectorAll(".link-st").forEach(el=>{
 async function pollLink(){
   let d;
   try{d=await (await fetch(BRIDGE,{cache:"no-store"})).json();}
-  catch(e){linkStatus("補助プログラムが見つかりません（BPノート連携.bat を起動してください）",false);return;}
+  catch(e){linkStatus("連携ソフトが見つかりません（BPNoteLink.exe を起動してください）",false);return;}
   if(!d.client){linkStatus("LoL クライアントが見つかりません",false);return;}
   if(!d.champSelect){linkStatus("連携中：チャンプ選択を待っています",true);LINK.tabSet=false;return;}
   linkStatus("連携中：チャンプ選択の内容を反映しています",true);
@@ -730,7 +732,7 @@ function buildLane(id,pos,label){
   const step=(n,h,p,body)=>`<li class="step" data-step="${n}"><div class="step-h"><span class="sn">${n}</span><div><h3>${h}</h3><p>${p}</p></div></div>${body}</li>`;
   root.innerHTML=`<section class="flow"><h2>${label}のBP</h2><ol class="steps">
     ${step(1,"相手と味方を見る","ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）",`
-      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> クライアントと連携</label><span class="link-st"></span></div>
+      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> クライアントと連携</label><span class="link-st"></span><a class="link-dl" href="https://github.com/blackpanda0609/lol-sup-ban-pick/releases/latest" target="_blank" rel="noopener">連携ソフト（Windows）の入手</a></div>
       <div class="board">
         ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?"味方":"敵"}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
         <div class="bans"></div>
