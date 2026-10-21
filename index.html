@@ -75,6 +75,7 @@ select:focus-visible,input:focus-visible,button:focus-visible{outline:2px solid 
 .panel li .tag,.panel li .gc{margin-left:auto}
 .panel li .tag + .gc{margin-left:0}
 .gc{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.gc.rare{font-family:var(--body);opacity:.8}
 .panel .none-hit{color:var(--muted);cursor:default}
 .results{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
@@ -204,6 +205,14 @@ td.extra .chips{flex-wrap:nowrap}
 .draft-reset{justify-self:end;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
 .draft-reset span{color:var(--bad);font-size:14px;line-height:1}
 .draft-reset:hover{border-color:var(--bad);color:var(--bad)}
+.link-bar{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
+.link-tg{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer}
+.link-tg input{width:auto;accent-color:var(--accent)}
+.link-st{font-size:12px;color:var(--bad)}
+.link-st.ok{color:var(--good)}
+.bans{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bans .side{padding:0;color:var(--muted)}
+.ban .ic{width:24px;height:24px;filter:grayscale(1);opacity:.6;border-radius:4px}
 .linkbtn{justify-self:start;font:inherit;font-size:12px;color:var(--accent);background:none;border:none;padding:0;cursor:pointer;text-decoration:underline}
 .comp{display:grid;gap:6px}
 .comp-row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;font-size:12.5px}
@@ -631,7 +640,56 @@ function traitsOf(key,L){
 // ===== レーンタブ（実データ） =====
 // ===== ドラフト（味方5人・敵5人）：全タブで共有する =====
 const ROLES=["TOP","JUNGLE","MIDDLE","BOTTOM","UTILITY"];
-const DRAFT={ally:{},enemy:{}};
+const DRAFT={ally:{},enemy:{},bans:[]};
+
+// ===== クライアント連携：PC で動く補助プログラム（lcu_bridge.py）からチャンプ選択の内容を読む =====
+const BRIDGE="http://127.0.0.1:8899/draft";
+const LINK={on:false,timer:null,last:"",tabSet:false};
+// 敵のロールはわからないので、そのチャンプがよく使われるロールから、全員の組み合わせでいちばん自然な割り振りを選ぶ
+function assignRoles(ids,roles){
+  const res={};ids=ids.slice(0,roles.length);if(!ids.length)return res;
+  const ps=ids.map(k=>{const d=roles.map(r=>((((ST.lanes[r]||{}).champs||{})[k]||[0])[0])+.5),t=d.reduce((a,b)=>a+b,0);return d.map(x=>Math.log(x/t));});
+  let best=-Infinity,bestA=null;const used=roles.map(()=>false),cur=[];
+  (function rec(i,sc){
+    if(i===ids.length){if(sc>best){best=sc;bestA=cur.slice();}return;}
+    for(let j=0;j<roles.length;j++){if(used[j])continue;used[j]=true;cur[i]=j;rec(i+1,sc+ps[i][j]);used[j]=false;}
+  })(0,0);
+  ids.forEach((k,i)=>{res[roles[bestA[i]]]=k;});
+  return res;
+}
+function linkStatus(text,ok){document.querySelectorAll(".link-st").forEach(el=>{el.textContent=text;el.classList.toggle("ok",!!ok);});}
+async function pollLink(){
+  let d;
+  try{d=await (await fetch(BRIDGE,{cache:"no-store"})).json();}
+  catch(e){linkStatus("補助プログラムが見つかりません（BPノート連携.bat を起動してください）",false);return;}
+  if(!d.client){linkStatus("LoL クライアントが見つかりません",false);return;}
+  if(!d.champSelect){linkStatus("連携中：チャンプ選択を待っています",true);LINK.tabSet=false;return;}
+  linkStatus("連携中：チャンプ選択の内容を反映しています",true);
+  const sig=JSON.stringify(d);if(sig===LINK.last)return;LINK.last=sig;
+  ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});
+  let mine="",myPos="";const noPos=[];
+  d.ally.forEach(a=>{
+    const k=a.championId||a.intent;
+    if(a.isMe){mine=k;myPos=a.position;}
+    if(a.position){if(k)DRAFT.ally[a.position]=k;}else if(k&&!a.isMe)noPos.push(k);
+  });
+  // ノーマルなど、味方のロールも決まっていないときは推定する
+  if(noPos.length)Object.assign(DRAFT.ally,assignRoles(noPos,ROLES.filter(r=>!DRAFT.ally[r]&&r!==myPos)));
+  Object.assign(DRAFT.enemy,assignRoles(d.enemy||[],ROLES));
+  DRAFT.bans=d.bans||[];
+  // 自分のロールのタブに切り替え（最初の1回だけ）、自分のピックを入れる
+  const tab=LANES.find(([,p])=>p===myPos);
+  if(tab&&!LINK.tabSet){showTab(tab[0]);LINK.tabSet=true;}
+  if(tab&&lanePanels[tab[0]])lanePanels[tab[0]].setPick(mine);
+  redrawAll();
+}
+function setLink(on){
+  LINK.on=on;LINK.last="";
+  document.querySelectorAll(".link-on").forEach(x=>{x.checked=on;});
+  try{localStorage.setItem("bp-link",on?"1":"");}catch(e){}
+  clearInterval(LINK.timer);
+  if(on){pollLink();LINK.timer=setInterval(pollLink,1500);}else linkStatus("",false);
+}
 const redrawAll=()=>Object.values(lanePanels).forEach(p=>p.draw());
 // チームの構成：ダメージの物理・魔法の割合（1分あたりの実データ。なければ推定で400）と、DPS・フロント・CC・エンゲージの人数
 function compOf(side,skipPos){
@@ -672,8 +730,10 @@ function buildLane(id,pos,label){
   const step=(n,h,p,body)=>`<li class="step" data-step="${n}"><div class="step-h"><span class="sn">${n}</span><div><h3>${h}</h3><p>${p}</p></div></div>${body}</li>`;
   root.innerHTML=`<section class="flow"><h2>${label}のBP</h2><ol class="steps">
     ${step(1,"相手と味方を見る","ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）",`
+      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> クライアントと連携</label><span class="link-st"></span></div>
       <div class="board">
         ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?"味方":"敵"}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
+        <div class="bans"></div>
         <button type="button" class="draft-reset"><span aria-hidden="true">↺</span>ドラフトを全部消す</button>
       </div>
       <div class="comp"></div>
@@ -693,15 +753,21 @@ function buildLane(id,pos,label){
     </ol></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field");
-  // プルダウンも一覧と同じく、そのロールでのピック率が低いチャンプは出さない
-  const itemsOf=LL=>()=>Object.keys(LL.champs).filter(k=>BYKEY[k]&&LL.champs[k][0]>=roleMin(LL)).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),extra:`${clsTag(k)}<span class="gc">${LL.champs[k][0]}試合</span>`}));
+  // プルダウンは全チャンプから選べる（実際の試合では珍しいピックも来るので）。並びはあいうえお順。
+  // そのロールでほとんど使われないチャンプには「まれ」と付ける
+  const itemsOf=LL=>()=>{
+    const g=k=>((LL.champs||{})[k]||[0])[0];
+    return Object.keys(BYKEY).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),
+      extra:g(k)>=roleMin(LL)?`${clsTag(k)}<span class="gc">${g(k)}試合</span>`:`<span class="gc rare">まれ${g(k)?`・${g(k)}試合`:""}</span>`}));
+  };
   const slots=[...root.querySelectorAll(".slot[data-side]")].map(el=>{
     const side=el.dataset.side,r=el.dataset.pos;
     const p=makePicker(el,`${id}-${side}-${r}`,itemsOf(ST.lanes[r]||{champs:{}}),v=>{DRAFT[side][r]=v;redrawAll();});
     return {side,r,p};
   });
-  const mirror=root.querySelector(".me-mirror"),compEl=root.querySelector(".comp"),needsNote=root.querySelector(".needs-note");
-  root.querySelector(".draft-reset").addEventListener("click",()=>{ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});Object.values(lanePanels).forEach(p=>p.resetNeeds&&p.resetNeeds());redrawAll();});
+  const mirror=root.querySelector(".me-mirror"),compEl=root.querySelector(".comp"),needsNote=root.querySelector(".needs-note"),bansEl=root.querySelector(".bans");
+  root.querySelector(".link-on").addEventListener("change",e=>setLink(e.target.checked));
+  root.querySelector(".draft-reset").addEventListener("click",()=>{ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});DRAFT.bans=[];Object.values(lanePanels).forEach(p=>p.resetNeeds&&p.resetNeeds());redrawAll();});
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
   const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),recs=root.querySelector(".recs");
   let lastM="";
@@ -729,6 +795,7 @@ function buildLane(id,pos,label){
     // 盤面の表示を合わせる
     slots.forEach(({side,r,p})=>{const v=DRAFT[side][r]||"";if(p.value!==v)p.set(v);});
     mirror.innerHTML=M?`${icK(M)}<span>${nm(M)}</span>`:`<span>あなた</span>`;
+    bansEl.innerHTML=DRAFT.bans.length?`<span class="side">BAN</span><div class="chips">${DRAFT.bans.map(k=>`<span class="ban" tabindex="0" data-tip-h="${nm(k)}" data-tip="BAN されています">${icK(k)}</span>`).join("")}</div>`:"";
     // 構成と、ほしいもの（手で触っていなければ自動）
     const allyC=compOf("ally",pos),enemyC=compOf("enemy",null);
     if(!touched){needs.clear();autoNeeds(allyC).forEach(x=>needs.add(x));}
@@ -736,7 +803,7 @@ function buildLane(id,pos,label){
     compEl.innerHTML=compHtml(allyC,"味方（あなた以外）")+compHtml(enemyC,"敵");
     needsNote.innerHTML=touched?`手で選んでいます <button type="button" class="linkbtn" data-auto>自動に戻す</button>`:allyC.n>=2?"味方の構成から、足りないものを自動で選んでいます（押して変えられます）":"味方を2人以上入れると、足りないものを自動で選びます";
     // すでに選ばれているチャンプは候補にしない
-    const taken=new Set([...Object.values(DRAFT.ally),...Object.values(DRAFT.enemy)].filter(Boolean));
+    const taken=new Set([...Object.values(DRAFT.ally),...Object.values(DRAFT.enemy),...DRAFT.bans].filter(Boolean));
     // --- ステップ2：おすすめ ---
     // 候補は勝率一覧に出ているチャンプだけ。点数：Tierのスコア（勝率・ピック率・BAN率）の 0.2倍
     //   ＋ ほしい役割1つにつき +3 ＋ 敵を選んでいればその対面の勝率で ±2 ＋ 隣の味方を選んでいれば組んだときの勝率で ±2
@@ -792,7 +859,7 @@ function buildLane(id,pos,label){
   };
   const table=laneTable(root.querySelector(".lt"),L,label,extras,k=>open(k,true));
   draw();
-  lanePanels[id]={draw,table,open,resetNeeds:()=>{touched=false;}};
+  lanePanels[id]={draw,table,open,resetNeeds:()=>{touched=false;},setPick:k=>{if(pm.value!==(k||"")){pm.set(k||"");draw();}}};
 }
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。
 // そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
@@ -1021,6 +1088,7 @@ function drawStatus(p){
   buildMaps();
   LANES.forEach(([id,pos,label])=>buildLane(id,pos,label));
   if(location.hash.includes("-"))applyHash();
+  try{if(localStorage.getItem("bp-link"))setLink(true);}catch(e){}
   pickers.forEach(p=>p.drawBtn());
 })();
 </script>
