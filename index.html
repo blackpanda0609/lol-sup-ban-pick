@@ -229,6 +229,15 @@ td.extra .chips{flex-wrap:nowrap}
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
 .mypick .pbtn .ic{width:32px;height:32px}
+/* 試合の勝ち筋 */
+.pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
+.pl .ic{width:24px;height:24px}
+.pl-r{width:2.6em;font-weight:700;color:var(--muted);font-size:12px}
+.pl-vs{color:var(--muted);font-size:11px}
+.pl-v{font-weight:700;margin-left:4px}
+.pl.good .pl-v{color:var(--good)}.pl.bad .pl-v{color:var(--bad)}.pl.nodata .pl-v{color:var(--muted);font-weight:400}
+.plan-l{margin:4px 0 0;padding-left:1.2em;display:grid;gap:4px;font-size:13.5px}
 /* 対面の強み・弱点 */
 .ep-card{grid-column:1/-1}
 .ep-card h3{display:flex;align-items:center;gap:6px}
@@ -782,6 +791,96 @@ function compHtml(c,title){
   return `<div class="comp-row"><span class="comp-h">${title}</span>${ap!==null?`<span class="dmg" tabindex="0" data-tip-h="${title}のダメージ" data-tip="物理 ${Math.round((1-ap)*100)}% ／ 魔法 ${Math.round(ap*100)}%" data-tip-s="1分あたりのダメージ量（実データ）から"><i class="d-p" style="width:${((1-ap)*100).toFixed(0)}%"></i><i class="d-m" style="width:${(ap*100).toFixed(0)}%"></i></span><span class="comp-t">AD ${Math.round((1-ap)*100)}%・AP ${Math.round(ap*100)}%</span>`:""}${["dps","front","cc","engage"].map(x=>`<span class="cpill${c[x]?"":" zero"}">${LANE_NEEDS[x]} ${c[x]}</span>`).join("")}</div>`;
 }
 
+// ===== 試合の勝ち筋 =====
+// スプリット（1人でサイドを押す）が得意なチャンプ、回復が多いチャンプ（Data Dragon のID）
+const SPLIT_LIST=idSet("Fiora Jax Tryndamere Camille Yorick Nasus Shen Gwen Riven Irelia Aatrox Graves Trundle Kayle Yone Yasuo Sion Udyr Warwick Briar Belveth MasterYi Teemo Gangplank Quinn Olaf Darius Renekton Illaoi Ambessa");
+const HEAL_LIST=idSet("Aatrox Soraka Yuumi Sona Nami Vladimir Swain Sylas Warwick DrMundo Fiddlesticks Briar Illaoi Nidalee Kayn Olaf Renekton Irelia Seraphine Milio Senna Maokai Zac Volibear Gwen");
+const TEAM_ROLE_JA={TOP:"TOP",JUNGLE:"JG",MIDDLE:"MID",BOTTOM:"ADC",UTILITY:"SUP"};
+// レーンで有利なときに取りに行くもの
+const LANE_PLAN={TOP:"TOP側のヴォイドグラブ・リフトヘラルドを取りに行きやすい",JUNGLE:"敵のジャングルに入る（カウンタージャングル）チャンスがある",MIDDLE:"MIDの主導権を活かして、JGと一緒に川の取り合いに寄れる",BOTTOM:"BOTから押し込んで、ドラゴンを優先できる",UTILITY:"BOTから押し込んで、ドラゴンを優先できる"};
+function teamStyle(team){
+  // 各チャンプの役割を数えて、構成のタイプの点数にする
+  const s={teamfight:0,pick:0,poke:0,split:0,protect:0};let n=0,engage=0,peel=0,carry=0;
+  for(const r of ROLES){
+    const k=team[r];if(!k||!BYKEY[k])continue;n++;
+    const t=traitsOf(k,ST.lanes[r]),id=BYKEY[k].id;
+    // 仕掛ける力：エンゲージ役を1、キャッチ役・アサシン・飛び込み型のファイターを0.5として数える
+    if(t.has("engage")){s.teamfight+=1.5;engage+=1;}
+    else if(t.has("catch")||BYKEY[k].tags[0]==="Assassin"||(BYKEY[k].tags[0]==="Fighter"&&t.has("dps")&&r!=="BOTTOM"))engage+=.5;
+    if(t.has("front"))s.teamfight+=1;
+    if(t.has("cc"))s.teamfight+=.5;
+    if(t.has("catch"))s.pick+=2;
+    if(t.has("poke"))s.poke+=2;
+    if(SPLIT_LIST.has(id)&&(r==="TOP"||r==="MIDDLE"||r==="JUNGLE"))s.split+=2;
+    if(t.has("peel")||t.has("disengage")){s.protect+=1.2;peel++;}
+    if(r==="BOTTOM"&&ADC_STYLE.hyper.has(K2A[k]||""))carry=1;
+    if(t.has("disengage"))s.teamfight+=.3;
+  }
+  if(carry)s.protect+=2;else s.protect*=.6;
+  return {s,n,engage,peel};
+}
+const STYLE_JA={
+  teamfight:["集団戦型","5人で固まって、正面からの集団戦で勝つ。オブジェクト（ドラゴン・バロン）の前で戦いを起こす"],
+  pick:["ピック型","視界の外から敵を1人ずつ捕まえて数的有利を作る。敵の視界を消して、単独行動している敵を狙う"],
+  poke:["ポーク型","正面から当たらず、遠くからスキルで削ってからオブジェクトを取る。敵に飛び込まれないよう距離を保つ"],
+  split:["スプリット型","強い1人がサイドレーンを押し、残りの4人は無理に戦わずに時間を稼ぐ。敵を分散させて、タワーやオブジェクトを取る"],
+  protect:["キャリーを守る型","ADCが安全に攻撃し続けられるよう、周りの4人が守る。後半の集団戦ほど強い"]
+};
+const topStyle=x=>Object.entries(x.s).sort((a,b)=>b[1]-a[1])[0];
+// チームの強い時間帯：各チャンプの「30分未満の勝率 − 30分以上の勝率」の平均
+function teamTempo(team){
+  const ds=[];
+  for(const r of ROLES){const k=team[r];if(!k)continue;const x=timingOf(ST.lanes[r],k);if(x&&x.type)ds.push(x.d);}
+  return ds.length?{d:ds.reduce((a,b)=>a+b,0)/ds.length,n:ds.length}:null;
+}
+function planHtml(ally,enemy){
+  const an=ROLES.filter(r=>ally[r]).length,en=ROLES.filter(r=>enemy[r]).length;
+  if(an<3||en<3)return empty("ステップ①で味方と敵を3人以上ずつ入れると、勝ち筋を表示します。");
+  const blocks=[];
+  // 1. レーン戦の見通し（各レーンの対面勝率）
+  const lanes=ROLES.map(r=>{
+    const a=ally[r],e=enemy[r];if(!a||!e)return null;
+    const rec=((ST.lanes[r].vs||{})[a]||{})[e];
+    if(!rec||rec[0]<MIN)return {r,a,e,v:"nodata"};
+    const w=smooth(rec);return {r,a,e,rec,v:w>=.53?"good":w<=.47?"bad":"even"};
+  }).filter(Boolean);
+  const good=lanes.filter(x=>x.v==="good"),bad=lanes.filter(x=>x.v==="bad");
+  const laneRow=x=>`<li class="pl ${x.v}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?"有利":x.v==="bad"?"不利":x.v==="even"?"互角":"データなし"}</span>${x.rec?`<span class="why">${pct(x.rec)}（${x.rec[0]}試合）</span>`:""}</li>`;
+  const laneAdv=[...new Set(good.map(x=>LANE_PLAN[x.r]))].map(t=>`<li>${t}</li>`).join("")+(bad.length?`<li>${bad.map(x=>TEAM_ROLE_JA[x.r]).join("・")}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない</li>`:"");
+  blocks.push(card("レーン戦の見通し",`<ul class="pl-list">${lanes.map(laneRow).join("")}</ul>${laneAdv?`<ul class="plan-l">${laneAdv}</ul>`:`<p class="why" style="margin:0">はっきり有利・不利なレーンはありません。</p>`}`));
+  // 2. 試合のテンポ
+  const at=teamTempo(ally),et=teamTempo(enemy);
+  let tempo;
+  if(!at||!et)tempo=empty("試合時間ごとのデータが足りないため、まだ判定できません。");
+  else{
+    const diff=at.d-et.d;
+    tempo=diff>.015?`<p><b>味方のほうが序盤型</b>：序盤から積極的にオブジェクトを取り、30分までに試合を決めにいく。長引くほど不利になる。</p>`
+      :diff<-.015?`<p><b>味方のほうが終盤型</b>：序盤は無理に戦わず、ミニオンと視界で耐える。30分以降の集団戦で勝負する。</p>`
+      :`<p><b>テンポはほぼ互角</b>：時間帯よりも、レーン戦の有利・不利と構成のタイプで動き方を決める。</p>`;
+  }
+  blocks.push(card("試合のテンポ",tempo));
+  // 3. 構成のタイプ
+  const as=teamStyle(ally),es=teamStyle(enemy),[ak]=topStyle(as),[ek]=topStyle(es);
+  blocks.push(card("構成のタイプ",`<p><b>味方：${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>敵：${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
+  // 4. 仕掛けと受け
+  const aE=as.engage,eE=es.engage,aP=as.peel,fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
+  const eng=aE-eE>=1?`<p><b>味方が仕掛ける側</b>（仕掛ける力 ${fmt(aE)} 対 ${fmt(eE)}）：味方の仕掛けるスキルが揃っているときに、こちらから戦いを始める。</p>`
+    :eE-aE>=1?`<p><b>敵が仕掛ける側</b>（仕掛ける力 ${fmt(eE)} 対 ${fmt(aE)}）：敵の仕掛けを先に受ける前提で、固まりすぎず、受けてから反撃する。${aP<=1?"守る役が少ないので、後衛は前に出すぎない。":""}</p>`
+    :`<p><b>仕掛ける力はほぼ同じ</b>（${fmt(aE)} 対 ${fmt(eE)}）：先に相手の重要なスキルを使わせた側が有利。焦って先に飛び込まない。</p>`;
+  blocks.push(card("仕掛けと受け",eng));
+  // 5. ローディング前のチェック
+  const ec=compOf("enemy",null),checks=[];
+  if(ec.cc>=3)checks.push("敵はCCが多い：マーキュリー ブーツや、クイックシルバー サッシュを検討");
+  if(ec.ap!==null&&ec.ap>=.65)checks.push(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：魔法防御のアイテムが効く`);
+  else if(ec.ap!==null&&ec.ap<=.35)checks.push(`敵のダメージは物理が中心（AD ${Math.round((1-ec.ap)*100)}%）：物理防御のアイテム（プレート スチールキャップなど）が効く`);
+  if(ec.front>=2)checks.push("敵は前衛が多い：防御を削るアイテム（ブラック クリーバー、ドミニク リガード、ヴォイド スタッフなど）を検討");
+  const heals=ROLES.map(r=>enemy[r]).filter(k=>k&&BYKEY[k]&&HEAL_LIST.has(BYKEY[k].id));
+  if(heals.length>=2)checks.push(`敵は回復が多い（${heals.map(nm).join("、")}）：回復阻害のアイテム（エグゼキューショナー コーリング、モレロノミコンなど）を早めに`);
+  if(es.engage>=2.5)checks.push("敵は飛び込んでくる力が強い：ゾーニャの砂時計などの守りのアイテムも検討");
+  blocks.push(card("ローディング前のチェック",checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">特別な対策が必要な構成ではありません。</p>`));
+  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと仕掛け・受けはチャンプの役割から自動で判定しています（仕掛ける力は、エンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5として数えています）。</p>`;
+}
+
 function buildLane(id,pos,label){
   const root=$("p-"+id);
   if(!ST){root.innerHTML=card("データを読み込めませんでした",empty("通信状態を確認して、ページを再読み込みしてください。"));return;}
@@ -810,7 +909,8 @@ function buildLane(id,pos,label){
       <div class="s2b"></div>
       <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><div class="s2"></div></details>`)}
     ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
-    ${step(4,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
+    ${step(4,"試合の勝ち筋","決まった構成で、どこで差をつけて、どう勝つか",`<div class="s5"></div>`)}
+    ${step(5,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
     </ol></section>
     <section class="lt"></section>`;
   const fields=root.querySelectorAll(".field");
@@ -830,7 +930,7 @@ function buildLane(id,pos,label){
   root.querySelector(".link-on").addEventListener("change",e=>setLink(e.target.checked));
   root.querySelector(".draft-reset").addEventListener("click",()=>{ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});DRAFT.bans=[];Object.values(lanePanels).forEach(p=>{p.resetNeeds&&p.resetNeeds();p.setPick&&p.setPick("");});redrawAll();});
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
-  const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),recs=root.querySelector(".recs");
+  const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),s5=root.querySelector(".s5"),recs=root.querySelector(".recs");
   let lastM="";
   const tk=t=>t?`・★${t}`:"";
   // 組んだときの成績：ADC→SUP の向きで持っているので、どちらのレーンからでも引けるように
@@ -904,10 +1004,12 @@ function buildLane(id,pos,label){
       const want=M?`#${id}-${champSlug(M)}`:`#${id}`;
       if(!root.hidden&&location.hash!==want)history.replaceState(null,"",want);
     }
-    // --- ステップ3・4 ---
+    // --- ステップ4：試合の勝ち筋（味方は自分のピックを含めて考える） ---
+    s5.innerHTML=planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy);
+    // --- ステップ3・5 ---
     if(!M){s3.innerHTML=s4.innerHTML=empty("ステップ2でピックを決めると表示されます。");}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
-    root.querySelectorAll(".step").forEach(li=>{const n=+li.dataset.step;li.classList.toggle("wait",n>=3&&!M);});
+    root.querySelectorAll(".step").forEach(li=>{const n=+li.dataset.step;li.classList.toggle("wait",(n===3||n===5)&&!M);});
   }
   const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
   if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
