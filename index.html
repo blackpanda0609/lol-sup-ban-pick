@@ -249,6 +249,8 @@ td.extra .chips{flex-wrap:nowrap}
 .tri-text{flex:1 1 260px;display:grid;gap:6px;min-width:0}
 .tri-v{margin:0;font-weight:700;font-size:16px;color:var(--fg)}
 .tri-v.up{color:var(--good)}.tri-v.down{color:var(--bad)}
+.tri-tip{border-left:3px solid var(--bad);padding:6px 0 6px 12px;background:var(--bg);border-radius:0 6px 6px 0}
+.tri-tip b{font-size:13px}
 .tri-e line{stroke:var(--line);stroke-width:3}
 .tri-e polygon{fill:var(--line)}
 .tri-e.up line{stroke:var(--good)}.tri-e.up polygon{fill:var(--good)}
@@ -933,6 +935,27 @@ const TRIAD_MU={ // [味方][敵] の立ち回り
         poke:"相性で不利（ポークはカウンターに強い）：削られ続けると不利。オブジェクトは早めに取りに行き、長い睨み合いを避ける。",
         counter:"どちらもカウンター型：お互いに仕掛けにくい。ファームと視界で差をつけ、相手が無理に出てきたところを狙う。"}
 };
+// 相性で不利になったときの勝ち方（キーは「味方のタイプ」、相手はそのタイプに強いタイプ）
+const TRIAD_COMEBACK={
+  poke:[ // ポーク対ダイブ
+    "オブジェクトが出る1分ほど前から先に陣取り、近づいてくる敵を削っておく。体力が減ったダイブは飛び込めない",
+    "敵の仕掛け役を優先して削る。仕掛け役の体力が低ければ、ダイブはそもそも始められない",
+    "仕掛けのスキル（マルファイトのR など）を数え、使われた・外れた直後に反撃する。それまでは正面に立たない",
+    "横や後ろに視界を置き、広がって立つ。後衛は敵の仕掛けスキルの射程の一歩外に。ゾーニャなどの守りのアイテムも早めに"
+  ],
+  dive:[ // ダイブ対カウンター
+    "敵の止めるスキル（ノックバック・ポリモーフなど）を、軽いちょっかいで先に使わせてから本命が入る",
+    "一人ずつ入らない。仕掛け役と後続が同時に入り、止めるスキルを1回で使い切らせる",
+    "正面からではなく、視界の外から横や後ろに回り込んで後衛を狙う",
+    "カウンターは固まってこそ強い。サイドレーンを押して敵を分散させ、人数が欠けたところで仕掛ける"
+  ],
+  counter:[ // カウンター対ポーク
+    "削り合いに付き合わない。体力が減ったら一度戻り、削られた状態で集団戦をしない",
+    "オブジェクトは、敵が陣取る前に早めに視界を取り、湧いたらすぐに取りきる",
+    "ポークの射程の外でサイドレーンを押し、敵に時間を使わせる。睨み合いの時間を短くする",
+    "敵のポークのスキルが外れた直後や、敵が前に出すぎた瞬間だけを狙って一気に寄る"
+  ]
+};
 function triad(team){
   // ダイブ：エンゲージ役1、キャッチ役・アサシン・飛び込むファイター0.5 ／ ポーク：ポーク役1 ／ カウンター：ディスエンゲージ役1、ピール役0.5
   const s={dive:0,poke:0,counter:0};
@@ -1007,8 +1030,11 @@ function planHtml(ally,enemy,me){
     body="味方・敵ともにタイプがはっきりしないので、三すくみよりも、レーン戦の有利・不利と構成のタイプで動き方を決める。";
   }
   const score=x=>`ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}`;
+  // 相性で不利なとき（敵が2つで並び、片方に不利なときも）は、不利なときの勝ち方を出す
+  const losing=triA.type&&triE.tops.some(e=>BEATS[e]===triA.type)?triA.type:null;
+  const comeback=losing?`<div class="tri-tip"><b>不利なときの勝ち方</b><ul class="plan-l">${TRIAD_COMEBACK[losing].map(x=>`<li>${x}</li>`).join("")}</ul></div>`:"";
   blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.tops,triE.tops)}
-    <div class="tri-text"><p class="tri-v ${verdict}">${head}</p><p style="margin:0">${body}</p>
+    <div class="tri-text"><p class="tri-v ${verdict}">${head}</p><p style="margin:0">${body}</p>${comeback}
     <p class="why" style="margin:0;font-size:12px">味方：${typeText(triA)}（${score(triA)}）<br>敵：${typeText(triE)}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
   // 5. ローディング前のチェック
   const ec=compOf("enemy",null),checks=[];
