@@ -267,6 +267,7 @@ td.extra .chips{flex-wrap:nowrap}
 .pl-r{width:2.6em;font-weight:700;color:var(--muted);font-size:12px}
 .pl-vs{color:var(--muted);font-size:11px}
 .pl-v{font-weight:700;margin-left:4px}
+.pl.weak .pl-v{opacity:.6;font-weight:400}
 .pl.good .pl-v{color:var(--good)}.pl.bad .pl-v{color:var(--bad)}.pl.nodata .pl-v{color:var(--muted);font-weight:400}
 .plan-l{margin:4px 0 0;padding-left:1.2em;display:grid;gap:4px;font-size:13.5px}
 /* 対面の強み・弱点 */
@@ -892,7 +893,8 @@ function teamTempo(team){
   return ds.length?{d:ds.reduce((a,b)=>a+b,0)/ds.length,n:ds.length}:null;
 }
 // 三すくみの三角形：頂点に3つのタイプ、矢印は強い向き。味方と敵の印を付け、2つの間の矢印を有利なら緑・不利なら赤にする
-function triSvg(a,e){
+function triSvg(aT,eT){
+  const a=aT.length===1?aT[0]:null,e=eT.length===1?eT[0]:null;
   const P={dive:[130,58],poke:[222,196],counter:[38,196]},R=34,label={dive:"ダイブ",poke:"ポーク",counter:"カウンター"};
   const edge=(from,to)=>{
     const [x1,y1]=P[from],[x2,y2]=P[to],dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
@@ -901,8 +903,8 @@ function triSvg(a,e){
     return `<g class="tri-e ${cls}"><line x1="${sx}" y1="${sy}" x2="${ex-ux*8}" y2="${ey-uy*8}"/><polygon points="${ex},${ey} ${ex-ux*13+hx},${ey-uy*13+hy} ${ex-ux*13-hx},${ey-uy*13-hy}"/></g>`;
   };
   const node=k=>{
-    const [x,y]=P[k],tags=[a===k&&"味方",e===k&&"敵"].filter(Boolean);
-    return `<g class="tri-n${a===k?" ally":""}${e===k?" enemy":""}"><circle cx="${x}" cy="${y}" r="${R}"/><text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
+    const [x,y]=P[k],tags=[aT.includes(k)&&"味方",eT.includes(k)&&"敵"].filter(Boolean);
+    return `<g class="tri-n${aT.includes(k)?" ally":""}${eT.includes(k)?" enemy":""}"><circle cx="${x}" cy="${y}" r="${R}"/><text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
       ${tags.map(t=>{
         // 印は頂点の上に。2つあるときは「味方」を左、「敵」を右に並べる
         const w=t==="味方"?40:28,bx=tags.length>1?(t==="味方"?x-44:x+2):x-w/2;
@@ -935,10 +937,10 @@ function triad(team){
     if(t.has("poke"))s.poke+=1;
     if(t.has("disengage"))s.counter+=1;else if(t.has("peel"))s.counter+=.5;
   }
-  const best=Object.entries(s).sort((a,b)=>b[1]-a[1]);
-  // 1位が1点未満、または2位と並んでいるときは「はっきりしない」
-  const type=best[0][1]>=1&&best[0][1]>best[1][1]?best[0][0]:null;
-  return {s,type};
+  // 一番高いタイプ（1点以上）。並んだときは並んだタイプをすべて候補にする
+  const max=Math.max(s.dive,s.poke,s.counter);
+  const tops=max>=1?Object.keys(s).filter(k=>s[k]===max):[];
+  return {s,tops,type:tops.length===1?tops[0]:null};
 }
 
 function planHtml(ally,enemy,me){
@@ -951,10 +953,11 @@ function planHtml(ally,enemy,me){
     const a=ally[r],e=enemy[r];if(!a||!e)return null;
     const rec=((ST.lanes[r].vs||{})[a]||{})[e];
     if(!rec||rec[0]<MIN)return {r,a,e,v:"nodata"};
-    const w=smooth(rec);return {r,a,e,rec,v:w>=.53?"good":w<=.47?"bad":"even"};
+    // 勝率は20勝20敗ぶんを足してならしてから判定する。50試合未満は（参考）として、助言には使わない
+    const w=tierScore(rec);return {r,a,e,rec,v:w>=.53?"good":w<=.47?"bad":"even",weak:rec[0]<50};
   }).filter(Boolean);
-  const good=lanes.filter(x=>x.v==="good"),bad=lanes.filter(x=>x.v==="bad");
-  const laneRow=x=>`<li class="pl ${x.v}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?"有利":x.v==="bad"?"不利":x.v==="even"?"互角":"データなし"}</span>${x.rec?`<span class="why">${pct(x.rec)}（${x.rec[0]}試合）</span>`:""}</li>`;
+  const good=lanes.filter(x=>x.v==="good"&&!x.weak),bad=lanes.filter(x=>x.v==="bad"&&!x.weak);
+  const laneRow=x=>`<li class="pl ${x.v}${x.weak?" weak":""}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?"有利":x.v==="bad"?"不利":x.v==="even"?"互角":"データなし"}${x.weak?"（参考）":""}</span>${x.rec?`<span class="why">${pct(x.rec)}（${x.rec[0]}試合）</span>`:""}</li>`;
   const laneAdv=[...new Set(good.map(x=>LANE_PLAN[x.r]))].map(t=>`<li>${t}</li>`).join("")+(bad.length?`<li>${bad.map(x=>TEAM_ROLE_JA[x.r]).join("・")}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない</li>`:"");
   blocks.push(card("レーン戦の見通し",`<ul class="pl-list">${lanes.map(laneRow).join("")}</ul>${laneAdv?`<ul class="plan-l">${laneAdv}</ul>`:`<p class="why" style="margin:0">はっきり有利・不利なレーンはありません。</p>`}`));
   // 2. 試合のテンポ
@@ -973,13 +976,31 @@ function planHtml(ally,enemy,me){
   blocks.push(card("構成のタイプ",`<p><b>味方：${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>敵：${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
   // 4. 三すくみ：ダイブ → ポーク → カウンター → ダイブ（矢印の先に強い）
   const triA=triad(ally),triE=triad(enemy),fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
-  const mu=triA.type&&triE.type?TRIAD_MU[triA.type][triE.type]:"どちらかのタイプがはっきりしないので、相性よりもレーン戦と構成のタイプで動き方を決める。";
-  const [head,...rest]=mu.split("：");
-  const verdict=triA.type&&triE.type?(BEATS[triA.type]===triE.type?"up":BEATS[triE.type]===triA.type?"down":""):"";
+  const tn=k=>TRIAD[k][0],typeText=x=>x.tops.length?x.tops.map(tn).join("・")+(x.tops.length>1?"の両面":"型"):"はっきりしない";
+  let head,body,verdict="";
+  if(triA.type&&triE.type){
+    [head,...body]=TRIAD_MU[triA.type][triE.type].split("：");body=body.join("：");
+    verdict=BEATS[triA.type]===triE.type?"up":BEATS[triE.type]===triA.type?"down":"";
+  }else if(triA.type&&triE.tops.length){
+    // 敵が2つのタイプで並んだとき：味方のタイプの基本の動き方と、それぞれの要素への注意
+    const a=triA.type,notes=triE.tops.filter(e=>e!==a).map(e=>BEATS[e]===a?`敵の${tn(e)}の要素には相性で不利なので、そこに注意（${TRIAD_MU[a][e].split("：").slice(1).join("：")}）`:BEATS[a]===e?`敵の${tn(e)}の要素には相性で有利`:"");
+    head=`敵は${triE.tops.map(tn).join("・")}の両面がある`;
+    body=`味方は${tn(a)}型：${TRIAD[a][1]}。${notes.filter(Boolean).join("。")}`;
+    verdict=triE.tops.some(e=>BEATS[e]===a)?"down":"";
+  }else if(triA.tops.length>1&&triE.type){
+    // 味方が2つのタイプで並んだとき：敵に有利なほうの動き方を選ぶ
+    const e=triE.type,win=triA.tops.find(a=>BEATS[a]===e);
+    head=`味方は${triA.tops.map(tn).join("・")}の両面がある`;
+    body=win?`敵は${tn(e)}型なので、相性で有利な${tn(win)}の動き方を選ぶ：${TRIAD_MU[win][e].split("：").slice(1).join("：")}`:`敵は${tn(e)}型。どちらの動き方でも相性での有利はないので、レーン戦と構成のタイプで決める。`;
+    verdict=win?"up":"";
+  }else{
+    head="相性の決め手がない";
+    body="味方・敵ともにタイプがはっきりしないので、三すくみよりも、レーン戦の有利・不利と構成のタイプで動き方を決める。";
+  }
   const score=x=>`ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}`;
-  blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.type,triE.type)}
-    <div class="tri-text"><p class="tri-v ${verdict}">${rest.length?head:"相性"}</p><p style="margin:0">${rest.length?rest.join("："):mu}</p>
-    <p class="why" style="margin:0;font-size:12px">味方：${triA.type?TRIAD[triA.type][0]+"型":"はっきりしない"}（${score(triA)}）<br>敵：${triE.type?TRIAD[triE.type][0]+"型":"はっきりしない"}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
+  blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.tops,triE.tops)}
+    <div class="tri-text"><p class="tri-v ${verdict}">${head}</p><p style="margin:0">${body}</p>
+    <p class="why" style="margin:0;font-size:12px">味方：${typeText(triA)}（${score(triA)}）<br>敵：${typeText(triE)}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
   // 5. ローディング前のチェック
   const ec=compOf("enemy",null),checks=[];
   if(ec.cc>=3)checks.push(`敵はCCが多い：${defTip(cls,"cc")}`);
