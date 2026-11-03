@@ -568,7 +568,7 @@ function enemyProfile(L,E,M){
   if(t.has("engage"))pros.push(["自分から仕掛けられる（エンゲージ）","相手の仕掛けるスキルを使わせてから戦う。壁やミニオンの後ろに立つ"]);
   if(r&&r[0]>=MIN&&smooth(r)<.485)cons.push([`全体の勝率が低い（${pct(r)}）`,"今の環境では弱めのチャンプ。落ち着いて対処すれば十分戦える"]);
   // データ上の苦手な相手（その対面で勝率が高いピック。20試合以上ある対面だけ）
-  const ctr=Object.keys(L.vs||{}).map(x=>[x,(L.vs[x]||{})[E]]).filter(([x,rr])=>BYKEY[x]&&rr&&rr[0]>=Math.max(MIN,20)&&smooth(rr)>.52&&((L.champs[x]||[0])[0]>=roleMin(L))).sort((a,b)=>smooth(b[1])-smooth(a[1])).slice(0,3);
+  const ctr=Object.keys(L.vs||{}).map(x=>[x,(L.vs[x]||{})[E]]).filter(([x,rr])=>BYKEY[x]&&rr&&rr[0]>=Math.max(MIN,20)&&smooth(rr)>.52&&oppOk(L,x)).sort((a,b)=>smooth(b[1])-smooth(a[1])).slice(0,3);
   return {pros,cons,ctr};
 }
 function enemyCard(L,E,M){
@@ -1122,11 +1122,11 @@ function buildLane(id,pos,label){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
       sub.push(timingCard(L,M));
-      const mine=Object.entries(L.vs[M]||{}).filter(([,r])=>r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
+      const mine=Object.entries(L.vs[M]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       sub.push(card(`${nm(M)}の苦手な相手（次の試合のBAN候補）`,statList(mine,o=>tk(teikiCounter(o,M)))));
       if(partner&&!AL){const ps=pairRank(M,pos==="BOTTOM").slice(0,5);sub.push(card(`${nm(M)}と相性のいい${partner[1].replace("味方","")}`,statList(ps.map(o=>[o.key,o.r]),k=>tk(pos==="BOTTOM"?teikiDuo(M,k):teikiDuo(k,M)))));}
     }else if(E){
-      const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
+      const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([x,r])=>BYKEY[x]&&r&&r[0]>=Math.max(MIN,20)&&oppOk(L,x)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       // ピック前は場所を取らないよう、アイコンと勝率だけを1行で
       if(list.length)sub.push(`<div class="avoid" style="grid-column:1/-1"><span class="avoid-h">${nm(E)}相手に避けたいピック</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${nm(E)}相手に勝率が低いピック" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
     }
@@ -1159,9 +1159,13 @@ function buildLane(id,pos,label){
 // そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
 let SHOW_PR=.003;
 const roleMin=L=>Math.max(10,Math.ceil(laneN(L)*SHOW_PR));
-// データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）
+// 苦手な対面・BAN候補・避けたいピックの「相手」は、そのロールでピック率1%以上のよくいるチャンプだけにする
+const OPP_MIN_PR=.01;
+const oppOk=(L,k)=>((L.champs||{})[k]||[0])[0]>=Math.max(roleMin(L),laneN(L)*OPP_MIN_PR);
+// データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）。
+// 相手はそのロールでよくいるチャンプだけ（oppOk）、対面は20試合以上あるものだけ
 function worstChips(L,k,pos){
-  const rows=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,3);
+  const rows=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,3);
   return rows.length?`<div class="chips">${rows.map(([o,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${pos==="UTILITY"&&teikiCounter(o,k)?"★ ":""}${nm(o)}" data-tip="${(pos==="UTILITY"&&teikiCounter(o,k))||"データ上の苦手な対面"}" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(o)}">${icK(o)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div>`:`<span class="why">—</span>`;
 }
 // CC/分 とダメージ内訳のセル
