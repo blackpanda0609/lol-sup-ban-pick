@@ -50,8 +50,10 @@ header p{color:var(--muted);margin:0;max-width:62ch}
 .status label{margin-left:auto;display:flex;gap:8px;align-items:center}
 .status select{width:auto;padding:4px 8px}
 /* BPのタブ：大きめのボタンを並べ、選んでいるものは金色で塗る */
-.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
-.tab{font:inherit;font-family:var(--display);font-size:17px;letter-spacing:.04em;background:none;border:1px solid transparent;border-radius:8px;padding:12px 4px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.tab{font:inherit;font-weight:700;font-size:13.5px;letter-spacing:.04em;background:none;border:1px solid transparent;border-radius:7px;padding:6px 4px;color:var(--muted);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+/* アイコンは文字と同じ色にする（画像を形の型として使う） */
+.ri{width:18px;height:18px;flex:none;background:currentColor;-webkit-mask:var(--ri) center/contain no-repeat;mask:var(--ri) center/contain no-repeat}
 .tab:hover{color:var(--fg);background:var(--bg)}
 .tab[aria-selected="true"]{color:var(--bg);background:var(--accent);border-color:var(--accent)}
 #tier-sec{display:grid;gap:12px}
@@ -654,7 +656,9 @@ addEventListener("popstate",applyHash);
 
 // ===== タブ =====
 const lanePanels={};
-$("tabs").innerHTML=LANES.map(([id,,label])=>`<button type="button" class="tab" role="tab" id="t-${id}" aria-controls="p-${id}" aria-selected="false">${label}</button>`).join("");
+// ロールのアイコン（ゲームのクライアントと同じもの。CommunityDragon から）
+const ROLE_ICON=pos=>`https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions/icon-position-${pos.toLowerCase()}.png`;
+$("tabs").innerHTML=LANES.map(([id,pos,label])=>`<button type="button" class="tab" role="tab" id="t-${id}" aria-controls="p-${id}" aria-selected="false"><span class="ri" style="--ri:url(${ROLE_ICON(pos)})" aria-hidden="true"></span>${label}</button>`).join("");
 LANES.forEach(([id])=>$("p-"+id).setAttribute("aria-labelledby","t-"+id));
 function showTab(id){
   LANES.forEach(([t])=>{const on=t===id;$("t-"+t).setAttribute("aria-selected",on);$("p-"+t).hidden=!on;});
