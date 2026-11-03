@@ -229,17 +229,6 @@ td.extra .chips{flex-wrap:nowrap}
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
 .mypick .pbtn .ic{width:32px;height:32px}
-/* Tier表 */
-.tierboard{display:grid;gap:6px}
-.trow{display:grid;grid-template-columns:48px minmax(0,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
-.tlabel{display:grid;place-items:center;font-family:var(--display);font-size:22px;border-right:1px solid var(--line);background:var(--bg)}
-.ttiles{display:flex;flex-wrap:wrap;gap:6px 4px;padding:8px}
-.tt{display:grid;justify-items:center;gap:3px;width:60px;background:none;border:none;padding:2px;color:var(--fg);cursor:pointer;font:inherit;font-size:11px;border-radius:6px}
-.tt:hover{background:var(--bg)}
-.tt .ic{width:44px;height:44px;border-radius:6px}
-.tt span{max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tbl-more summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0}
-.tbl-more[open] summary{margin-bottom:8px}
 /* 試合の勝ち筋 */
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
@@ -1055,11 +1044,9 @@ function extCells(L,k){
 function laneTable(host,L,label,extras=[],onOpen=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}のTier表</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}のTier表を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tierboard"></div>
-    <details class="tbl-more"><summary>詳しいデータを見る（勝率・試合数・ピック率・苦手な対面などの表）</summary>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div></details>
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。ただし、そのロールでのピック率が1%未満のチャンプは、スコアが高くてもSにはせずAまでにしています。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
-  const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter"),board=host.querySelector(".tierboard");
+  const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
   cf.addEventListener("click",e=>{
@@ -1073,22 +1060,16 @@ function laneTable(host,L,label,extras=[],onOpen=null){
   function table(){
     const t=kata(tq.value.trim());
     const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
-    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
+    const tm=tierMapOf(L),TR={S:5,A:4,B:3,C:2,D:1};
+    const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(tm[k]?TR[tm[k]]*1000+powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
-    const tm=tierMapOf(L);
     tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
-    // Tier表：S〜D の段にアイコンを並べる（段の中はスコアの高い順。Tierなしのチャンプは出さない）
-    board.innerHTML=["S","A","B","C","D"].map(T=>{
-      const ks=rows.filter(([k])=>tm[k]===T).sort((a,b)=>powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L));
-      if(!ks.length)return "";
-      return `<div class="trow"><div class="tlabel tier-${T}">${T}</div><div class="ttiles">${ks.map(([k,r])=>`<button type="button" class="tt" ${onOpen?`data-open="${k}"`:""} data-tip-h="${nm(k)}（Tier ${T}）" data-tip="勝率 ${pct(r)}・ピック率 ${(r[0]/laneN(L)*100).toFixed(1)}%・BAN率 ${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}" data-tip-s="${r[0]}試合${onOpen?"・押すと自分のピックに入れます":""}">${icK(k)}<span>${nm(k)}</span></button>`).join("")}</div></div>`;
-    }).join("")||`<p class="why" style="margin:0">条件に合うチャンプがいません。</p>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
   host.querySelector("thead").addEventListener("click",e=>{const th=e.target.closest("th[data-s]");if(!th)return;const s=th.dataset.s==="pr"?"g":th.dataset.s;if(s===sk)sd=-sd;else{sk=s;sd=s==="name"?1:-1;}table();});
   tq.addEventListener("input",table);
-  if(onOpen)[tb,board].forEach(el=>el.addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)onOpen(b.dataset.open);}));
+  if(onOpen)tb.addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)onOpen(b.dataset.open);});
   table();
   return table;
 }
