@@ -229,6 +229,11 @@ td.extra .chips{flex-wrap:nowrap}
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
 .mypick .pbtn .ic{width:32px;height:32px}
+/* Tier表の上のレーン切り替え */
+.lt-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.lt-tab{font:inherit;font-size:13px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 16px;cursor:pointer}
+.lt-tab:hover{color:var(--fg)}
+.lt-tab[aria-current="true"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);cursor:default}
 /* 試合の勝ち筋 */
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
@@ -1022,6 +1027,14 @@ function buildLane(id,pos,label){
     if(k)root.querySelector(`[data-step="2"]`).scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
   };
   const table=laneTable(root.querySelector(".lt"),L,label,extras,k=>open(k,true));
+  // 表の上にもレーンの切り替えボタン（押したら、切り替え先のレーンの表の位置を表示する）
+  const lt=root.querySelector(".lt");
+  lt.insertAdjacentHTML("afterbegin",`<nav class="lt-tabs" aria-label="Tier表のレーン">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="${t===id}">${lb}</button>`).join("")}</nav>`);
+  lt.querySelector(".lt-tabs").addEventListener("click",e=>{
+    const b=e.target.closest("[data-lt]");if(!b||b.dataset.lt===id)return;
+    showTab(b.dataset.lt);
+    $("p-"+b.dataset.lt).querySelector(".lt").scrollIntoView({block:"start"});
+  });
   draw();
   lanePanels[id]={draw,table,open,resetNeeds:()=>{touched=false;},setPick:k=>{if(pm.value!==(k||"")){pm.set(k||"");draw();}}};
 }
