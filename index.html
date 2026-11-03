@@ -229,6 +229,15 @@ td.extra .chips{flex-wrap:nowrap}
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
 .mypick .pbtn .ic{width:32px;height:32px}
+/* 対面の強み・弱点 */
+.ep-card{grid-column:1/-1}
+.ep-card h3{display:flex;align-items:center;gap:6px}
+.ep-card h3 .ic{width:24px;height:24px}
+.ep{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px 24px}
+.ep-h{font-size:12.5px;margin:0 0 6px;font-weight:700}
+.ep-h.up{color:var(--bad)}.ep-h.down{color:var(--good)}
+.ep-l{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ep-l li{display:grid;gap:1px;font-size:13.5px}
 .avoid{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap}
 .avoid-h{font-size:12px;font-weight:700;color:var(--muted)}
 /* おすすめ：補助なので折りたためる */
@@ -428,9 +437,9 @@ const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm
 const tierScore=r=>(r[1]+20)/(r[0]+40);
 const tierMin=()=>Math.max(MIN,50);
 // 環境への影響力：勝率点（ならした勝率と50%の差を1.5倍）＋ 人気点（ピック率%の平方根 × 重み）
-// 重みは「環境重視」の3で固定。例：勝率53%・ピック率1% → 4.5+3.0=7.5 ／ 勝率50.5%・ピック率15% → 0.75+11.6=12.4
+// 人気の重みは3、勝率点は「ならした勝率と50%の差（%）× 2」。例：勝率53%・ピック率1% → 6.0+3.0=9.0 ／ 勝率50.5%・ピック率15% → 1.0+11.6=12.6
 const PR_W=3;
-const wrPts=r=>(tierScore(r)-.5)*100*1.5;
+const wrPts=r=>(tierScore(r)-.5)*100*2;
 // ピック率の分母はそのレーンを数えた試合数（古いデータにはないので全試合数）
 const laneN=L=>(L&&L.n)||ST.matches;
 const prPts=(r,L)=>PR_W*Math.sqrt(r[0]/laneN(L)*100);
@@ -441,13 +450,19 @@ const banRate=key=>ST&&ST.ban_matches>=1?((ST.bans||{})[key]||0)/ST.ban_matches:
 const champGames=key=>Object.values(ST.lanes).reduce((n,L)=>n+(((L.champs||{})[key]||[0])[0]),0)||1;
 const banPts=(r,key)=>ST&&ST.ban_matches>=BAN_MIN?PR_W*.7*Math.sqrt(banRate(key)*100)*(r[0]/champGames(key)):0;
 const powerScore=(r,key,L)=>wrPts(r)+prPts(r,L)+banPts(r,key);
+// S にするのに必要な、そのロールでのピック率
+const S_MIN_PR=.01;
 function tierMapOf(L){
   const ks=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=tierMin()).sort((a,b)=>powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L));
   const map={};
-  ks.forEach(([k],i)=>{const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";});
+  ks.forEach(([k,r],i)=>{
+    const f=(i+.5)/ks.length;map[k]=f<=.1?"S":f<=.3?"A":f<=.65?"B":f<=.85?"C":"D";
+    // ほとんど使われていないチャンプは、勝率が高くても S にはしない（A まで）
+    if(map[k]==="S"&&r[0]/laneN(L)<S_MIN_PR){map[k]="A";map[k+"_cap"]=true;}
+  });
   return map;
 }
-const tierBadge=(t,r,key,L)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key,L).toFixed(1)}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r,L).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
+const tierBadge=(t,r,key,L,cap=false)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key,L).toFixed(1)}${cap?`（スコアはS相当ですが、ピック率が${S_MIN_PR*100}%未満なのでAにしています）`:""}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r,L).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
 // 強い時間帯：30分未満と30分以上の勝率（それぞれ10勝10敗ぶんを足してならす）の差で、アーリー型かレイト型かを決める
 const TB=["〜25分","25〜30分","30〜35分","35分〜"];
 const TIMING={early:["アーリー","序盤に強く、試合が長引くと勝率が下がる","fighter"],mid:["安定","試合時間で勝率があまり変わらない","tank"],late:["レイト","序盤は控えめで、試合が長引くほど勝率が上がる","catch"]};
@@ -459,6 +474,50 @@ function timingOf(L,k){
   return {t,d,type:d>.03?"early":d<-.03?"late":"mid"};
 }
 const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${n}型" data-tip="${desc}" data-tip-s="30分未満と30分以上の勝率の差 ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
+// ===== 対面の強み・弱点（自動判定） =====
+// 射程（公式データ）、強い時間帯・ダメージの種類と量・CC（実データ）、分類、勝率、データ上の苦手な相手から作る。
+// それぞれに、初心者向けの「どう突くか」を添える
+const dpmCuts=new WeakMap();
+function dpmCut(L){ // そのレーンで1分あたりの総ダメージが上位1/4に入る境目
+  if(dpmCuts.has(L))return dpmCuts.get(L);
+  const v=Object.values(L.ext||{}).filter(e=>e[0]>=EXT_MIN&&e[1]>0).map(e=>dmgPerMin(e).reduce((a,b)=>a+b,0)).sort((a,b)=>b-a);
+  const c=v.length>=8?v[Math.floor(v.length/4)]:null;dpmCuts.set(L,c);return c;
+}
+function enemyProfile(L,E){
+  const c=BYKEY[E];if(!c)return null;
+  const pros=[],cons=[],t=traitsOf(E,L),e=extOf(L,E),tm=timingOf(L,E),r=(L.champs||{})[E];
+  const range=(c.stats||{}).attackrange||0;
+  if(range>=400)pros.push(["遠距離から攻撃できる","正面から殴り合わず、相手のスキルが外れた直後や、味方と一緒のときに近づく"]);
+  else if(range&&range<=250)cons.push(["近接なので、近づかないと攻撃できない","通常攻撃やスキルで少しずつ削り、相手が近づいてきたら下がる"]);
+  if(tm&&tm.type==="early"){pros.push(["序盤に強い","序盤は無理に戦わず、ミニオンを取ることと視界を優先して耐える"]);cons.push(["試合が長引くと勝率が下がる","30分以降の集団戦で勝負する。早い段階での小競り合いは避ける"]);}
+  if(tm&&tm.type==="late"){pros.push(["試合が長引くほど強くなる","放っておくと手がつけられなくなる"]);cons.push(["序盤は控えめ","序盤にトレードやジャングラーとの連携で差をつけ、早めに試合を決めにいく"]);}
+  if(e){
+    const [p,m]=dmgShare(e),tot=dmgPerMin(e).reduce((a,b)=>a+b,0),cut=dpmCut(L);
+    if(cut!==null&&tot>=cut)pros.push(["ダメージが大きい","体力が減った状態で近づかない。1対1は避けて、味方と一緒に戦う"]);
+    if(m>=.7)cons.push(["ダメージのほとんどが魔法","魔法防御のアイテム（靴ならマーキュリー ブーツ）が効く"]);
+    else if(p>=.7)cons.push(["ダメージのほとんどが物理","物理防御のアイテム（靴ならプレート スチールキャップ）が効く"]);
+  }
+  if(t.has("cc"))pros.push(["CC（行動妨害）が多い","相手のCCスキルが見えてから動く。行動妨害耐性（マーキュリー ブーツなど）も効く"]);
+  else if(e)cons.push(["CC（行動妨害）が少ない","捕まりにくいので、味方が仕掛けたときに安心して寄れる"]);
+  if(c.tags[0]==="Tank")pros.push(["硬い","倒しきろうとせず、レーンではミニオンの取り合いで差をつける"]);
+  if(c.tags[0]==="Assassin")pros.push(["一瞬で倒す力（バースト）がある","一人で歩かない。体力を高めに保ち、相手の姿が見えないときは慎重に"]);
+  if(t.has("engage"))pros.push(["自分から仕掛けられる（エンゲージ）","相手の仕掛けるスキルを使わせてから戦う。壁やミニオンの後ろに立つ"]);
+  if(r&&r[0]>=MIN&&smooth(r)<.485)cons.push([`全体の勝率が低い（${pct(r)}）`,"今の環境では弱めのチャンプ。落ち着いて対処すれば十分戦える"]);
+  // データ上の苦手な相手（その対面で勝率が高いピック。20試合以上ある対面だけ）
+  const ctr=Object.keys(L.vs||{}).map(x=>[x,(L.vs[x]||{})[E]]).filter(([x,rr])=>BYKEY[x]&&rr&&rr[0]>=Math.max(MIN,20)&&smooth(rr)>.52&&((L.champs[x]||[0])[0]>=roleMin(L))).sort((a,b)=>smooth(b[1])-smooth(a[1])).slice(0,3);
+  return {pros,cons,ctr};
+}
+function enemyCard(L,E){
+  const x=enemyProfile(L,E);if(!x)return "";
+  const item=([h,tip])=>`<li><b>${h}</b><span class="why">→ ${tip}</span></li>`;
+  const body=`<div class="ep">
+      <div><h4 class="ep-h up">強み（気をつけること）</h4>${x.pros.length?`<ul class="ep-l">${x.pros.map(item).join("")}</ul>`:`<p class="why" style="margin:0">目立った強みはデータからは見つかりませんでした</p>`}</div>
+      <div><h4 class="ep-h down">弱点（突くところ）</h4>${x.cons.length?`<ul class="ep-l">${x.cons.map(item).join("")}</ul>`:`<p class="why" style="margin:0">目立った弱点はデータからは見つかりませんでした</p>`}</div>
+    </div>${x.ctr.length?`<p class="why" style="margin:0">データ上の苦手な相手：${x.ctr.map(([k,rr])=>`${nm(k)}（${pct(rr)}）`).join("、")}</p>`:""}
+    <p class="why" style="margin:0;font-size:12px">射程・分類はRiotの公式データ、それ以外は集めた試合データから自動で判定しています。</p>`;
+  return `<div class="card ep-card"><h3>対面：${icK(E)}${nm(E)}の強みと弱点</h3>${body}</div>`;
+}
+
 function timingCard(L,k){
   const x=timingOf(L,k),title=`${nm(k)}の強い時間帯`;
   if(!x)return card(title,empty("試合時間ごとのデータは、まだたまっていません。"));
@@ -825,6 +884,7 @@ function buildLane(id,pos,label){
     s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
+    if(E)sub.push(enemyCard(L,E));
     if(M){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
@@ -835,9 +895,9 @@ function buildLane(id,pos,label){
     }else if(E){
       const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([,r])=>r&&r[0]>=MIN).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       // ピック前は場所を取らないよう、アイコンと勝率だけを1行で
-      if(list.length)sub.push(`<div class="avoid"><span class="avoid-h">${nm(E)}相手に避けたいピック</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${nm(E)}相手に勝率が低いピック" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
+      if(list.length)sub.push(`<div class="avoid" style="grid-column:1/-1"><span class="avoid-h">${nm(E)}相手に避けたいピック</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${nm(E)}相手に勝率が低いピック" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
     }
-    s2b.innerHTML=!sub.length?"":M?`<div class="results">${sub.join("")}</div>`:sub.join("");
+    s2b.innerHTML=!sub.length?"":`<div class="results">${sub.join("")}</div>`;
     // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
     if(M!==lastM){
       recs.open=!M;lastM=M;
@@ -883,7 +943,7 @@ function laneTable(host,L,label,extras=[],onOpen=null){
   host.innerHTML=`<div class="tablebar"><h2>${label}の勝率一覧（環境を見る）</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}の勝率一覧を絞り込み"></div>
     <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
+    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。ただし、そのロールでのピック率が1%未満のチャンプは、スコアが高くてもSにはせずAまでにしています。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -901,7 +961,7 @@ function laneTable(host,L,label,extras=[],onOpen=null){
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(r[0]>=tierMin()?powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
     const tm=tierMapOf(L);
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L)}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
@@ -1071,7 +1131,7 @@ function drawStatus(p){
   try{const v=await getJSON("https://ddragon.leagueoflegends.com/api/versions.json");if(v[0])DD=v[0];}catch(e){}
   try{
     const c=await getJSON(`https://ddragon.leagueoflegends.com/cdn/${DD}/data/ja_JP/champion.json`);
-    for(const id in c.data){const x=c.data[id];CH[id]={key:x.key,name:x.name};BYKEY[x.key]={id,name:x.name,tags:x.tags||[],info:x.info||{}};}
+    for(const id in c.data){const x=c.data[id];CH[id]={key:x.key,name:x.name};BYKEY[x.key]={id,name:x.name,tags:x.tags||[],info:x.info||{},stats:x.stats||{}};}
   }catch(e){}
   for(const base of DATA_BASES){
     try{
