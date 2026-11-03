@@ -958,7 +958,10 @@ function planHtml(ally,enemy,me){
   }).filter(Boolean);
   const good=lanes.filter(x=>x.v==="good"&&!x.weak),bad=lanes.filter(x=>x.v==="bad"&&!x.weak);
   const laneRow=x=>`<li class="pl ${x.v}${x.weak?" weak":""}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?"有利":x.v==="bad"?"不利":x.v==="even"?"互角":"データなし"}${x.weak?"（参考）":""}</span>${x.rec?`<span class="why">${pct(x.rec)}（${x.rec[0]}試合）</span>`:""}</li>`;
-  const laneAdv=[...new Set(good.map(x=>LANE_PLAN[x.r]))].map(t=>`<li>${t}</li>`).join("")+(bad.length?`<li>${bad.map(x=>TEAM_ROLE_JA[x.r]).join("・")}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない</li>`:"");
+  const laneAdv=[...new Set(good.map(x=>LANE_PLAN[x.r]))].map(t=>`<li>${t}</li>`).join("")
+    // 不利なレーンへの助言：レーナーは「JGのカバーを待つ」、JG自身は別の動き方
+    +(bad.filter(x=>x.r!=="JUNGLE").length?`<li>${bad.filter(x=>x.r!=="JUNGLE").map(x=>TEAM_ROLE_JA[x.r]).join("・")}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない</li>`:"")
+    +(bad.some(x=>x.r==="JUNGLE")?`<li>JGは不利なので、敵JGとの1対1や、敵のジャングルへの侵入は避ける。${good.length?`有利な${good.filter(x=>x.r!=="JUNGLE").map(x=>TEAM_ROLE_JA[x.r]).join("・")}の近くで動き、`:"味方レーナーの近くで動き、"}敵JGの位置を見てから動く</li>`:"");
   blocks.push(card("レーン戦の見通し",`<ul class="pl-list">${lanes.map(laneRow).join("")}</ul>${laneAdv?`<ul class="plan-l">${laneAdv}</ul>`:`<p class="why" style="margin:0">はっきり有利・不利なレーンはありません。</p>`}`));
   // 2. 試合のテンポ
   const at=teamTempo(ally),et=teamTempo(enemy);
