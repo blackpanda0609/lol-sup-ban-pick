@@ -1165,11 +1165,16 @@ function buildLane(id,pos,label){
       const vr=E&&(L.vs[k]||{})[E];
       if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);notes.push(`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`);shown=vr;}
       else notes.push(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`);
+      if(!E){
+        const b=blindRisk(L,k);
+        if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`);}
+        else if(b.risk<.03)notes.push("先出しでも安全（カウンターされにくい）");
+      }
       if(AL){const dr=duoR(k,AL);if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}}
       const teiki=[E&&teikiCounter(k,E),AL&&duoTeiki(k,AL)].filter(Boolean);
       return {k,s,notes,teiki,r:shown};
     }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,6);
-    const conds=[E&&`${nm(E)}に勝ちやすい`,AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`].filter(Boolean).join(" × ")||"今の環境で強い";
+    const conds=[E?`${nm(E)}に勝ちやすい`:"先出しでも安全",AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`].filter(Boolean).join(" × ")||"今の環境で強い";
     s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
@@ -1177,6 +1182,10 @@ function buildLane(id,pos,label){
     if(M){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
+      if(!E){
+        const b=blindRisk(L,M);
+        sub.push(card(`${nm(M)}を先出しするリスク`,b.counters.length?`<p class="why" style="margin:0">カウンターされる確率 <b style="color:${b.risk>=.08?"var(--bad)":"var(--fg)"}">${Math.round(b.risk*100)}%</b>（下の相手のピック率の合計）</p>`+statList(b.counters.slice(0,5),o=>`・ピック率${(b.share(o)*100).toFixed(1)}%`):empty(`${nm(M)}を大きく上回る相手はデータ上いません。先出しでも安全です。`)));
+      }
       sub.push(timingCard(L,M));
       const mine=Object.entries(L.vs[M]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       sub.push(card(`${nm(M)}の苦手な相手（次の試合のBAN候補）`,statList(mine,o=>tk(teikiCounter(o,M)))));
@@ -1218,6 +1227,14 @@ const roleMin=L=>Math.max(10,Math.ceil(laneN(L)*SHOW_PR));
 // 苦手な対面・BAN候補・避けたいピックの「相手」は、そのロールでピック率1%以上のよくいるチャンプだけにする
 const OPP_MIN_PR=.01;
 const oppOk=(L,k)=>((L.champs||{})[k]||[0])[0]>=Math.max(roleMin(L),laneN(L)*OPP_MIN_PR);
+// 先出し（相手より先にピック）のリスク：よくいる相手のうち、こちらの勝率が大きく下がる相手（カウンター）が
+// ピックされる確率。確率は相手のそのロールでのピック率から出す
+function blindRisk(L,k){
+  const opps=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o));
+  const share=o=>((L.champs||{})[o]||[0])[0]/laneN(L);
+  const counters=opps.filter(([,r])=>smooth(r)<.45).sort((a,b)=>smooth(a[1])-smooth(b[1]));
+  return {risk:counters.reduce((n,[o])=>n+share(o),0),counters,share};
+}
 // データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）。
 // 相手はそのロールでよくいるチャンプだけ（oppOk）、対面は20試合以上あるものだけ
 function worstChips(L,k,pos){
