@@ -243,6 +243,9 @@ td.extra .chips{flex-wrap:nowrap}
 .lt-tab:hover{color:var(--fg)}
 .lt-tab[aria-current="true"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);cursor:default}
 /* 試合の勝ち筋 */
+.tri{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tri-c{border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.tri-c.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
 .pl .ic{width:24px;height:24px}
@@ -506,7 +509,29 @@ function dpmCut(L){ // そのレーンで1分あたりの総ダメージが上�
   const v=Object.values(L.ext||{}).filter(e=>e[0]>=EXT_MIN&&e[1]>0).map(e=>dmgPerMin(e).reduce((a,b)=>a+b,0)).sort((a,b)=>b-a);
   const c=v.length>=8?v[Math.floor(v.length/4)]:null;dpmCuts.set(L,c);return c;
 }
-function enemyProfile(L,E){
+// 自分のピックのクラス：防具・回復阻害・防御を削るアイテムは、クラスによって買うものが違う
+function buildClass(M){
+  const c=M&&BYKEY[M];if(!c)return null;
+  if(c.tags.includes("Tank")||c.tags[0]==="Fighter")return "bruiser";
+  if(c.tags.includes("Support"))return "support"; // エンチャンターやメイジのサポートは防具を積まない
+  if(c.tags[0]==="Marksman")return "adc";
+  return "mage"; // メイジ・アサシン
+}
+const ITEM_DEF={ // 魔法ダメージ・物理ダメージ・CC への守り
+  bruiser:{ap:"魔法防御のアイテム（靴ならマーキュリー ブーツ）",ad:"物理防御のアイテム（靴ならプレート スチールキャップ）",cc:"マーキュリー ブーツ"},
+  mage:{ap:"バンシー ヴェール",ad:"ゾーニャの砂時計",cc:"バンシー ヴェール"},
+  adc:{ap:"マウ オブ マルモティウス",ad:"ガーディアン エンジェル",cc:"クイックシルバー サッシュ"}
+};
+const ITEM_HEAL={bruiser:"エグゼキューショナー コーリング（タンクならソーンメイル）",mage:"モレロノミコン",adc:"モータル リマインダー",support:"ケミテック ピュートリファイア"};
+const ITEM_PEN={bruiser:"ブラック クリーバー",mage:"ヴォイド スタッフ",adc:"ドミニク リガード"};
+// 防具の提案：クラスがわからなければ一般論、エンチャンター系サポートなら位置取りの助言
+function defTip(cls,kind){
+  if(!cls)return {ap:"魔法防御が効く（自分のピックを決めると、合うアイテムを出します）",ad:"物理防御が効く（自分のピックを決めると、合うアイテムを出します）",cc:"行動妨害への対策も効く"}[kind];
+  if(!ITEM_DEF[cls])return kind==="cc"?"味方の後ろから動き、CCの届かない位置を保つ":"防具は積まず、相手のスキルが届かない位置を保つ";
+  return `${ITEM_DEF[cls][kind]}が効く`;
+}
+function enemyProfile(L,E,M){
+  const cls=buildClass(M);
   const c=BYKEY[E];if(!c)return null;
   const pros=[],cons=[],t=traitsOf(E,L),e=extOf(L,E),tm=timingOf(L,E),r=(L.champs||{})[E];
   const range=(c.stats||{}).attackrange||0;
@@ -515,12 +540,13 @@ function enemyProfile(L,E){
   if(tm&&tm.type==="early"){pros.push(["序盤に強い","序盤は無理に戦わず、ミニオンを取ることと視界を優先して耐える"]);cons.push(["試合が長引くと勝率が下がる","30分以降の集団戦で勝負する。早い段階での小競り合いは避ける"]);}
   if(tm&&tm.type==="late"){pros.push(["試合が長引くほど強くなる","放っておくと手がつけられなくなる"]);cons.push(["序盤は控えめ","序盤にトレードやジャングラーとの連携で差をつけ、早めに試合を決めにいく"]);}
   if(e){
-    const [p,m]=dmgShare(e),tot=dmgPerMin(e).reduce((a,b)=>a+b,0),cut=dpmCut(L);
+    const [p,m]=dmgShare(e),dpm=dmgPerMin(e),tot=dpm.reduce((a,b)=>a+b,0),cut=dpmCut(L);
     if(cut!==null&&tot>=cut)pros.push(["ダメージが大きい","体力が減った状態で近づかない。1対1は避けて、味方と一緒に戦う"]);
-    if(m>=.7)cons.push(["ダメージのほとんどが魔法","魔法防御のアイテム（靴ならマーキュリー ブーツ）が効く"]);
-    else if(p>=.7)cons.push(["ダメージのほとんどが物理","物理防御のアイテム（靴ならプレート スチールキャップ）が効く"]);
+    // ダメージの種類は、その種類のダメージが十分な量（1分あたり300以上）あるときだけ取り上げる
+    if(m>=.7&&dpm[1]>=DMG_MIN)cons.push(["ダメージのほとんどが魔法",defTip(cls,"ap")]);
+    else if(p>=.7&&dpm[0]>=DMG_MIN)cons.push(["ダメージのほとんどが物理",defTip(cls,"ad")]);
   }
-  if(t.has("cc"))pros.push(["CC（行動妨害）が多い","相手のCCスキルが見えてから動く。行動妨害耐性（マーキュリー ブーツなど）も効く"]);
+  if(t.has("cc"))pros.push(["CC（行動妨害）が多い",`相手のCCスキルが見えてから動く。${defTip(cls,"cc")}`]);
   else if(e)cons.push(["CC（行動妨害）が少ない","捕まりにくいので、味方が仕掛けたときに安心して寄れる"]);
   if(c.tags[0]==="Tank")pros.push(["硬い","倒しきろうとせず、レーンではミニオンの取り合いで差をつける"]);
   if(c.tags[0]==="Assassin")pros.push(["一瞬で倒す力（バースト）がある","一人で歩かない。体力を高めに保ち、相手の姿が見えないときは慎重に"]);
@@ -530,8 +556,8 @@ function enemyProfile(L,E){
   const ctr=Object.keys(L.vs||{}).map(x=>[x,(L.vs[x]||{})[E]]).filter(([x,rr])=>BYKEY[x]&&rr&&rr[0]>=Math.max(MIN,20)&&smooth(rr)>.52&&((L.champs[x]||[0])[0]>=roleMin(L))).sort((a,b)=>smooth(b[1])-smooth(a[1])).slice(0,3);
   return {pros,cons,ctr};
 }
-function enemyCard(L,E){
-  const x=enemyProfile(L,E);if(!x)return "";
+function enemyCard(L,E,M){
+  const x=enemyProfile(L,E,M);if(!x)return "";
   const item=([h,tip])=>`<li><b>${h}</b><span class="why">→ ${tip}</span></li>`;
   const body=`<div class="ep">
       <div><h4 class="ep-h up">強み（気をつけること）</h4>${x.pros.length?`<ul class="ep-l">${x.pros.map(item).join("")}</ul>`:`<p class="why" style="margin:0">目立った強みはデータからは見つかりませんでした</p>`}</div>
@@ -850,7 +876,38 @@ function teamTempo(team){
   for(const r of ROLES){const k=team[r];if(!k)continue;const x=timingOf(ST.lanes[r],k);if(x&&x.type)ds.push(x.d);}
   return ds.length?{d:ds.reduce((a,b)=>a+b,0)/ds.length,n:ds.length}:null;
 }
-function planHtml(ally,enemy){
+// 三すくみ：ダイブ（飛び込む）→ ポーク（遠くから削る）→ カウンター（飛び込みを止めて反撃）→ ダイブ
+const TRIAD={dive:["ダイブ","自分から飛び込んで仕掛ける"],poke:["ポーク","遠くからスキルで削る"],counter:["カウンター","飛び込んできた相手を止めて反撃する"]};
+const BEATS={dive:"poke",poke:"counter",counter:"dive"};
+const TRIAD_MU={ // [味方][敵] の立ち回り
+  dive:{dive:"どちらもダイブ型：先に飛び込んだほうが有利になりやすい。味方の仕掛けるスキルが揃った瞬間を逃さない。",
+        poke:"相性で有利（ダイブはポークに強い）：削られる前に距離を詰めて一気に仕掛ける。様子見の時間を長くしない。",
+        counter:"相性で不利（カウンターはダイブに強い）：正面から飛び込むと止められて返り討ちにされる。敵の止めるスキルを先に使わせるか、横や後ろから仕掛ける。"},
+  poke:{dive:"相性で不利（ダイブはポークに強い）：距離を詰められると負ける。視界を広く取り、飛び込まれる前に下がる。",
+        poke:"どちらもポーク型：削り合いになる。体力を先に削った側がオブジェクトを取れるので、回復とスキルの当て合いを大切に。",
+        counter:"相性で有利（ポークはカウンターに強い）：敵は自分から飛び込んでこないので、遠くから削ってからオブジェクトを取る。"},
+  counter:{dive:"相性で有利（カウンターはダイブに強い）：自分から仕掛けず、敵の飛び込みを受けて止めてから反撃する。",
+        poke:"相性で不利（ポークはカウンターに強い）：削られ続けると不利。オブジェクトは早めに取りに行き、長い睨み合いを避ける。",
+        counter:"どちらもカウンター型：お互いに仕掛けにくい。ファームと視界で差をつけ、相手が無理に出てきたところを狙う。"}
+};
+function triad(team){
+  // ダイブ：エンゲージ役1、キャッチ役・アサシン・飛び込むファイター0.5 ／ ポーク：ポーク役1 ／ カウンター：ディスエンゲージ役1、ピール役0.5
+  const s={dive:0,poke:0,counter:0};
+  for(const r of ROLES){
+    const k=team[r];if(!k||!BYKEY[k])continue;
+    const t=traitsOf(k,ST.lanes[r]),tg=BYKEY[k].tags;
+    if(t.has("engage"))s.dive+=1;else if(t.has("catch")||tg[0]==="Assassin"||(tg[0]==="Fighter"&&t.has("dps")&&r!=="BOTTOM"))s.dive+=.5;
+    if(t.has("poke"))s.poke+=1;
+    if(t.has("disengage"))s.counter+=1;else if(t.has("peel"))s.counter+=.5;
+  }
+  const best=Object.entries(s).sort((a,b)=>b[1]-a[1]);
+  // 1位が1点未満、または2位と並んでいるときは「はっきりしない」
+  const type=best[0][1]>=1&&best[0][1]>best[1][1]?best[0][0]:null;
+  return {s,type};
+}
+
+function planHtml(ally,enemy,me){
+  const cls=buildClass(me);
   const an=ROLES.filter(r=>ally[r]).length,en=ROLES.filter(r=>enemy[r]).length;
   if(an<3||en<3)return empty("ステップ①で味方と敵を3人以上ずつ入れると、勝ち筋を表示します。");
   const blocks=[];
@@ -879,23 +936,23 @@ function planHtml(ally,enemy){
   // 3. 構成のタイプ
   const as=teamStyle(ally),es=teamStyle(enemy),[ak]=topStyle(as),[ek]=topStyle(es);
   blocks.push(card("構成のタイプ",`<p><b>味方：${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>敵：${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
-  // 4. 仕掛けと受け
-  const aE=as.engage,eE=es.engage,aP=as.peel,fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
-  const eng=aE-eE>=1?`<p><b>味方が仕掛ける側</b>（仕掛ける力 ${fmt(aE)} 対 ${fmt(eE)}）：味方の仕掛けるスキルが揃っているときに、こちらから戦いを始める。</p>`
-    :eE-aE>=1?`<p><b>敵が仕掛ける側</b>（仕掛ける力 ${fmt(eE)} 対 ${fmt(aE)}）：敵の仕掛けを先に受ける前提で、固まりすぎず、受けてから反撃する。${aP<=1?"守る役が少ないので、後衛は前に出すぎない。":""}</p>`
-    :`<p><b>仕掛ける力はほぼ同じ</b>（${fmt(aE)} 対 ${fmt(eE)}）：先に相手の重要なスキルを使わせた側が有利。焦って先に飛び込まない。</p>`;
-  blocks.push(card("仕掛けと受け",eng));
+  // 4. 三すくみ：ダイブ → ポーク → カウンター → ダイブ（矢印の先に強い）
+  const triA=triad(ally),triE=triad(enemy),fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
+  const tri=`<div class="tri"><span class="tri-c${triA.type==="dive"?" on":""}">ダイブ</span><span class="arrow">→</span><span class="tri-c${triA.type==="poke"?" on":""}">ポーク</span><span class="arrow">→</span><span class="tri-c${triA.type==="counter"?" on":""}">カウンター</span><span class="arrow">→</span><span class="tri-c">ダイブ</span></div><p class="why" style="margin:0;font-size:12px">矢印の先のタイプに強い（ダイブはポークに、ポークはカウンターに、カウンターはダイブに強い）</p>`;
+  const line=(who,x)=>`<b>${who}：${x.type?TRIAD[x.type][0]+"型":"はっきりしない"}</b><span class="why">（ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}）</span>`;
+  const mu=triA.type&&triE.type?TRIAD_MU[triA.type][triE.type]:"どちらかのタイプがはっきりしないので、相性よりもレーン戦と構成のタイプで動き方を決める。";
+  blocks.push(card("ダイブ・ポーク・カウンター",`${tri}<p style="margin:6px 0 0">${line("味方",triA)}<br>${line("敵",triE)}</p><p style="margin:6px 0 0">${mu}</p>`));
   // 5. ローディング前のチェック
   const ec=compOf("enemy",null),checks=[];
-  if(ec.cc>=3)checks.push("敵はCCが多い：マーキュリー ブーツや、クイックシルバー サッシュを検討");
-  if(ec.ap!==null&&ec.ap>=.65)checks.push(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：魔法防御のアイテムが効く`);
-  else if(ec.ap!==null&&ec.ap<=.35)checks.push(`敵のダメージは物理が中心（AD ${Math.round((1-ec.ap)*100)}%）：物理防御のアイテム（プレート スチールキャップなど）が効く`);
-  if(ec.front>=2)checks.push("敵は前衛が多い：防御を削るアイテム（ブラック クリーバー、ドミニク リガード、ヴォイド スタッフなど）を検討");
+  if(ec.cc>=3)checks.push(`敵はCCが多い：${defTip(cls,"cc")}`);
+  if(ec.ap!==null&&ec.ap>=.65)checks.push(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：${defTip(cls,"ap")}`);
+  else if(ec.ap!==null&&ec.ap<=.35)checks.push(`敵のダメージは物理が中心（AD ${Math.round((1-ec.ap)*100)}%）：${defTip(cls,"ad")}`);
+  if(ec.front>=2)checks.push(cls&&ITEM_PEN[cls]?`敵は前衛が多い：${ITEM_PEN[cls]}などの防御を削るアイテムを検討`:cls?"敵は前衛が多い：倒しきるのは味方のキャリーに任せ、前衛を足止めして守る":"敵は前衛が多い：防御を削るアイテムを検討（自分のピックを決めると、合うアイテムを出します）");
   const heals=ROLES.map(r=>enemy[r]).filter(k=>k&&BYKEY[k]&&HEAL_LIST.has(BYKEY[k].id));
-  if(heals.length>=2)checks.push(`敵は回復が多い（${heals.map(nm).join("、")}）：回復阻害のアイテム（エグゼキューショナー コーリング、モレロノミコンなど）を早めに`);
-  if(es.engage>=2.5)checks.push("敵は飛び込んでくる力が強い：ゾーニャの砂時計などの守りのアイテムも検討");
+  if(heals.length>=2)checks.push(`敵は回復が多い（${heals.map(nm).join("、")}）：${cls?`回復阻害のアイテム（${ITEM_HEAL[cls]}）を早めに`:"回復阻害のアイテムを早めに（自分のピックを決めると、合うアイテムを出します）"}`);
+  if(es.engage>=2.5)checks.push(`敵は飛び込んでくる力が強い：${cls==="mage"?"ゾーニャの砂時計などの守りのアイテムも検討":cls==="adc"?"前に出すぎず、ガーディアン エンジェルなどの守りのアイテムも検討":cls==="support"?"味方のキャリーのそばにいて、飛び込んできた敵を止める":"固まりすぎず、飛び込んできた敵をまとめて迎え撃つ"}`);
   blocks.push(card("ローディング前のチェック",checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">特別な対策が必要な構成ではありません。</p>`));
-  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと仕掛け・受けはチャンプの役割から自動で判定しています（仕掛ける力は、エンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5として数えています）。</p>`;
+  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。</p>`;
 }
 
 // ===== Tier表（BPのタブとは別に、表の上のボタンでレーンを切り替える） =====
@@ -1022,7 +1079,7 @@ function buildLane(id,pos,label){
     s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
-    if(E)sub.push(enemyCard(L,E));
+    if(E)sub.push(enemyCard(L,E,M));
     if(M){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
@@ -1043,7 +1100,7 @@ function buildLane(id,pos,label){
       if(!root.hidden&&location.hash!==want)history.replaceState(null,"",want);
     }
     // --- ステップ4：試合の勝ち筋（味方は自分のピックを含めて考える） ---
-    s5.innerHTML=planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy);
+    s5.innerHTML=planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy,M);
     // --- ステップ3・5 ---
     if(!M){s3.innerHTML=s4.innerHTML=empty("ステップ2でピックを決めると表示されます。");}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
