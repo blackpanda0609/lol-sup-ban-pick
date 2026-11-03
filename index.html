@@ -49,9 +49,15 @@ header p{color:var(--muted);margin:0;max-width:62ch}
 .status .warn{color:var(--bad)}
 .status label{margin-left:auto;display:flex;gap:8px;align-items:center}
 .status select{width:auto;padding:4px 8px}
-.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
-.tab{font:inherit;font-weight:700;background:none;border:none;border-bottom:3px solid transparent;padding:10px 16px;color:var(--muted);cursor:pointer;white-space:nowrap}
-.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+/* BPのタブ：大きめのボタンを並べ、選んでいるものは金色で塗る */
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.tab{font:inherit;font-family:var(--display);font-size:17px;letter-spacing:.04em;background:none;border:1px solid transparent;border-radius:8px;padding:12px 4px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab:hover{color:var(--fg);background:var(--bg)}
+.tab[aria-selected="true"]{color:var(--bg);background:var(--accent);border-color:var(--accent)}
+#tier-sec{display:grid;gap:12px}
+/* 広い表に引っぱられてページが横に広がらないように（表は自分の枠の中で横スクロール） */
+#tier-sec,#tier-sec>*,.tier-lane>*{min-width:0}
+.tier-lane{display:grid;gap:16px}
 .tabpanel{display:grid;gap:32px}
 section{display:grid;gap:16px}
 .pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
@@ -323,6 +329,7 @@ td.extra .chips{flex-wrap:nowrap}
   <div class="tabpanel" id="p-adc" role="tabpanel" hidden></div>
   <div class="tabpanel" id="p-sup" role="tabpanel" hidden></div>
 </div>
+<section class="lt" id="tier-sec" aria-label="Tier表"></section>
 
 <p class="note">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。★の付いた理由は、手書きの定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
 <p class="note">BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
@@ -622,7 +629,7 @@ addEventListener("scroll",()=>{if(tipFor)hideTip();},{passive:true,capture:true}
 // 表の箱は横スクロールのために overflow を持つので CSS の sticky が効かない。代わりに見出しのセルを下へずらす
 function syncHeads(){
   const top=parseFloat(getComputedStyle(document.documentElement).paddingTop)||0;
-  document.querySelectorAll(".tabpanel:not([hidden]) .tbl").forEach(box=>{
+  document.querySelectorAll("#tier-sec .tier-lane:not([hidden]) .tbl").forEach(box=>{
     const th=box.querySelectorAll("thead th");if(!th.length)return;
     const r=box.getBoundingClientRect(),h=th[0].offsetHeight;
     const y=Math.max(0,Math.min(top-r.top,r.height-h*2));
@@ -653,6 +660,7 @@ function showTab(id){
   LANES.forEach(([t])=>{const on=t===id;$("t-"+t).setAttribute("aria-selected",on);$("p-"+t).hidden=!on;});
   try{localStorage.setItem("bp-tab",id);}catch(e){}
   if(location.hash.slice(1).split("-")[0]!==id)history.replaceState(null,"","#"+id);
+  if(document.querySelector("#tier-sec .tier-lane"))setTierLane(id);
   queueHeads();
 }
 $("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)showTab(b.id.slice(2));});
@@ -886,6 +894,28 @@ function planHtml(ally,enemy){
   return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと仕掛け・受けはチャンプの役割から自動で判定しています（仕掛ける力は、エンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5として数えています）。</p>`;
 }
 
+// ===== Tier表（BPのタブとは別に、表の上のボタンでレーンを切り替える） =====
+function buildTiers(){
+  const sec=$("tier-sec");if(!ST){sec.hidden=true;return;}
+  sec.innerHTML=`<nav class="lt-tabs" aria-label="Tier表のレーン">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="false">${lb}</button>`).join("")}</nav>`
+    +LANES.map(([t])=>`<div class="tier-lane" data-lane="${t}" hidden></div>`).join("");
+  LANES.forEach(([id,pos,label])=>{
+    const L=ST.lanes[pos]||{champs:{},vs:{}};
+    const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
+    if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
+    if(pos==="UTILITY")extras.push({head:"相性のいいADC",cell:k=>pairCell(k,false)});
+    // 名前を押したら、そのチャンプを自分のピックにする（これはBPの操作なので、BPのタブも切り替える）
+    const tbl=laneTable(sec.querySelector(`[data-lane="${id}"]`),L,label,extras,k=>{showTab(id);lanePanels[id].open(k,true);});
+    lanePanels[id].table=tbl;
+  });
+  sec.querySelector(".lt-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-lt]");if(b)setTierLane(b.dataset.lt);});
+}
+function setTierLane(id){
+  document.querySelectorAll("#tier-sec .tier-lane").forEach(el=>{el.hidden=el.dataset.lane!==id;});
+  document.querySelectorAll("#tier-sec .lt-tab").forEach(b=>b.setAttribute("aria-current",b.dataset.lt===id));
+  queueHeads();
+}
+
 function buildLane(id,pos,label){
   const root=$("p-"+id);
   if(!ST){root.innerHTML=card("データを読み込めませんでした",empty("通信状態を確認して、ページを再読み込みしてください。"));return;}
@@ -916,8 +946,7 @@ function buildLane(id,pos,label){
     ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
     ${step(4,"試合の勝ち筋","決まった構成で、どこで差をつけて、どう勝つか",`<div class="s5"></div>`)}
     ${step(5,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
-    </ol></section>
-    <section class="lt"></section>`;
+    </ol></section>`;
   const fields=root.querySelectorAll(".field");
   // プルダウンは全チャンプから選べる（実際の試合では珍しいピックも来るので）。並びはあいうえお順。
   // そのロールでほとんど使われないチャンプには「まれ」と付ける
@@ -1016,27 +1045,16 @@ function buildLane(id,pos,label){
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
     root.querySelectorAll(".step").forEach(li=>{const n=+li.dataset.step;li.classList.toggle("wait",(n===3||n===5)&&!M);});
   }
-  const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
-  if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
-  if(pos==="UTILITY")extras.push({head:"相性のいいADC",cell:k=>pairCell(k,false)});
-  // 一覧の名前を押したら：自分のピックに入れて、ステップ2へ。URL も変えるので「戻る」で一覧に戻れる
+  // Tier表の名前を押したら：自分のピックに入れて、ステップ2へ。URL も変えるので「戻る」で一覧に戻れる
   const open=(k,push)=>{
     // 先に履歴を足してから描き直す（描き直しで URL を上書きしないように）
     if(push)history.pushState(null,"",k?`#${id}-${champSlug(k)}`:`#${id}`);
     pm.set(k||"");draw();
     if(k)root.querySelector(`[data-step="2"]`).scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
   };
-  const table=laneTable(root.querySelector(".lt"),L,label,extras,k=>open(k,true));
-  // 表の上にもレーンの切り替えボタン（押したら、切り替え先のレーンの表の位置を表示する）
-  const lt=root.querySelector(".lt");
-  lt.insertAdjacentHTML("afterbegin",`<nav class="lt-tabs" aria-label="Tier表のレーン">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="${t===id}">${lb}</button>`).join("")}</nav>`);
-  lt.querySelector(".lt-tabs").addEventListener("click",e=>{
-    const b=e.target.closest("[data-lt]");if(!b||b.dataset.lt===id)return;
-    showTab(b.dataset.lt);
-    $("p-"+b.dataset.lt).querySelector(".lt").scrollIntoView({block:"start"});
-  });
   draw();
-  lanePanels[id]={draw,table,open,resetNeeds:()=>{touched=false;},setPick:k=>{if(pm.value!==(k||"")){pm.set(k||"");draw();}}};
+  // table は、BPの画面の下にある共通のTier表ができたあとで入る（buildTiers）
+  lanePanels[id]={draw,table:()=>{},open,resetNeeds:()=>{touched=false;},setPick:k=>{if(pm.value!==(k||"")){pm.set(k||"");draw();}}};
 }
 // レーンの勝率一覧（見出しで並べ替え・名前で絞り込み）。
 // そのロールでのピック率が SHOW_PR 未満のチャンプは出さない（データが少ないうちは最低10試合）
@@ -1262,6 +1280,8 @@ function drawStatus(p){
   drawStatus();
   buildMaps();
   LANES.forEach(([id,pos,label])=>buildLane(id,pos,label));
+  buildTiers();
+  setTierLane(LANES.find(([t])=>!$("p-"+t).hidden)[0]);
   if(location.hash.includes("-"))applyHash();
   // 連携ソフトから ?link=1 で開かれたら連携をオンにする（URL からは消しておく）
   const qs=new URLSearchParams(location.search);
