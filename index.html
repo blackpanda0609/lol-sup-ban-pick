@@ -1036,7 +1036,7 @@ function planHtml(ally,enemy,me){
   blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.tops,triE.tops)}
     <div class="tri-text"><p class="tri-v ${verdict}">${head}</p><p style="margin:0">${body}</p>${comeback}
     <p class="why" style="margin:0;font-size:12px">味方：${typeText(triA)}（${score(triA)}）<br>敵：${typeText(triE)}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
-  // 5. ローディング前のチェック
+  // 5. レーン戦前に確認しておくこと
   const ec=compOf("enemy",null),checks=[];
   if(ec.cc>=3)checks.push(`敵はCCが多い：${defTip(cls,"cc")}`);
   if(ec.ap!==null&&ec.ap>=.65)checks.push(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：${defTip(cls,"ap")}`);
@@ -1045,7 +1045,7 @@ function planHtml(ally,enemy,me){
   const heals=ROLES.map(r=>enemy[r]).filter(k=>k&&BYKEY[k]&&HEAL_LIST.has(BYKEY[k].id));
   if(heals.length>=2)checks.push(`敵は回復が多い（${heals.map(nm).join("、")}）：${cls?`回復阻害のアイテム（${ITEM_HEAL[cls]}）を早めに`:"回復阻害のアイテムを早めに（自分のピックを決めると、合うアイテムを出します）"}`);
   if(es.engage>=2.5)checks.push(`敵は飛び込んでくる力が強い：${cls==="mage"?"ゾーニャの砂時計などの守りのアイテムも検討":cls==="adc"?"前に出すぎず、ガーディアン エンジェルなどの守りのアイテムも検討":cls==="support"?"味方のキャリーのそばにいて、飛び込んできた敵を止める":"固まりすぎず、飛び込んできた敵をまとめて迎え撃つ"}`);
-  blocks.push(card("ローディング前のチェック",checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">特別な対策が必要な構成ではありません。</p>`));
+  blocks.push(card("レーン戦前に確認しておくこと",checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">特別な対策が必要な構成ではありません。</p>`));
   return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。</p>`;
 }
 
