@@ -257,6 +257,9 @@ td.extra .chips{flex-wrap:nowrap}
 .tri-n text{fill:var(--muted);font-size:13px;font-weight:700}
 .tri-n.ally circle{stroke:var(--tank);stroke-width:3}
 .tri-n.enemy circle{stroke:var(--bad);stroke-width:3}
+.tri-n.both .tri-fill{stroke:none}
+.tri-half{fill:none;stroke-width:3}
+.tri-half.ally{stroke:var(--tank)}.tri-half.enemy{stroke:var(--bad)}
 .tri-n.ally text,.tri-n.enemy text{fill:var(--fg)}
 .tri-b rect{stroke:none}
 .tri-b.ally rect{fill:var(--tank)}.tri-b.enemy rect{fill:var(--bad)}
@@ -904,7 +907,10 @@ function triSvg(aT,eT){
   };
   const node=k=>{
     const [x,y]=P[k],tags=[aT.includes(k)&&"味方",eT.includes(k)&&"敵"].filter(Boolean);
-    return `<g class="tri-n${aT.includes(k)?" ally":""}${eT.includes(k)?" enemy":""}"><circle cx="${x}" cy="${y}" r="${R}"/><text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
+    const both=aT.includes(k)&&eT.includes(k);
+    // 味方と敵が同じ頂点のときは、枠を左半分（味方）は青、右半分（敵）は赤にする
+    const ring=both?`<circle class="tri-fill" cx="${x}" cy="${y}" r="${R}"/><path class="tri-half ally" d="M${x} ${y-R}A${R} ${R} 0 0 0 ${x} ${y+R}"/><path class="tri-half enemy" d="M${x} ${y-R}A${R} ${R} 0 0 1 ${x} ${y+R}"/>`:`<circle cx="${x}" cy="${y}" r="${R}"/>`;
+    return `<g class="tri-n${aT.includes(k)?" ally":""}${eT.includes(k)?" enemy":""}${both?" both":""}">${ring}<text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
       ${tags.map(t=>{
         // 印は頂点の上に。2つあるときは「味方」を左、「敵」を右に並べる
         const w=t==="味方"?40:28,bx=tags.length>1?(t==="味方"?x-44:x+2):x-w/2;
