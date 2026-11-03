@@ -243,9 +243,24 @@ td.extra .chips{flex-wrap:nowrap}
 .lt-tab:hover{color:var(--fg)}
 .lt-tab[aria-current="true"]{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);cursor:default}
 /* 試合の勝ち筋 */
-.tri{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.tri-c{border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-size:12.5px;font-weight:700;color:var(--muted)}
-.tri-c.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.tri-card{grid-column:1/-1}
+.tri-wrap{display:flex;gap:12px 24px;align-items:center;flex-wrap:wrap}
+.tri-svg{width:240px;max-width:100%;flex:none}
+.tri-text{flex:1 1 260px;display:grid;gap:6px;min-width:0}
+.tri-v{margin:0;font-weight:700;font-size:16px;color:var(--fg)}
+.tri-v.up{color:var(--good)}.tri-v.down{color:var(--bad)}
+.tri-e line{stroke:var(--line);stroke-width:3}
+.tri-e polygon{fill:var(--line)}
+.tri-e.up line{stroke:var(--good)}.tri-e.up polygon{fill:var(--good)}
+.tri-e.down line{stroke:var(--bad)}.tri-e.down polygon{fill:var(--bad)}
+.tri-n circle{fill:var(--bg);stroke:var(--line);stroke-width:2}
+.tri-n text{fill:var(--muted);font-size:13px;font-weight:700}
+.tri-n.ally circle{stroke:var(--tank);stroke-width:3}
+.tri-n.enemy circle{stroke:var(--bad);stroke-width:3}
+.tri-n.ally text,.tri-n.enemy text{fill:var(--fg)}
+.tri-b rect{stroke:none}
+.tri-b.ally rect{fill:var(--tank)}.tri-b.enemy rect{fill:var(--bad)}
+.tri-b text{fill:var(--bg);font-size:11px;font-weight:700}
 .pl-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .pl{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px}
 .pl .ic{width:24px;height:24px}
@@ -876,6 +891,26 @@ function teamTempo(team){
   for(const r of ROLES){const k=team[r];if(!k)continue;const x=timingOf(ST.lanes[r],k);if(x&&x.type)ds.push(x.d);}
   return ds.length?{d:ds.reduce((a,b)=>a+b,0)/ds.length,n:ds.length}:null;
 }
+// 三すくみの三角形：頂点に3つのタイプ、矢印は強い向き。味方と敵の印を付け、2つの間の矢印を有利なら緑・不利なら赤にする
+function triSvg(a,e){
+  const P={dive:[130,58],poke:[222,196],counter:[38,196]},R=34,label={dive:"ダイブ",poke:"ポーク",counter:"カウンター"};
+  const edge=(from,to)=>{
+    const [x1,y1]=P[from],[x2,y2]=P[to],dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
+    const sx=x1+ux*(R+4),sy=y1+uy*(R+4),ex=x2-ux*(R+6),ey=y2-uy*(R+6),hx=-uy*7,hy=ux*7;
+    const cls=a&&e&&((from===a&&to===e)?"up":(from===e&&to===a)?"down":"");
+    return `<g class="tri-e ${cls}"><line x1="${sx}" y1="${sy}" x2="${ex-ux*8}" y2="${ey-uy*8}"/><polygon points="${ex},${ey} ${ex-ux*13+hx},${ey-uy*13+hy} ${ex-ux*13-hx},${ey-uy*13-hy}"/></g>`;
+  };
+  const node=k=>{
+    const [x,y]=P[k],tags=[a===k&&"味方",e===k&&"敵"].filter(Boolean);
+    return `<g class="tri-n${a===k?" ally":""}${e===k?" enemy":""}"><circle cx="${x}" cy="${y}" r="${R}"/><text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
+      ${tags.map(t=>{
+        // 印は頂点の上に。2つあるときは「味方」を左、「敵」を右に並べる
+        const w=t==="味方"?40:28,bx=tags.length>1?(t==="味方"?x-44:x+2):x-w/2;
+        return `<g class="tri-b ${t==="味方"?"ally":"enemy"}"><rect x="${bx}" y="${y-R-14}" width="${w}" height="18" rx="9"/><text x="${bx+w/2}" y="${y-R-1}" text-anchor="middle">${t}</text></g>`;
+      }).join("")}</g>`;
+  };
+  return `<svg class="tri-svg" viewBox="0 0 260 240" role="img" aria-label="三すくみ：ダイブはポークに、ポークはカウンターに、カウンターはダイブに強い">${edge("dive","poke")}${edge("poke","counter")}${edge("counter","dive")}${["dive","poke","counter"].map(node).join("")}</svg>`;
+}
 // 三すくみ：ダイブ（飛び込む）→ ポーク（遠くから削る）→ カウンター（飛び込みを止めて反撃）→ ダイブ
 const TRIAD={dive:["ダイブ","自分から飛び込んで仕掛ける"],poke:["ポーク","遠くからスキルで削る"],counter:["カウンター","飛び込んできた相手を止めて反撃する"]};
 const BEATS={dive:"poke",poke:"counter",counter:"dive"};
@@ -938,10 +973,13 @@ function planHtml(ally,enemy,me){
   blocks.push(card("構成のタイプ",`<p><b>味方：${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>敵：${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
   // 4. 三すくみ：ダイブ → ポーク → カウンター → ダイブ（矢印の先に強い）
   const triA=triad(ally),triE=triad(enemy),fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
-  const tri=`<div class="tri"><span class="tri-c${triA.type==="dive"?" on":""}">ダイブ</span><span class="arrow">→</span><span class="tri-c${triA.type==="poke"?" on":""}">ポーク</span><span class="arrow">→</span><span class="tri-c${triA.type==="counter"?" on":""}">カウンター</span><span class="arrow">→</span><span class="tri-c">ダイブ</span></div><p class="why" style="margin:0;font-size:12px">矢印の先のタイプに強い（ダイブはポークに、ポークはカウンターに、カウンターはダイブに強い）</p>`;
-  const line=(who,x)=>`<b>${who}：${x.type?TRIAD[x.type][0]+"型":"はっきりしない"}</b><span class="why">（ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}）</span>`;
   const mu=triA.type&&triE.type?TRIAD_MU[triA.type][triE.type]:"どちらかのタイプがはっきりしないので、相性よりもレーン戦と構成のタイプで動き方を決める。";
-  blocks.push(card("ダイブ・ポーク・カウンター",`${tri}<p style="margin:6px 0 0">${line("味方",triA)}<br>${line("敵",triE)}</p><p style="margin:6px 0 0">${mu}</p>`));
+  const [head,...rest]=mu.split("：");
+  const verdict=triA.type&&triE.type?(BEATS[triA.type]===triE.type?"up":BEATS[triE.type]===triA.type?"down":""):"";
+  const score=x=>`ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}`;
+  blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.type,triE.type)}
+    <div class="tri-text"><p class="tri-v ${verdict}">${rest.length?head:"相性"}</p><p style="margin:0">${rest.length?rest.join("："):mu}</p>
+    <p class="why" style="margin:0;font-size:12px">味方：${triA.type?TRIAD[triA.type][0]+"型":"はっきりしない"}（${score(triA)}）<br>敵：${triE.type?TRIAD[triE.type][0]+"型":"はっきりしない"}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
   // 5. ローディング前のチェック
   const ec=compOf("enemy",null),checks=[];
   if(ec.cc>=3)checks.push(`敵はCCが多い：${defTip(cls,"cc")}`);
