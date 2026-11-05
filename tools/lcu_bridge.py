@@ -17,6 +17,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import threading
 import time
 import webbrowser
 import urllib.error
@@ -41,10 +42,24 @@ SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
 _cred = None  # (port, token)
+_cred_lock = threading.Lock()
+_next_search = 0.0  # クライアントが見つからなかったとき、次に探してよい時刻
+# 探しても見つからなかったら、この秒数は探し直さない。
+# PowerShell + WMI（Get-CimInstance）の起動は重く、1.5秒ごとに走らせると
+# LoL を起動していないとき（VALORANT などのプレイ中）に一瞬のカクつきの原因になる。
+SEARCH_INTERVAL = 15
 
 
 def find_credentials():
-    """起動中の LeagueClientUx の引数から、なければ lockfile から、ポートと合言葉を探す。"""
+    """lockfile から、なければ起動中の LeagueClientUx の引数から、ポートと合言葉を探す。"""
+    # lockfile はクライアント起動中だけ存在する。読むだけなので軽い。先に試す
+    for lf in LOCKFILES:
+        try:
+            parts = lf.read_text(encoding="utf-8").split(":")
+            return parts[2], parts[3]
+        except (OSError, IndexError):
+            continue
+    # インストール先が違うときだけ、重いプロセス検索をする
     try:
         out = subprocess.run(
             ["powershell", "-NoProfile", "-Command",
@@ -56,13 +71,22 @@ def find_credentials():
             return port.group(1), token.group(1)
     except (OSError, subprocess.SubprocessError):
         pass
-    for lf in LOCKFILES:
-        try:
-            parts = lf.read_text(encoding="utf-8").split(":")
-            return parts[2], parts[3]
-        except (OSError, IndexError):
-            continue
     return None
+
+
+def get_credentials():
+    """見つかっていればそれを返す。なければ探すが、失敗後 SEARCH_INTERVAL 秒は探さない。"""
+    global _cred, _next_search
+    with _cred_lock:  # 同時に来たリクエストで何度も探さない
+        if _cred:
+            return _cred
+        now = time.monotonic()
+        if now < _next_search:
+            return None
+        _cred = find_credentials()
+        if not _cred:
+            _next_search = now + SEARCH_INTERVAL
+        return _cred
 
 
 def lcu_get(path):
@@ -71,11 +95,10 @@ def lcu_get(path):
     if MOCK:
         return json.loads(Path(MOCK).read_text(encoding="utf-8")) if path.endswith("session") else "ChampSelect"
     for attempt in range(2):
-        if not _cred:
-            _cred = find_credentials()
-            if not _cred:
-                return None
-        port, token = _cred
+        cred = get_credentials()
+        if not cred:
+            return None
+        port, token = cred
         auth = base64.b64encode(f"riot:{token}".encode()).decode()
         req = urllib.request.Request(f"https://127.0.0.1:{port}{path}", headers={"Authorization": f"Basic {auth}"})
         try:
