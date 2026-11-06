@@ -5,11 +5,11 @@
 環境変数
   RIOT_API_KEY  必須。GitHub Actions では Secrets から渡す
   PLATFORMS     集めるサーバー（既定: jp1,kr）
-  MAX_MINUTES   この時間で切り上げて保存する（既定: 300）
+  MAX_MINUTES   この時間で切り上げて保存する（既定: 340）
   DAYS          何日前までの試合を見るか（既定: 3）
-  PAGES         ダイヤ・エメの各ディビジョンから読むページ数（既定: 1、1ページ約200人）
+  PAGES         ダイヤ・エメの各ディビジョンから読むページ数（既定: 4、1ページ約200人）
   RATE_2MIN     2分あたりのリクエスト上限（既定: 95。Production Key なら上げてよい）
-  TIMELINE_RATE スキル順・購入順のためにタイムラインも取る試合の割合（既定: 0.3）
+  TIMELINE_RATE スキル順・購入順のためにタイムラインも取る試合の割合（既定: 0.15）
 """
 import json
 import os
@@ -26,12 +26,12 @@ KEY = os.environ.get("RIOT_API_KEY", "").strip()
 PLATFORMS = [p.strip() for p in os.environ.get("PLATFORMS", "jp1,kr").split(",") if p.strip()]
 ROUTING = "asia"  # jp1 と kr の試合データはどちらも asia
 QUEUE = 420  # ソロ/デュオランク
-MAX_MINUTES = float(os.environ.get("MAX_MINUTES", "300"))
+MAX_MINUTES = float(os.environ.get("MAX_MINUTES", "340"))
 DAYS = int(os.environ.get("DAYS", "3"))
-PAGES = int(os.environ.get("PAGES", "1"))
+PAGES = int(os.environ.get("PAGES", "4"))
 RATE_2MIN = int(os.environ.get("RATE_2MIN", "95"))
 DATA = Path(os.environ.get("DATA_DIR", "data"))
-TIMELINE_RATE = float(os.environ.get("TIMELINE_RATE", "0.3"))
+TIMELINE_RATE = float(os.environ.get("TIMELINE_RATE", "0.15"))
 SKILL = {1: "Q", 2: "W", 3: "E"}
 # ビルドの集計で残す件数（多すぎるとファイルが大きくなるので、試合数の多い順にこれだけ残す）
 KEEP = {"runes": 15, "spells": 6, "items": 25, "boots": 8, "core": 15, "start": 8, "order": 6, "early": 8}
@@ -147,7 +147,8 @@ def count_build(b, p, win):
     if len(st) >= 2:
         sh = perks.get("statPerks") or {}
         pri = ",".join(str(s.get("perk")) for s in st[0].get("selections", []))
-        sub = ",".join(str(s.get("perk")) for s in st[1].get("selections", []))
+        # サブの2つは選んだ順で返ってくるので、並べ替えて同じページを1つにまとめる
+        sub = ",".join(sorted(str(s.get("perk")) for s in st[1].get("selections", [])))
         key = f"{st[0].get('style')}:{pri}|{st[1].get('style')}:{sub}|{sh.get('offense')},{sh.get('flex')},{sh.get('defense')}"
         add(b.setdefault("runes", {}), key, win)
     sp = sorted([p.get("summoner1Id", 0), p.get("summoner2Id", 0)])
@@ -276,6 +277,12 @@ def count_match(m, patch, stats, seed=None, builds=None):
     return targets
 
 
+def window_start(stats, now):
+    """試合を探し始める時刻。パッチ直後は、前のパッチの試合を取って捨てる無駄を省く。
+    first_seen はこのパッチを最初に見つけた時刻（Data Dragon の更新とのずれを見て12時間さかのぼる）。"""
+    return max(now - DAYS * 86400, int(stats.get("first_seen", 0)) - 12 * 3600)
+
+
 def players(platform):
     out = []
     for a in APEX:
@@ -332,6 +339,8 @@ def main():
     # ban は途中から集計を始めたので、分母（ban を数えた試合数）を別に持つ
     stats.setdefault("bans", {})
     stats.setdefault("ban_matches", 0)
+    # このパッチを最初に見つけた時刻。すでに集め始めているパッチには制限をかけない
+    stats.setdefault("first_seen", 0 if stats["matches"] else int(time.time()))
     # これまでの試合は全レーンを数えていたので、レーンごとの分母は試合数と同じ
     for L in stats["lanes"].values():
         L.setdefault("n", stats["matches"])
@@ -342,7 +351,7 @@ def main():
     try:
         pool = [pu for pf in PLATFORMS for pu in players(pf)]
         random.shuffle(pool)
-        since = int(time.time()) - DAYS * 86400
+        since = window_start(stats, int(time.time()))
         new = 0
         for i, puuid in enumerate(pool):
             if time_left() < 60:
