@@ -2,8 +2,8 @@
  "patches": [
   {
    "patch": "16.22",
-   "matches": 75959,
-   "updated": "2026-11-14T04:23:07Z"
+   "matches": 84055,
+   "updated": "2026-11-15T03:08:23Z"
   },
   {
    "patch": "16.21",
