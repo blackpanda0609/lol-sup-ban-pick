@@ -41,7 +41,11 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:
 h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
 header{display:grid;gap:10px}
 header p{color:var(--muted);margin:0;max-width:62ch}
-.h1row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.h1row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hlinks{display:flex;align-items:center;gap:8px}
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.lang button{font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);background:none;border:0;padding:5px 11px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg)}
 .gh{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
 .gh:hover,.gh:focus-visible{color:var(--fg);border-color:var(--muted)}
 /* 説明文は意味のかたまりごとに折り返す（言葉の途中で改行しない） */
@@ -348,12 +352,12 @@ td.extra .chips{flex-wrap:nowrap}
 <body>
 <div class="wrap">
 <header>
-  <div class="h1row"><h1>BPノート</h1><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div>
-  <p class="lead"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p>
-  <div class="status" id="status"><span>データを読み込み中…</span></div>
+  <div class="h1row"><h1 data-en="BP Note">BPノート</h1><div class="hlinks"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button></div><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div>
+  <p class="lead" data-en="<span>A pick &amp; ban helper for every role,</span> <span>based on JP/KR Emerald+ solo queue win rates.</span>"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p>
+  <div class="status" id="status"><span data-en="Loading data…">データを読み込み中…</span></div>
 </header>
 
-<nav class="tabs" role="tablist" aria-label="レーン" id="tabs"></nav>
+<nav class="tabs" role="tablist" aria-label="レーン" data-en-aria="Role" id="tabs"></nav>
 
 <div id="panels">
   <div class="tabpanel" id="p-top" role="tabpanel" hidden></div>
@@ -362,13 +366,37 @@ td.extra .chips{flex-wrap:nowrap}
   <div class="tabpanel" id="p-adc" role="tabpanel" hidden></div>
   <div class="tabpanel" id="p-sup" role="tabpanel" hidden></div>
 </div>
-<section class="lt" id="tier-sec" aria-label="Tier表"></section>
+<section class="lt" id="tier-sec" aria-label="Tier"></section>
 
-<p class="note">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。★の付いた理由は、手書きの定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
-<p class="note">ソースコードと集計方法は <a href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener">GitHub</a> で公開しています。<br>BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
+<p class="note" data-en="Win rates are calculated directly from the collected games. Pairings with few games swing a lot, so they are pulled toward 50% when ranking. Reasons marked ★ are hand-written rules of thumb based on well-known matchups and may change between patches.">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。★の付いた理由は、手書きの定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
+<p class="note" data-en="The source code and the aggregation methods are public on &lt;a href=&quot;https://github.com/blackpanda0609/lol-sup-ban-pick&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;GitHub&lt;/a&gt;.&lt;br&gt;BP Note isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all associated properties are trademarks or registered trademarks of Riot Games, Inc.">ソースコードと集計方法は <a href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener">GitHub</a> で公開しています。<br>BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
 </div>
 
 <script>
+// ===== 言語（日本語・英語）=====
+// ?lang=en / ?lang=ja ＞ 前回選んだ言語 ＞ ブラウザの言語。切り替えたらページを読み込み直す
+let LANG="ja";
+try{const q=new URLSearchParams(location.search).get("lang"),s=localStorage.getItem("bp-lang");LANG=q==="en"||q==="ja"?q:s||(/^ja\b/i.test(navigator.language||"ja")?"ja":"en");}catch(e){}
+const EN=LANG==="en";
+// J("日本語","English")：表示する言語のほうを返す
+const J=(ja,en)=>EN?en:ja;
+const DD_LANG=EN?"en_US":"ja_JP";
+document.documentElement.lang=LANG;
+if(EN){
+  document.title="BP Note";
+  document.querySelectorAll("[data-en]").forEach(el=>{el.innerHTML=el.dataset.en;});
+  document.querySelectorAll("[data-en-aria]").forEach(el=>el.setAttribute("aria-label",el.dataset.enAria));
+}
+document.querySelectorAll(".lang [data-lang]").forEach(b=>{
+  b.setAttribute("aria-pressed",b.dataset.lang===LANG);
+  b.addEventListener("click",()=>{
+    if(b.dataset.lang===LANG)return;
+    const qs=new URLSearchParams(location.search);qs.delete("lang");
+    // 保存できないブラウザでは URL で言語を持ち回る
+    try{localStorage.setItem("bp-lang",b.dataset.lang);}catch(e){qs.set("lang",b.dataset.lang);}
+    location.href=location.pathname+(qs.toString()?"?"+qs:"")+location.hash;
+  });
+});
 // ===== 手書きデータ（サポートタブ） =====
 const TYPES={engage:"エンゲージ",catch:"キャッチ",tank:"タンク",ench:"エンチャンター",mage:"メイジ"};
 const S={
@@ -446,6 +474,67 @@ const Y={
  hwei:[["lux","スネアに合わせてスキルを確定で当てる"],["morg","Qの拘束からコンボがつながる"],["naut","固めた相手にスキルを全部当てられる"]],
  karthus:[["morg","スネアでQが確定ヒットする"],["naut","固めた相手にQとEを当て続ける"],["rell","まとめて止めた相手にQを重ねる"]]
 };
+// 上の C・Y の理由の英語版（同じ並び順）
+const C_EN={
+ thresh:["E's spell shield blocks the hook and Flay","E catches the hook, and the passive stun punishes it","Q and R stop the follow-up after someone gets pulled"],
+ blitz:["E's spell shield blocks the grab","E blocks the line of fire and protects the ADC","Devour a grabbed ally to rescue them"],
+ naut:["E blocks the anchor and the auto-attack root","Q interrupts the follow-up after the dash","Take the engage, then answer with the passive stun"],
+ leona:["E blocks the stun, and Q catches her instead","Q's knock-up stops the dive","E absorbs the dash and the passive stuns back"],
+ pyke:["Tanky with a stun counter, so hard to get into execute range","Tanky and can counter-engage off his E","Heals and tankiness keep the ADC out of kill range"],
+ rell:["Q and R push back a Rell who dives in","Plants and roots keep the slow Rell away while you chip her","R's knock-up and W absorb the dive"],
+ ali:["Q interrupts the follow-up after W-Q and lets the ADC escape","E protects allies from crowd control","R's knock-up stops the second engage"],
+ rakan:["Point-and-click E and Q make him easy to catch","Passive and R reliably stop him","Q can interrupt his dashes"],
+ lulu:["Weak to early all-ins; tanky engage pushes through","Level 2 dive lands hard","Grab her from outside W range"],
+ janna:["Deal damage from beyond her protection range","Long-range poke pushes the lane down","Fight from a distance where her knock-up can't punish you"],
+ nami:["No escape, weak to all-ins","Her Q is hard to land after an engage","Squishy and easy to catch"],
+ soraka:["Once caught, her healing can't keep up","Finish the squishy target with execute","All-ins out-damage her heals (buy anti-heal early)"],
+ yuumi:["Focus the ADC from the very start of the lane","Hit her the moment she detaches and she can do nothing","Easy to chip the ADC into execute range"],
+ karma:["Tanky engage closes her poke range","Engage forces her shield, then push through","Tanky enough to take the poke and still go in"],
+ milio:["Few escape tools, easy to catch","Kill the target before his cleanse ult","Squishy and easy to execute"],
+ senna:["Long range but no escape","Catch her once and burst her down","Squishy and easy to execute"],
+ brand:["All-ins punish a squishy mage","Go in when he misses a skill","Mobility dodges his skills on the way in"],
+ zyra:["Ignore the plants and dive her directly","Point-and-click R catches her reliably","Dodge the root and still go in"],
+ xerath:["Dive an immobile target","Useless once you close the distance","Catch the squishy body and kill it"],
+ vel:["Go in before the knock-up","Punish missed skills","Easy to find execute windows"],
+ morg:["Q breaks her black shield, then E stuns","Area poke that ignores the shield","Poke from beyond E range","Plants make her waste the shield"],
+ lux:["No escape, weak to all-ins","Go in when she misses a skill","Squishy and easy to catch"],
+ bard:["2v1 the lane while Bard roams","Win early trades","Tankiness dominates the early lane"],
+ braum:["Plant poke that his shield can't block","Area damage ignores the shield","Chip him from outside his range"],
+ taric:["Poke from out of range to wear him down","Area chip damage outpaces his lane sustain","Damage him without letting him close in"],
+ tahm:["Poke him from out of range","Passive burn beats his tankiness","Q poke keeps him away"],
+ mao:["Plants chip him for free","Area damage beats his tankiness","Damage him before he closes in"],
+ renata:["All-in before she can use R","Few escapes once caught","Catch her and you can finish her"],
+ sona:["Squishy: one grab means a kill","Weak to all-ins","Push her down from the start"],
+ sera:["Fragile once you close the gap","Easy to catch","Easy to execute"]
+};
+const Y_EN={
+ kaisa:["Q and passive burst right after the CC","Point-and-click CC into R follow-up","Kai'Sa dives onto targets grouped and locked down"],
+ jinx:["Polymorph and R stop divers","Lantern rescues, Flay protects","Bubble and E for both follow-up and defense"],
+ lucian:["Passive double-shot applies the full E buff","Rapid shots stack the passive stun quickly","E's shield and range bonus cover his short range"],
+ draven:["All-in from level 1 and kill with axes","Easy to go in together at level 2","A single grab turns into a kill"],
+ ezreal:["Poke together with long-range Q","Extends E so he can keep poking","Easy to layer Q onto the root"],
+ kalista:["Throw with R and chain into the hook","Instant W-Q right after the R throw","Stun lands easily after the R throw"],
+ xayah:["Special combo recall and W synergy","Recall feathers onto locked-down targets","Pierce grouped enemies with feathers"],
+ vayne:["Keeps her safe until she scales","Shuts down every dive","R keeps her alive in teamfights"],
+ cait:["Traps on top of the root guarantee headshots","Place traps on Q's root","Traps stack on the root"],
+ ashe:["E becomes a root on slowed targets, so Ashe's slow guarantees it","Slows and Power Chord make strong poke","Many auto-attacks build the passive fast","Slows and roots control the lane"],
+ jhin:["W's root lands on top of the snare","Q root into a guaranteed W","Burst damage into the root"],
+ twitch:["R and W keep him alive after an ambush","Move speed boosts his stealth ambush","Range bonus makes R even longer"],
+ mf:["Lock enemies down and land the full Bullet Time","Point-and-click CC into R","R onto grouped, stopped enemies"],
+ samira:["Knock-ups build style for R","Lock down the group and dive in","Lots of knock-ups for easy combos"],
+ zeri:["Move speed and heals boost her mobility","Move speed and shields make kiting stronger","Range bonus covers her short range"],
+ aphelios:["Lantern makes up for his lack of mobility","Protects an immobile ADC","Bubble and empowered attacks support his weapon rotation"],
+ trist:["Strong level 2 all-in","W in on top of the CC","Empowered attacks win early trades"],
+ sivir:["Stack move speed and collapse together","Empowered attacks and slows give strong pressure","Q is easy to land on locked-down targets"],
+ varus:["Chain CC with R's tether","R follow-up on targets who go in","Matching poke range"],
+ kog:["Attack speed and enlarge protect the hyper-carry","Range bonus extends W even more","Stands in front to guard his line of fire"],
+ nilah:["Her passive shares heals and shields","She receives massive heals through her passive","Bubble and heals let them go in together"],
+ smolder:["Range bonus helps him farm stacks","Keeps him safe until he scales","R keeps him alive in teamfights"],
+ ziggs:["Combined poke and push break towers early","Q and R land guaranteed on the root","Stands in front to guard the immobile Ziggs"],
+ swain:["Pull with E on top of the CC and fight long with R","E and R land easily on locked-down targets","Stun and R's invulnerability keep his R going"],
+ hwei:["Guaranteed skill shots on top of the root","Q's root connects into his combo","Land every skill on locked-down targets"],
+ karthus:["Root guarantees Q hits","Keep landing Q and E on locked-down targets","Stack Q on grouped, stopped enemies"]
+};
 // Data Dragon のチャンピオンID
 const ID={thresh:"Thresh",blitz:"Blitzcrank",pyke:"Pyke",bard:"Bard",naut:"Nautilus",leona:"Leona",rell:"Rell",ali:"Alistar",rakan:"Rakan",
  braum:"Braum",taric:"Taric",tahm:"TahmKench",mao:"Maokai",lulu:"Lulu",janna:"Janna",nami:"Nami",soraka:"Soraka",yuumi:"Yuumi",
@@ -468,32 +557,39 @@ const ic=k=>icon(ID[k]);
 const icK=key=>icon(BYKEY[key]&&BYKEY[key].id);
 const nm=key=>BYKEY[key]?BYKEY[key].name:`#${key}`;
 const kKey=k=>CH[ID[k]]?CH[ID[k]].key:null;
-const kata=s=>s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
+// 検索用：ひらがなをカタカナに、英字は小文字にそろえる
+const kata=s=>s.replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60)).toLowerCase();
 const wrOf=r=>r[1]/r[0];
 const smooth=r=>(r[1]+5)/(r[0]+10);
 // 95%の信頼区間（ウィルソン法）
-const ciText=r=>{const n=r[0],p=r[1]/n,z=1.96,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return `${((c-h)*100).toFixed(1)}%〜${((c+h)*100).toFixed(1)}%`;};
+const ciText=r=>{const n=r[0],p=r[1]/n,z=1.96,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return `${((c-h)*100).toFixed(1)}%${J("〜"," – ")}${((c+h)*100).toFixed(1)}%`;};
+// 「〇試合」
+const G=n=>J(`${n}試合`,`${n} ${n===1?"game":"games"}`);
+// 区切り
+const SEP=J("・",", "),SL=J("／"," / "),SL2=J(" ／ "," / ");
+// 括弧書き・コロン
+const PAR=s=>J(`（${s}）`,` (${s})`),COL=J("：",": ");
 const pct=r=>(wrOf(r)*100).toFixed(1)+"%";
 const dirOf=r=>wrOf(r)>=.52?"up":wrOf(r)<=.48?"down":"";
 const tag=k=>`<span class="tag t-${S[k][1]}">${TYPES[S[k][1]]}</span>`;
 const apcTag=`<span class="tag t-mage">APC</span>`;
 const card=(title,body,best)=>`<div class="card${best?" best":""}"><h3>${title}</h3>${body}</div>`;
 const empty=t=>`<p class="empty">${t}</p>`;
-const fewMsg=()=>empty(`${MIN}試合以上の組み合わせがまだありません。データがたまるのを待ってください。`);
+const fewMsg=()=>empty(J(`${MIN}試合以上の組み合わせがまだありません。データがたまるのを待ってください。`,`No pairings with ${MIN}+ games yet. Please wait for more data.`));
 // 勝率つきの1行
 // Data Dragon のクラス（1つ目の色で表示し、2つ目があれば併記）
-const CLS={Fighter:["ファイター","fighter"],Tank:["タンク","tank"],Mage:["メイジ","mage"],Assassin:["アサシン","assassin"],Marksman:["マークスマン","marks"],Support:["サポート","ench"]};
-const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join("／")}</span>`:"";};
+const CLS={Fighter:[J("ファイター","Fighter"),"fighter"],Tank:[J("タンク","Tank"),"tank"],Mage:[J("メイジ","Mage"),"mage"],Assassin:[J("アサシン","Assassin"),"assassin"],Marksman:[J("マークスマン","Marksman"),"marks"],Support:[J("サポート","Support"),"ench"]};
+const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join(J("／","/"))}</span>`:"";};
 // 操作の難しさ（ゲームのクライアントと同じ 1=低 2=中 3=高）。data/difficulty.json がなければ Data Dragon の古い10段階で代用
 let DIFF={},EASY=true;
 try{EASY=localStorage.getItem("bp-easy")!=="0";}catch(e){}
 const diffOf=key=>{const v=DIFF[key];if(v)return v;const d=((BYKEY[key]||{}).info||{}).difficulty;return d?(d<=3?1:d<=7?2:3):0;};
 // 中くらいのチャンプには何も付けない
-const DIFF_L={1:["簡単","diff-1","操作がシンプルで、はじめて使っても力を出しやすいチャンプです"],3:["難しい","diff-3","操作が難しく、使い慣れるまで本来の勝率が出にくいチャンプです"]};
-const diffTag=key=>{const x=DIFF_L[diffOf(key)];if(!x)return "";const [n,c,t]=x;return `<span class="tag ${c}" tabindex="0" data-tip-h="操作が${n}" data-tip="${t}" data-tip-s="ゲームのチャンプ情報にある難易度（低・中・高）の、低を「簡単」、高を「難しい」としています">${n}</span>`;};
+const DIFF_L={1:[J("簡単","Easy"),"diff-1",J("操作がシンプルで、はじめて使っても力を出しやすいチャンプです","Simple to play; performs well even on your first games")],3:[J("難しい","Hard"),"diff-3",J("操作が難しく、使い慣れるまで本来の勝率が出にくいチャンプです","Mechanically demanding; win rate suffers until you've practiced")]};
+const diffTag=key=>{const x=DIFF_L[diffOf(key)];if(!x)return "";const [n,c,t]=x;return `<span class="tag ${c}" tabindex="0" data-tip-h="${J(`操作が${n}`,`${n} to play`)}" data-tip="${t}" data-tip-s="${J("ゲームのチャンプ情報にある難易度（低・中・高）の、低を「簡単」、高を「難しい」としています","Based on the in-game difficulty rating (Low / Moderate / High): Low = Easy, High = Hard")}">${n}</span>`;};
 // おすすめの点数への上乗せ（「操作が簡単なチャンプを優先」がオンのとき）
 const EASY_PTS={1:2,2:0,3:-3};
-const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
+const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${G(r[0])}${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
 // Tier：勝率に「20勝20敗」を足して50%寄りにならした値で並べる（試合数が多いほど実際の勝率に近づく）。
 // 50試合（最低試合数のほうが多ければそちら）に届いたチャンプだけを対象に、レーン内の順位で
 // 上位10%=S / 次の20%=A / 35%=B / 20%=C / 残り=D
@@ -525,10 +621,10 @@ function tierMapOf(L){
   });
   return map;
 }
-const tierBadge=(t,r,key,L,cap=false)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="環境への影響力スコア ${powerScore(r,key,L).toFixed(1)}${cap?`（スコアはS相当ですが、ピック率が${S_MIN_PR*100}%未満なのでAにしています）`:""}" data-tip-s="勝率点 ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)} ／ 人気点 +${prPts(r,L).toFixed(1)} ／ BAN点 +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="Tierなし" data-tip="${tierMin()}試合に届いていないので、まだTierを付けていません">—</span>`;
+const tierBadge=(t,r,key,L,cap=false)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="${J("環境への影響力スコア","Meta impact score")} ${powerScore(r,key,L).toFixed(1)}${cap?J(`（スコアはS相当ですが、ピック率が${S_MIN_PR*100}%未満なのでAにしています）`,` (S-level score, but capped at A because pick rate is under ${S_MIN_PR*100}%)`):""}" data-tip-s="${J("勝率点","Win rate")} ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}${SL2}${J("人気点","Popularity")} +${prPts(r,L).toFixed(1)}${SL2}${J("BAN点","Ban")} +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="${J("Tierなし","No tier")}" data-tip="${J(`${tierMin()}試合に届いていないので、まだTierを付けていません`,`Not ranked yet: fewer than ${tierMin()} games`)}">—</span>`;
 // 強い時間帯：30分未満と30分以上の勝率（それぞれ10勝10敗ぶんを足してならす）の差で、アーリー型かレイト型かを決める
-const TB=["〜25分","25〜30分","30〜35分","35分〜"];
-const TIMING={early:["アーリー","序盤に強く、試合が長引くと勝率が下がる","fighter"],mid:["安定","試合時間で勝率があまり変わらない","tank"],late:["レイト","序盤は控えめで、試合が長引くほど勝率が上がる","catch"]};
+const TB=J(["〜25分","25〜30分","30〜35分","35分〜"],["< 25 min","25–30 min","30–35 min","35+ min"]);
+const TIMING={early:[J("アーリー","Early"),J("序盤に強く、試合が長引くと勝率が下がる","Strong early; win rate drops in long games"),"fighter"],mid:[J("安定","Steady"),J("試合時間で勝率があまり変わらない","Win rate barely changes with game length"),"tank"],late:[J("レイト","Late"),J("序盤は控えめで、試合が長引くほど勝率が上がる","Modest early; win rate rises the longer the game goes"),"catch"]};
 function timingOf(L,k){
   const t=L&&L.time&&L.time[k];if(!t)return null;
   const e=[t[0][0]+t[1][0],t[0][1]+t[1][1]],l=[t[2][0]+t[3][0],t[2][1]+t[3][1]];
@@ -536,7 +632,7 @@ function timingOf(L,k){
   const d=(e[1]+10)/(e[0]+20)-(l[1]+10)/(l[0]+20);
   return {t,d,type:d>.03?"early":d<-.03?"late":"mid"};
 }
-const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${n}型" data-tip="${desc}" data-tip-s="30分未満と30分以上の勝率の差 ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
+const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${J(`${n}型`,`${n} game`)}" data-tip="${desc}" data-tip-s="${J("30分未満と30分以上の勝率の差","Win rate under 30 min minus 30+ min:")} ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
 // ===== 対面の強み・弱点（自動判定） =====
 // 射程（公式データ）、強い時間帯・ダメージの種類と量・CC（実データ）、分類、勝率、データ上の苦手な相手から作る。
 // それぞれに、初心者向けの「どう突くか」を添える
@@ -554,41 +650,45 @@ function buildClass(M){
   if(c.tags[0]==="Marksman")return "adc";
   return "mage"; // メイジ・アサシン
 }
-const ITEM_DEF={ // 魔法ダメージ・物理ダメージ・CC への守り
+const ITEM_DEF=EN?{
+  bruiser:{ap:"magic resist items (Mercury's Treads for boots)",ad:"armor items (Plated Steelcaps for boots)",cc:"Mercury's Treads"},
+  mage:{ap:"Banshee's Veil",ad:"Zhonya's Hourglass",cc:"Banshee's Veil"},
+  adc:{ap:"Maw of Malmortius",ad:"Guardian Angel",cc:"Quicksilver Sash"}
+}:{ // 魔法ダメージ・物理ダメージ・CC への守り
   bruiser:{ap:"魔法防御のアイテム（靴ならマーキュリー ブーツ）",ad:"物理防御のアイテム（靴ならプレート スチールキャップ）",cc:"マーキュリー ブーツ"},
   mage:{ap:"バンシー ヴェール",ad:"ゾーニャの砂時計",cc:"バンシー ヴェール"},
   adc:{ap:"マウ オブ マルモティウス",ad:"ガーディアン エンジェル",cc:"クイックシルバー サッシュ"}
 };
-const ITEM_HEAL={bruiser:"エグゼキューショナー コーリング（タンクならソーンメイル）",mage:"モレロノミコン",adc:"モータル リマインダー",support:"ケミテック ピュートリファイア"};
-const ITEM_PEN={bruiser:"ブラック クリーバー",mage:"ヴォイド スタッフ",adc:"ドミニク リガード"};
+const ITEM_HEAL=EN?{bruiser:"Executioner's Calling (Thornmail for tanks)",mage:"Morellonomicon",adc:"Mortal Reminder",support:"Chemtech Putrifier"}:{bruiser:"エグゼキューショナー コーリング（タンクならソーンメイル）",mage:"モレロノミコン",adc:"モータル リマインダー",support:"ケミテック ピュートリファイア"};
+const ITEM_PEN=EN?{bruiser:"Black Cleaver",mage:"Void Staff",adc:"Lord Dominik's Regards"}:{bruiser:"ブラック クリーバー",mage:"ヴォイド スタッフ",adc:"ドミニク リガード"};
 // 防具の提案：クラスがわからなければ一般論、エンチャンター系サポートなら位置取りの助言
 function defTip(cls,kind){
-  if(!cls)return {ap:"魔法防御が効く（自分のピックを決めると、合うアイテムを出します）",ad:"物理防御が効く（自分のピックを決めると、合うアイテムを出します）",cc:"行動妨害への対策も効く"}[kind];
-  if(!ITEM_DEF[cls])return kind==="cc"?"味方の後ろから動き、CCの届かない位置を保つ":"防具は積まず、相手のスキルが届かない位置を保つ";
-  return `${ITEM_DEF[cls][kind]}が効く`;
+  if(!cls)return (EN?{ap:"magic resist works (pick your champion to see matching items)",ad:"armor works (pick your champion to see matching items)",cc:"tenacity and cleanse help too"}:{ap:"魔法防御が効く（自分のピックを決めると、合うアイテムを出します）",ad:"物理防御が効く（自分のピックを決めると、合うアイテムを出します）",cc:"行動妨害への対策も効く"})[kind];
+  if(!ITEM_DEF[cls])return kind==="cc"?J("味方の後ろから動き、CCの届かない位置を保つ","play behind your allies and stay out of CC range"):J("防具は積まず、相手のスキルが届かない位置を保つ","skip defensive items and stay out of their skill range");
+  return J(`${ITEM_DEF[cls][kind]}が効く`,`build ${ITEM_DEF[cls][kind]}`);
 }
 function enemyProfile(L,E,M){
   const cls=buildClass(M);
   const c=BYKEY[E];if(!c)return null;
   const pros=[],cons=[],t=traitsOf(E,L),e=extOf(L,E),tm=timingOf(L,E),r=(L.champs||{})[E];
   const range=(c.stats||{}).attackrange||0;
-  if(range>=400)pros.push(["遠距離から攻撃できる","正面から殴り合わず、相手のスキルが外れた直後や、味方と一緒のときに近づく"]);
-  else if(range&&range<=250)cons.push(["近接なので、近づかないと攻撃できない","通常攻撃やスキルで少しずつ削り、相手が近づいてきたら下がる"]);
-  if(tm&&tm.type==="early"){pros.push(["序盤に強い","序盤は無理に戦わず、ミニオンを取ることと視界を優先して耐える"]);cons.push(["試合が長引くと勝率が下がる","30分以降の集団戦で勝負する。早い段階での小競り合いは避ける"]);}
-  if(tm&&tm.type==="late"){pros.push(["試合が長引くほど強くなる","放っておくと手がつけられなくなる"]);cons.push(["序盤は控えめ","序盤にトレードやジャングラーとの連携で差をつけ、早めに試合を決めにいく"]);}
+  if(range>=400)pros.push(J(["遠距離から攻撃できる","正面から殴り合わず、相手のスキルが外れた直後や、味方と一緒のときに近づく"],["Attacks from range","Don't trade head-on; close in right after they miss a skill or when your allies are with you"]));
+  else if(range&&range<=250)cons.push(J(["近接なので、近づかないと攻撃できない","通常攻撃やスキルで少しずつ削り、相手が近づいてきたら下がる"],["Melee: has to get close to attack","Chip them with autos and skills, and back off when they walk up"]));
+  if(tm&&tm.type==="early"){pros.push(J(["序盤に強い","序盤は無理に戦わず、ミニオンを取ることと視界を優先して耐える"],["Strong early","Don't force fights early; focus on farming and vision and survive"]));cons.push(J(["試合が長引くと勝率が下がる","30分以降の集団戦で勝負する。早い段階での小競り合いは避ける"],["Falls off in long games","Win the teamfights after 30 minutes; avoid early skirmishes"]));}
+  if(tm&&tm.type==="late"){pros.push(J(["試合が長引くほど強くなる","放っておくと手がつけられなくなる"],["Gets stronger the longer the game goes","Left alone, they become unstoppable"]));cons.push(J(["序盤は控えめ","序盤にトレードやジャングラーとの連携で差をつけ、早めに試合を決めにいく"],["Weak early","Build a lead early with trades and jungle help, and close the game fast"]));}
   if(e){
     const [p,m]=dmgShare(e),dpm=dmgPerMin(e),tot=dpm.reduce((a,b)=>a+b,0),cut=dpmCut(L);
-    if(cut!==null&&tot>=cut)pros.push(["ダメージが大きい","体力が減った状態で近づかない。1対1は避けて、味方と一緒に戦う"]);
+    if(cut!==null&&tot>=cut)pros.push(J(["ダメージが大きい","体力が減った状態で近づかない。1対1は避けて、味方と一緒に戦う"],["High damage","Don't approach when you're low; avoid 1v1s and fight with your team"]));
     // ダメージの種類は、その種類のダメージが十分な量（1分あたり300以上）あるときだけ取り上げる
-    if(m>=.7&&dpm[1]>=DMG_MIN)cons.push(["ダメージのほとんどが魔法",defTip(cls,"ap")]);
-    else if(p>=.7&&dpm[0]>=DMG_MIN)cons.push(["ダメージのほとんどが物理",defTip(cls,"ad")]);
+    if(m>=.7&&dpm[1]>=DMG_MIN)cons.push([J("ダメージのほとんどが魔法","Deals mostly magic damage"),defTip(cls,"ap")]);
+    else if(p>=.7&&dpm[0]>=DMG_MIN)cons.push([J("ダメージのほとんどが物理","Deals mostly physical damage"),defTip(cls,"ad")]);
   }
-  if(t.has("cc"))pros.push(["CC（行動妨害）が多い",`相手のCCスキルが見えてから動く。${defTip(cls,"cc")}`]);
-  else if(e)cons.push(["CC（行動妨害）が少ない","捕まりにくいので、味方が仕掛けたときに安心して寄れる"]);
-  if(c.tags[0]==="Tank")pros.push(["硬い","倒しきろうとせず、レーンではミニオンの取り合いで差をつける"]);
-  if(c.tags[0]==="Assassin")pros.push(["一瞬で倒す力（バースト）がある","一人で歩かない。体力を高めに保ち、相手の姿が見えないときは慎重に"]);
-  if(t.has("engage"))pros.push(["自分から仕掛けられる（エンゲージ）","相手の仕掛けるスキルを使わせてから戦う。壁やミニオンの後ろに立つ"]);
-  if(r&&r[0]>=MIN&&smooth(r)<.485)cons.push([`全体の勝率が低い（${pct(r)}）`,"今の環境では弱めのチャンプ。落ち着いて対処すれば十分戦える"]);
+  if(t.has("cc"))pros.push([J("CC（行動妨害）が多い","Lots of crowd control"),J(`相手のCCスキルが見えてから動く。${defTip(cls,"cc")}`,`Wait until you see their CC used before committing; ${defTip(cls,"cc")}`)]);
+  else if(e)cons.push(J(["CC（行動妨害）が少ない","捕まりにくいので、味方が仕掛けたときに安心して寄れる"],["Little crowd control","Hard for them to lock you down, so you can safely join your team's fights"]));
+  if(c.tags[0]==="Tank")pros.push(J(["硬い","倒しきろうとせず、レーンではミニオンの取り合いで差をつける"],["Tanky","Don't try to kill them; win the lane by out-farming them"]));
+  if(c.tags[0]==="Assassin")pros.push(J(["一瞬で倒す力（バースト）がある","一人で歩かない。体力を高めに保ち、相手の姿が見えないときは慎重に"],["High burst damage","Don't walk alone; keep your health high and play carefully when they're missing"]));
+  if(t.has("engage"))pros.push(J(["自分から仕掛けられる（エンゲージ）","相手の仕掛けるスキルを使わせてから戦う。壁やミニオンの後ろに立つ"],["Can start fights (engage)","Bait out their engage skill before fighting; stand behind walls or minions"]));
+  if(r&&r[0]>=MIN&&smooth(r)<.485)cons.push([J(`全体の勝率が低い（${pct(r)}）`,`Low overall win rate (${pct(r)})`),J("今の環境では弱めのチャンプ。落ち着いて対処すれば十分戦える","Weak in the current meta. Play calmly and you can handle them")]);
   // データ上の苦手な相手（その対面で勝率が高いピック。20試合以上ある対面だけ）
   const ctr=Object.keys(L.vs||{}).map(x=>[x,(L.vs[x]||{})[E]]).filter(([x,rr])=>BYKEY[x]&&rr&&rr[0]>=Math.max(MIN,20)&&smooth(rr)>.52&&oppOk(L,x)).sort((a,b)=>smooth(b[1])-smooth(a[1])).slice(0,3);
   return {pros,cons,ctr};
@@ -597,18 +697,18 @@ function enemyCard(L,E,M){
   const x=enemyProfile(L,E,M);if(!x)return "";
   const item=([h,tip])=>`<li><b>${h}</b><span class="why">→ ${tip}</span></li>`;
   const body=`<div class="ep">
-      <div><h4 class="ep-h up">強み（気をつけること）</h4>${x.pros.length?`<ul class="ep-l">${x.pros.map(item).join("")}</ul>`:`<p class="why" style="margin:0">目立った強みはデータからは見つかりませんでした</p>`}</div>
-      <div><h4 class="ep-h down">弱点（突くところ）</h4>${x.cons.length?`<ul class="ep-l">${x.cons.map(item).join("")}</ul>`:`<p class="why" style="margin:0">目立った弱点はデータからは見つかりませんでした</p>`}</div>
-    </div>${x.ctr.length?`<p class="why" style="margin:0">データ上の苦手な相手：${x.ctr.map(([k,rr])=>`${nm(k)}（${pct(rr)}）`).join("、")}</p>`:""}
-    <p class="why" style="margin:0;font-size:12px">射程・分類はRiotの公式データ、それ以外は集めた試合データから自動で判定しています。</p>`;
-  return `<div class="card ep-card"><h3>対面：${icK(E)}${nm(E)}の強みと弱点</h3>${body}</div>`;
+      <div><h4 class="ep-h up">${J("強み（気をつけること）","Strengths (watch out for)")}</h4>${x.pros.length?`<ul class="ep-l">${x.pros.map(item).join("")}</ul>`:`<p class="why" style="margin:0">${J("目立った強みはデータからは見つかりませんでした","No notable strengths found in the data")}</p>`}</div>
+      <div><h4 class="ep-h down">${J("弱点（突くところ）","Weaknesses (exploit these)")}</h4>${x.cons.length?`<ul class="ep-l">${x.cons.map(item).join("")}</ul>`:`<p class="why" style="margin:0">${J("目立った弱点はデータからは見つかりませんでした","No notable weaknesses found in the data")}</p>`}</div>
+    </div>${x.ctr.length?`<p class="why" style="margin:0">${J("データ上の苦手な相手：","Counters in the data: ")}${x.ctr.map(([k,rr])=>`${nm(k)}${PAR(pct(rr))}`).join(J("、",", "))}</p>`:""}
+    <p class="why" style="margin:0;font-size:12px">${J("射程・分類はRiotの公式データ、それ以外は集めた試合データから自動で判定しています。","Range and class come from Riot's official data; everything else is derived automatically from collected games.")}</p>`;
+  return `<div class="card ep-card"><h3>${J(`対面：${icK(E)}${nm(E)}の強みと弱点`,`Lane opponent: ${icK(E)}${nm(E)} strengths & weaknesses`)}</h3>${body}</div>`;
 }
 
 function timingCard(L,k){
-  const x=timingOf(L,k),title=`${nm(k)}の強い時間帯`;
-  if(!x)return card(title,empty("試合時間ごとのデータは、まだたまっていません。"));
-  const rows=x.t.map((r,i)=>r[0]?`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${r[0]}試合</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="bar ${r[0]>=MIN?dirOf(r):""}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`:`<li class="sl"><span class="name">${TB[i]}</span><span class="why">データなし</span></li>`).join("");
-  const head=x.type?`<p class="why" style="margin:0"><b style="color:var(--fg)">${TIMING[x.type][0]}型</b>：${TIMING[x.type][1]}</p>`:`<p class="why" style="margin:0">試合数が少ないので、まだ型は判定していません。</p>`;
+  const x=timingOf(L,k),title=J(`${nm(k)}の強い時間帯`,`When ${nm(k)} is strongest`);
+  if(!x)return card(title,empty(J("試合時間ごとのデータは、まだたまっていません。","Not enough data by game length yet.")));
+  const rows=x.t.map((r,i)=>r[0]?`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${G(r[0])}</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="bar ${r[0]>=MIN?dirOf(r):""}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`:`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${J("データなし","No data")}</span></li>`).join("");
+  const head=x.type?`<p class="why" style="margin:0"><b style="color:var(--fg)">${J(`${TIMING[x.type][0]}型`,`${TIMING[x.type][0]} game`)}</b>${COL}${TIMING[x.type][1]}</p>`:`<p class="why" style="margin:0">${J("試合数が少ないので、まだ型は判定していません。","Too few games to classify yet.")}</p>`;
   return card(title,head+`<ul class="list">${rows}</ul>`);
 }
 const statList=(rows,noteFn=null)=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r,noteFn?noteFn(k):"")).join("")}</ul>`:fewMsg();
@@ -620,17 +720,17 @@ function makePicker(host,labelId,items,onChange){
   const uid="pk"+pickers.length;
   const wrap=document.createElement("div");wrap.className="picker";
   wrap.innerHTML=`<button type="button" class="pbtn" id="${uid}-btn" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="${labelId} ${uid}-btn"></button>
-    <div class="panel" hidden><input type="search" id="${uid}-q" placeholder="名前で検索（ひらがなOK）" aria-label="検索" autocomplete="off"><ul role="listbox" tabindex="-1" aria-labelledby="${labelId}"></ul></div>`;
+    <div class="panel" hidden><input type="search" id="${uid}-q" placeholder="${J("名前で検索（ひらがなOK）","Search by name")}" aria-label="${J("検索","Search")}" autocomplete="off"><ul role="listbox" tabindex="-1" aria-labelledby="${labelId}"></ul></div>`;
   host.appendChild(wrap);
   const btn=wrap.querySelector(".pbtn"),panel=wrap.querySelector(".panel"),q=wrap.querySelector("input"),ul=wrap.querySelector("ul");
   let list=[],active=0;
-  const all=()=>[{v:"",name:"選択しない",icon:icon(null),extra:""},...items()];
+  const all=()=>[{v:"",name:J("選択しない","None"),icon:icon(null),extra:""},...items()];
   const drawBtn=()=>{const it=all().find(i=>i.v===value)||all()[0];btn.innerHTML=`${it.icon}<span class="pn">${it.name}</span>`;};
   const drawList=()=>{
     const t=kata(q.value.trim());
     list=all().filter(i=>!t||(i.v&&kata(i.name).includes(t)));
     active=Math.max(0,list.findIndex(i=>i.v===value));
-    ul.innerHTML=list.map((i,n)=>`<li role="option" data-v="${i.v}" aria-selected="${i.v===value}" class="${n===active?"active":""}">${i.icon}<span>${i.name}</span>${i.extra}</li>`).join("")||`<li class="none-hit">見つかりません</li>`;
+    ul.innerHTML=list.map((i,n)=>`<li role="option" data-v="${i.v}" aria-selected="${i.v===value}" class="${n===active?"active":""}">${i.icon}<span>${i.name}</span>${i.extra}</li>`).join("")||`<li class="none-hit">${J("見つかりません","No match")}</li>`;
   };
   const setActive=n=>{if(!list.length)return;active=(n+list.length)%list.length;[...ul.children].forEach((li,j)=>li.classList.toggle("active",j===active));ul.children[active].scrollIntoView({block:"nearest"});};
   const open=()=>{pickers.forEach(p=>p!==api&&p.close());panel.hidden=false;btn.setAttribute("aria-expanded","true");q.value="";drawList();
@@ -740,7 +840,7 @@ showTab(first);
 // ===== 全チャンプの役割（レーンタブ用）=====
 // フロント：Data Dragon の Tank タグ / AP・AD：手入力リストか magic と attack の比較 / それ以外：手入力リスト（Data Dragon のID）
 // ピックのときに考えること：ダメージの種類（AD・APのどちらか）、継続火力（DPS）、フロント、CC、エンゲージ
-const LANE_NEEDS={ad:"AD",ap:"AP",dps:"DPS",front:"フロント",cc:"CC",engage:"エンゲージ"};
+const LANE_NEEDS={ad:"AD",ap:"AP",dps:"DPS",front:J("フロント","Frontline"),cc:"CC",engage:J("エンゲージ","Engage")};
 const DMG_NEEDS=["ad","ap"];
 const idSet=s=>new Set(s.split(/\s+/));
 const T_LIST={
@@ -811,10 +911,10 @@ function linkStatus(text,ok){document.querySelectorAll(".link-st").forEach(el=>{
 async function pollLink(){
   let d;
   try{d=await (await fetch(BRIDGE,{cache:"no-store"})).json();}
-  catch(e){linkStatus("連携ソフトが見つかりません（BPNoteLink.exe をダブルクリックしてください）",false);return;}
-  if(!d.client){linkStatus("LoL クライアントが見つかりません",false);return;}
-  if(!d.champSelect){linkStatus("連携中：チャンプ選択を待っています",true);LINK.tabSet=false;return;}
-  linkStatus("連携中：チャンプ選択の内容を反映しています",true);
+  catch(e){linkStatus(J("連携ソフトが見つかりません（BPNoteLink.exe をダブルクリックしてください）","Link app not found (double-click BPNoteLink.exe)"),false);return;}
+  if(!d.client){linkStatus(J("LoL クライアントが見つかりません","LoL client not found"),false);return;}
+  if(!d.champSelect){linkStatus(J("連携中：チャンプ選択を待っています","Linked: waiting for champ select"),true);LINK.tabSet=false;return;}
+  linkStatus(J("連携中：チャンプ選択の内容を反映しています","Linked: syncing champ select"),true);
   const sig=JSON.stringify(d);if(sig===LINK.last)return;LINK.last=sig;
   ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});
   let mine="",myPos="";const noPos=[];
@@ -866,9 +966,9 @@ function autoNeeds(c){
   return s;
 }
 function compHtml(c,title){
-  if(!c.n)return `<div class="comp-row"><span class="comp-h">${title}</span><span class="why">まだ入っていません</span></div>`;
+  if(!c.n)return `<div class="comp-row"><span class="comp-h">${title}</span><span class="why">${J("まだ入っていません","Nobody yet")}</span></div>`;
   const ap=c.ap;
-  return `<div class="comp-row"><span class="comp-h">${title}</span>${ap!==null?`<span class="dmg" tabindex="0" data-tip-h="${title}のダメージ" data-tip="物理 ${Math.round((1-ap)*100)}% ／ 魔法 ${Math.round(ap*100)}%" data-tip-s="1分あたりのダメージ量（実データ）から"><i class="d-p" style="width:${((1-ap)*100).toFixed(0)}%"></i><i class="d-m" style="width:${(ap*100).toFixed(0)}%"></i></span><span class="comp-t">AD ${Math.round((1-ap)*100)}%・AP ${Math.round(ap*100)}%</span>`:""}${["dps","front","cc","engage"].map(x=>`<span class="cpill${c[x]?"":" zero"}">${LANE_NEEDS[x]} ${c[x]}</span>`).join("")}</div>`;
+  return `<div class="comp-row"><span class="comp-h">${title}</span>${ap!==null?`<span class="dmg" tabindex="0" data-tip-h="${J(`${title}のダメージ`,`${title}: damage`)}" data-tip="${J("物理","Physical")} ${Math.round((1-ap)*100)}%${SL2}${J("魔法","Magic")} ${Math.round(ap*100)}%" data-tip-s="${J("1分あたりのダメージ量（実データ）から","From damage per minute (real game data)")}"><i class="d-p" style="width:${((1-ap)*100).toFixed(0)}%"></i><i class="d-m" style="width:${(ap*100).toFixed(0)}%"></i></span><span class="comp-t">AD ${Math.round((1-ap)*100)}%${J("・"," · ")}AP ${Math.round(ap*100)}%</span>`:""}${["dps","front","cc","engage"].map(x=>`<span class="cpill${c[x]?"":" zero"}">${LANE_NEEDS[x]} ${c[x]}</span>`).join("")}</div>`;
 }
 
 // ===== 試合の勝ち筋 =====
@@ -877,7 +977,7 @@ const SPLIT_LIST=idSet("Fiora Jax Tryndamere Camille Yorick Nasus Shen Gwen Rive
 const HEAL_LIST=idSet("Aatrox Soraka Yuumi Sona Nami Vladimir Swain Sylas Warwick DrMundo Fiddlesticks Briar Illaoi Nidalee Kayn Olaf Renekton Irelia Seraphine Milio Senna Maokai Zac Volibear Gwen");
 const TEAM_ROLE_JA={TOP:"TOP",JUNGLE:"JG",MIDDLE:"MID",BOTTOM:"ADC",UTILITY:"SUP"};
 // レーンで有利なときに取りに行くもの
-const LANE_PLAN={TOP:"TOP側のヴォイドグラブ・リフトヘラルドを取りに行きやすい",JUNGLE:"敵のジャングルに入る（カウンタージャングル）チャンスがある",MIDDLE:"MIDの主導権を活かして、JGと一緒に川の取り合いに寄れる",BOTTOM:"BOTから押し込んで、ドラゴンを優先できる",UTILITY:"BOTから押し込んで、ドラゴンを優先できる"};
+const LANE_PLAN=EN?{TOP:"Top-side Voidgrubs and Rift Herald are easier to take",JUNGLE:"Chances to invade the enemy jungle (counter-jungle)",MIDDLE:"Use mid priority to join your jungler in river fights",BOTTOM:"Push from bot and prioritize dragons",UTILITY:"Push from bot and prioritize dragons"}:{TOP:"TOP側のヴォイドグラブ・リフトヘラルドを取りに行きやすい",JUNGLE:"敵のジャングルに入る（カウンタージャングル）チャンスがある",MIDDLE:"MIDの主導権を活かして、JGと一緒に川の取り合いに寄れる",BOTTOM:"BOTから押し込んで、ドラゴンを優先できる",UTILITY:"BOTから押し込んで、ドラゴンを優先できる"};
 function teamStyle(team){
   // 各チャンプの役割を数えて、構成のタイプの点数にする
   const s={teamfight:0,pick:0,poke:0,split:0,protect:0};let n=0,engage=0,peel=0,carry=0;
@@ -899,7 +999,13 @@ function teamStyle(team){
   if(carry)s.protect+=2;else s.protect*=.6;
   return {s,n,engage,peel};
 }
-const STYLE_JA={
+const STYLE_JA=EN?{
+  teamfight:["Teamfight","Group as five and win head-on teamfights. Start fights around objectives (Dragon, Baron)"],
+  pick:["Pick","Catch enemies one at a time from outside their vision to create numbers advantages. Clear their wards and hunt isolated enemies"],
+  poke:["Poke","Don't fight head-on; chip them from range, then take objectives. Keep your distance so they can't dive you"],
+  split:["Split push","One strong player pushes a side lane while the other four stall without forcing fights. Spread the enemy out and take towers and objectives"],
+  protect:["Protect the carry","The other four keep the ADC safe so they can keep attacking. Stronger in late-game teamfights"]
+}:{
   teamfight:["集団戦型","5人で固まって、正面からの集団戦で勝つ。オブジェクト（ドラゴン・バロン）の前で戦いを起こす"],
   pick:["ピック型","視界の外から敵を1人ずつ捕まえて数的有利を作る。敵の視界を消して、単独行動している敵を狙う"],
   poke:["ポーク型","正面から当たらず、遠くからスキルで削ってからオブジェクトを取る。敵に飛び込まれないよう距離を保つ"],
@@ -916,7 +1022,8 @@ function teamTempo(team){
 // 三すくみの三角形：頂点に3つのタイプ、矢印は強い向き。味方と敵の印を付け、2つの間の矢印を有利なら緑・不利なら赤にする
 function triSvg(aT,eT){
   const a=aT.length===1?aT[0]:null,e=eT.length===1?eT[0]:null;
-  const P={dive:[130,58],poke:[222,196],counter:[38,196]},R=34,label={dive:"ダイブ",poke:"ポーク",counter:"カウンター"};
+  const P={dive:[130,58],poke:[222,196],counter:[38,196]},R=34,label={dive:J("ダイブ","Dive"),poke:J("ポーク","Poke"),counter:J("カウンター","Counter")};
+  const AL_=J("味方","Ally"),EN_=J("敵","Enemy");
   const edge=(from,to)=>{
     const [x1,y1]=P[from],[x2,y2]=P[to],dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),ux=dx/L,uy=dy/L;
     const sx=x1+ux*(R+4),sy=y1+uy*(R+4),ex=x2-ux*(R+6),ey=y2-uy*(R+6),hx=-uy*7,hy=ux*7;
@@ -924,23 +1031,34 @@ function triSvg(aT,eT){
     return `<g class="tri-e ${cls}"><line x1="${sx}" y1="${sy}" x2="${ex-ux*8}" y2="${ey-uy*8}"/><polygon points="${ex},${ey} ${ex-ux*13+hx},${ey-uy*13+hy} ${ex-ux*13-hx},${ey-uy*13-hy}"/></g>`;
   };
   const node=k=>{
-    const [x,y]=P[k],tags=[aT.includes(k)&&"味方",eT.includes(k)&&"敵"].filter(Boolean);
+    const [x,y]=P[k],tags=[aT.includes(k)&&AL_,eT.includes(k)&&EN_].filter(Boolean);
     const both=aT.includes(k)&&eT.includes(k);
     // 味方と敵が同じ頂点のときは、枠を左半分（味方）は青、右半分（敵）は赤にする
     const ring=both?`<circle class="tri-fill" cx="${x}" cy="${y}" r="${R}"/><path class="tri-half ally" d="M${x} ${y-R}A${R} ${R} 0 0 0 ${x} ${y+R}"/><path class="tri-half enemy" d="M${x} ${y-R}A${R} ${R} 0 0 1 ${x} ${y+R}"/>`:`<circle cx="${x}" cy="${y}" r="${R}"/>`;
     return `<g class="tri-n${aT.includes(k)?" ally":""}${eT.includes(k)?" enemy":""}${both?" both":""}">${ring}<text x="${x}" y="${y+5}" text-anchor="middle">${label[k]}</text>
       ${tags.map(t=>{
         // 印は頂点の上に。2つあるときは「味方」を左、「敵」を右に並べる
-        const w=t==="味方"?40:28,bx=tags.length>1?(t==="味方"?x-44:x+2):x-w/2;
-        return `<g class="tri-b ${t==="味方"?"ally":"enemy"}"><rect x="${bx}" y="${y-R-14}" width="${w}" height="18" rx="9"/><text x="${bx+w/2}" y="${y-R-1}" text-anchor="middle">${t}</text></g>`;
+        const w=EN?(t===AL_?36:48):(t===AL_?40:28),bx=tags.length>1?(t===AL_?x-w-4:x+2):x-w/2;
+        return `<g class="tri-b ${t===AL_?"ally":"enemy"}"><rect x="${bx}" y="${y-R-14}" width="${w}" height="18" rx="9"/><text x="${bx+w/2}" y="${y-R-1}" text-anchor="middle">${t}</text></g>`;
       }).join("")}</g>`;
   };
-  return `<svg class="tri-svg" viewBox="0 0 260 240" role="img" aria-label="三すくみ：ダイブはポークに、ポークはカウンターに、カウンターはダイブに強い">${edge("dive","poke")}${edge("poke","counter")}${edge("counter","dive")}${["dive","poke","counter"].map(node).join("")}</svg>`;
+  return `<svg class="tri-svg" viewBox="0 0 260 240" role="img" aria-label="${J("三すくみ：ダイブはポークに、ポークはカウンターに、カウンターはダイブに強い","Dive beats poke, poke beats counter, counter beats dive")}">${edge("dive","poke")}${edge("poke","counter")}${edge("counter","dive")}${["dive","poke","counter"].map(node).join("")}</svg>`;
 }
 // 三すくみ：ダイブ（飛び込む）→ ポーク（遠くから削る）→ カウンター（飛び込みを止めて反撃）→ ダイブ
-const TRIAD={dive:["ダイブ","自分から飛び込んで仕掛ける"],poke:["ポーク","遠くからスキルで削る"],counter:["カウンター","飛び込んできた相手を止めて反撃する"]};
+const TRIAD=EN?{dive:["Dive","jump in and start the fight yourselves"],poke:["Poke","chip enemies down with skills from range"],counter:["Counter","stop divers and punish them"]}:{dive:["ダイブ","自分から飛び込んで仕掛ける"],poke:["ポーク","遠くからスキルで削る"],counter:["カウンター","飛び込んできた相手を止めて反撃する"]};
 const BEATS={dive:"poke",poke:"counter",counter:"dive"};
-const TRIAD_MU={ // [味方][敵] の立ち回り
+// 英語版は「見出し：本文」の区切りを同じ「：」にしてある（split("：") で分けるため）
+const TRIAD_MU=EN?{
+  dive:{dive:"Both teams dive：Whoever goes in first usually wins. Don't miss the moment your engage skills are all ready.",
+        poke:"Favorable matchup (dive beats poke)：Close the distance before they chip you down and go in all at once. Don't wait around.",
+        counter:"Unfavorable matchup (counter beats dive)：Diving head-on gets you stopped and punished. Bait out their stopping skills first, or go in from the side or behind."},
+  poke:{dive:"Unfavorable matchup (dive beats poke)：You lose if they close the distance. Keep wide vision and back off before they dive.",
+        poke:"Both teams poke：It becomes a battle of chip damage. Whoever lowers the other's health first gets the objective, so value healing and landing skills.",
+        counter:"Favorable matchup (poke beats counter)：They won't dive you, so chip them from range and then take the objective."},
+  counter:{dive:"Favorable matchup (counter beats dive)：Don't start fights; let them dive, stop them, then punish.",
+        poke:"Unfavorable matchup (poke beats counter)：Getting chipped over time loses. Take objectives early and avoid long standoffs.",
+        counter:"Both teams counter：Neither side wants to start. Win on farm and vision, and punish them when they overextend."}
+}:{ // [味方][敵] の立ち回り
   dive:{dive:"どちらもダイブ型：先に飛び込んだほうが有利になりやすい。味方の仕掛けるスキルが揃った瞬間を逃さない。",
         poke:"相性で有利（ダイブはポークに強い）：削られる前に距離を詰めて一気に仕掛ける。様子見の時間を長くしない。",
         counter:"相性で不利（カウンターはダイブに強い）：正面から飛び込むと止められて返り討ちにされる。敵の止めるスキルを先に使わせるか、横や後ろから仕掛ける。"},
@@ -952,7 +1070,26 @@ const TRIAD_MU={ // [味方][敵] の立ち回り
         counter:"どちらもカウンター型：お互いに仕掛けにくい。ファームと視界で差をつけ、相手が無理に出てきたところを狙う。"}
 };
 // 相性で不利になったときの勝ち方（キーは「味方のタイプ」、相手はそのタイプに強いタイプ）
-const TRIAD_COMEBACK={
+const TRIAD_COMEBACK=EN?{
+  poke:[
+    "Set up at the objective about a minute before it spawns and chip anyone who approaches. A dive team with low health can't dive",
+    "Focus your poke on their engager. If the engager is low, the dive can't even start",
+    "Track their engage skills (like Malphite's R) and punish right after they're used or missed. Until then, don't stand in front",
+    "Place vision on the flanks and spread out. Backliners stay one step outside the engage range. Buy defensive items like Zhonya's early"
+  ],
+  dive:[
+    "Bait out their stopping skills (knockbacks, polymorph, etc.) with light pressure before your main engage goes in",
+    "Don't go in one at a time. Your engager and follow-up go in together so their stopping skills are used up in one go",
+    "Don't come from the front; flank from outside their vision and hit the backline",
+    "Counter comps are strongest when grouped. Push side lanes to split them up, then engage when they're missing people"
+  ],
+  counter:[
+    "Don't play their poke game. Reset when you're low, and never teamfight while chipped",
+    "Ward objectives early before they set up, and take them as soon as they spawn",
+    "Push side lanes outside their poke range to make them spend time. Keep standoffs short",
+    "Collapse all at once only right after they miss a poke skill or step too far forward"
+  ]
+}:{
   poke:[ // ポーク対ダイブ
     "オブジェクトが出る1分ほど前から先に陣取り、近づいてくる敵を削っておく。体力が減ったダイブは飛び込めない",
     "敵の仕掛け役を優先して削る。仕掛け役の体力が低ければ、ダイブはそもそも始められない",
@@ -991,7 +1128,7 @@ function triad(team){
 function planHtml(ally,enemy,me){
   const cls=buildClass(me);
   const an=ROLES.filter(r=>ally[r]).length,en=ROLES.filter(r=>enemy[r]).length;
-  if(an<3||en<3)return empty("ステップ①で味方と敵を3人以上ずつ入れると、勝ち筋を表示します。");
+  if(an<3||en<3)return empty(J("ステップ①で味方と敵を3人以上ずつ入れると、勝ち筋を表示します。","Enter at least 3 allies and 3 enemies in step 1 to see the game plan."));
   const blocks=[];
   // 1. レーン戦の見通し（各レーンの対面勝率）
   const lanes=ROLES.map(r=>{
@@ -1002,79 +1139,84 @@ function planHtml(ally,enemy,me){
     const w=tierScore(rec);return {r,a,e,rec,v:w>=.53?"good":w<=.47?"bad":"even",weak:rec[0]<50};
   }).filter(Boolean);
   const good=lanes.filter(x=>x.v==="good"&&!x.weak),bad=lanes.filter(x=>x.v==="bad"&&!x.weak);
-  const laneRow=x=>`<li class="pl ${x.v}${x.weak?" weak":""}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?"有利":x.v==="bad"?"不利":x.v==="even"?"互角":"データなし"}${x.weak?"（参考）":""}</span>${x.rec?`<span class="why">${pct(x.rec)}（${x.rec[0]}試合）</span>`:""}</li>`;
+  const laneRow=x=>`<li class="pl ${x.v}${x.weak?" weak":""}"><span class="pl-r">${TEAM_ROLE_JA[x.r]}</span>${icK(x.a)}<span class="pl-vs">vs</span>${icK(x.e)}<span class="pl-v">${x.v==="good"?J("有利","Favored"):x.v==="bad"?J("不利","Unfavored"):x.v==="even"?J("互角","Even"):J("データなし","No data")}${x.weak?J("（参考）"," (low sample)"):""}</span>${x.rec?`<span class="why">${pct(x.rec)}${PAR(G(x.rec[0]))}</span>`:""}</li>`;
+  const roles=xs=>xs.map(x=>TEAM_ROLE_JA[x.r]).join(SEP);
   const laneAdv=[...new Set(good.map(x=>LANE_PLAN[x.r]))].map(t=>`<li>${t}</li>`).join("")
     // 不利なレーンへの助言：レーナーは「JGのカバーを待つ」、JG自身は別の動き方
-    +(bad.filter(x=>x.r!=="JUNGLE").length?`<li>${bad.filter(x=>x.r!=="JUNGLE").map(x=>TEAM_ROLE_JA[x.r]).join("・")}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない</li>`:"")
-    +(bad.some(x=>x.r==="JUNGLE")?`<li>JGは不利なので、敵JGとの1対1や、敵のジャングルへの侵入は避ける。${good.length?`有利な${good.filter(x=>x.r!=="JUNGLE").map(x=>TEAM_ROLE_JA[x.r]).join("・")}の近くで動き、`:"味方レーナーの近くで動き、"}敵JGの位置を見てから動く</li>`:"");
-  blocks.push(card("レーン戦の見通し",`<ul class="pl-list">${lanes.map(laneRow).join("")}</ul>${laneAdv?`<ul class="plan-l">${laneAdv}</ul>`:`<p class="why" style="margin:0">はっきり有利・不利なレーンはありません。</p>`}`));
+    +(bad.filter(x=>x.r!=="JUNGLE").length?`<li>${J(`${roles(bad.filter(x=>x.r!=="JUNGLE"))}は不利なので、無理に戦わずJGのカバーを待つ。そのレーンで敵に主導権を握られても慌てない`,`${roles(bad.filter(x=>x.r!=="JUNGLE"))} is behind in the matchup: don't force fights, wait for your jungler's help, and don't panic if the enemy takes control of that lane`)}</li>`:"")
+    +(bad.some(x=>x.r==="JUNGLE")?`<li>${J(`JGは不利なので、敵JGとの1対1や、敵のジャングルへの侵入は避ける。${good.length?`有利な${roles(good.filter(x=>x.r!=="JUNGLE"))}の近くで動き、`:"味方レーナーの近くで動き、"}敵JGの位置を見てから動く`,`Your jungler is behind: avoid 1v1s with the enemy jungler and don't invade. ${good.length?`Play near the winning ${roles(good.filter(x=>x.r!=="JUNGLE"))}, `:"Play near your laners, "}and move after you've spotted the enemy jungler`)}</li>`:"");
+  blocks.push(card(J("レーン戦の見通し","Laning outlook"),`<ul class="pl-list">${lanes.map(laneRow).join("")}</ul>${laneAdv?`<ul class="plan-l">${laneAdv}</ul>`:`<p class="why" style="margin:0">${J("はっきり有利・不利なレーンはありません。","No lane is clearly favored or unfavored.")}</p>`}`));
   // 2. 試合のテンポ
   const at=teamTempo(ally),et=teamTempo(enemy);
   let tempo;
-  if(!at||!et)tempo=empty("試合時間ごとのデータが足りないため、まだ判定できません。");
+  if(!at||!et)tempo=empty(J("試合時間ごとのデータが足りないため、まだ判定できません。","Not enough data by game length to judge yet."));
   else{
     const diff=at.d-et.d;
-    tempo=diff>.015?`<p><b>味方のほうが序盤型</b>：序盤から積極的にオブジェクトを取り、30分までに試合を決めにいく。長引くほど不利になる。</p>`
-      :diff<-.015?`<p><b>味方のほうが終盤型</b>：序盤は無理に戦わず、ミニオンと視界で耐える。30分以降の集団戦で勝負する。</p>`
-      :`<p><b>テンポはほぼ互角</b>：時間帯よりも、レーン戦の有利・不利と構成のタイプで動き方を決める。</p>`;
+    tempo=diff>.015?J(`<p><b>味方のほうが序盤型</b>：序盤から積極的にオブジェクトを取り、30分までに試合を決めにいく。長引くほど不利になる。</p>`,`<p><b>Your team is stronger early</b>: take objectives aggressively from the start and aim to end before 30 minutes. The longer it goes, the worse for you.</p>`)
+      :diff<-.015?J(`<p><b>味方のほうが終盤型</b>：序盤は無理に戦わず、ミニオンと視界で耐える。30分以降の集団戦で勝負する。</p>`,`<p><b>Your team is stronger late</b>: don't force early fights; survive with farm and vision, and win the teamfights after 30 minutes.</p>`)
+      :J(`<p><b>テンポはほぼ互角</b>：時間帯よりも、レーン戦の有利・不利と構成のタイプで動き方を決める。</p>`,`<p><b>Even tempo</b>: decide how to play from the lane matchups and comp types rather than game time.</p>`);
   }
-  blocks.push(card("試合のテンポ",tempo));
+  blocks.push(card(J("試合のテンポ","Game tempo"),tempo));
   // 3. 構成のタイプ
   const as=teamStyle(ally),es=teamStyle(enemy),[ak]=topStyle(as),[ek]=topStyle(es);
-  blocks.push(card("構成のタイプ",`<p><b>味方：${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>敵：${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
+  blocks.push(card(J("構成のタイプ","Team comp type"),`<p><b>${J("味方","Ally")}${COL}${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>${J("敵","Enemy")}${COL}${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
   // 4. 三すくみ：ダイブ → ポーク → カウンター → ダイブ（矢印の先に強い）
   const triA=triad(ally),triE=triad(enemy),fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
-  const tn=k=>TRIAD[k][0],typeText=x=>x.tops.length?x.tops.map(tn).join("・")+(x.tops.length>1?"の両面":"型"):"はっきりしない";
+  const tn=k=>TRIAD[k][0],typeText=x=>x.tops.length?x.tops.map(tn).join(J("・"," + "))+(x.tops.length>1?J("の両面"," (mixed)"):J("型","")):J("はっきりしない","unclear");
   let head,body,verdict="";
   if(triA.type&&triE.type){
     [head,...body]=TRIAD_MU[triA.type][triE.type].split("：");body=body.join("：");
     verdict=BEATS[triA.type]===triE.type?"up":BEATS[triE.type]===triA.type?"down":"";
   }else if(triA.type&&triE.tops.length){
     // 敵が2つのタイプで並んだとき：味方のタイプの基本の動き方と、それぞれの要素への注意
-    const a=triA.type,notes=triE.tops.filter(e=>e!==a).map(e=>BEATS[e]===a?`敵の${tn(e)}の要素には相性で不利なので、そこに注意（${TRIAD_MU[a][e].split("：").slice(1).join("：")}）`:BEATS[a]===e?`敵の${tn(e)}の要素には相性で有利`:"");
-    head=`敵は${triE.tops.map(tn).join("・")}の両面がある`;
-    body=`味方は${tn(a)}型：${TRIAD[a][1]}。${notes.filter(Boolean).join("。")}`;
+    const a=triA.type,MU=e=>TRIAD_MU[a][e].split("：").slice(1).join("：");
+    const notes=triE.tops.filter(e=>e!==a).map(e=>BEATS[e]===a?J(`敵の${tn(e)}の要素には相性で不利なので、そこに注意（${MU(e)}）`,`You're unfavored against their ${tn(e)} side, so watch out for it (${MU(e)})`):BEATS[a]===e?J(`敵の${tn(e)}の要素には相性で有利`,`You're favored against their ${tn(e)} side`):"");
+    head=J(`敵は${triE.tops.map(tn).join("・")}の両面がある`,`The enemy is mixed: ${triE.tops.map(tn).join(" + ")}`);
+    body=J(`味方は${tn(a)}型：${TRIAD[a][1]}。${notes.filter(Boolean).join("。")}`,`Your team is ${tn(a)}: ${TRIAD[a][1]}. ${notes.filter(Boolean).join(". ")}`);
     verdict=triE.tops.some(e=>BEATS[e]===a)?"down":"";
   }else if(triA.tops.length>1&&triE.type){
     // 味方が2つのタイプで並んだとき：敵に有利なほうの動き方を選ぶ
     const e=triE.type,win=triA.tops.find(a=>BEATS[a]===e);
-    head=`味方は${triA.tops.map(tn).join("・")}の両面がある`;
-    body=win?`敵は${tn(e)}型なので、相性で有利な${tn(win)}の動き方を選ぶ：${TRIAD_MU[win][e].split("：").slice(1).join("：")}`:`敵は${tn(e)}型。どちらの動き方でも相性での有利はないので、レーン戦と構成のタイプで決める。`;
+    head=J(`味方は${triA.tops.map(tn).join("・")}の両面がある`,`Your team is mixed: ${triA.tops.map(tn).join(" + ")}`);
+    body=win?J(`敵は${tn(e)}型なので、相性で有利な${tn(win)}の動き方を選ぶ：`,`The enemy is ${tn(e)}, so play the ${tn(win)} style, which beats it: `)+TRIAD_MU[win][e].split("：").slice(1).join("："):J(`敵は${tn(e)}型。どちらの動き方でも相性での有利はないので、レーン戦と構成のタイプで決める。`,`The enemy is ${tn(e)}. Neither of your styles has the edge, so decide from the lanes and comp types.`);
     verdict=win?"up":"";
   }else{
-    head="相性の決め手がない";
-    body="味方・敵ともにタイプがはっきりしないので、三すくみよりも、レーン戦の有利・不利と構成のタイプで動き方を決める。";
+    head=J("相性の決め手がない","No clear edge");
+    body=J("味方・敵ともにタイプがはっきりしないので、三すくみよりも、レーン戦の有利・不利と構成のタイプで動き方を決める。","Neither team has a clear type, so decide how to play from the lane matchups and comp types instead.");
   }
-  const score=x=>`ダイブ ${fmt(x.s.dive)}・ポーク ${fmt(x.s.poke)}・カウンター ${fmt(x.s.counter)}`;
+  const score=x=>`${J("ダイブ","Dive")} ${fmt(x.s.dive)}${SEP}${J("ポーク","Poke")} ${fmt(x.s.poke)}${SEP}${J("カウンター","Counter")} ${fmt(x.s.counter)}`;
   // 相性で不利なとき（敵が2つで並び、片方に不利なときも）は、不利なときの勝ち方を出す
   const losing=triA.type&&triE.tops.some(e=>BEATS[e]===triA.type)?triA.type:null;
-  const comeback=losing?`<div class="tri-tip"><b>不利なときの勝ち方</b><ul class="plan-l">${TRIAD_COMEBACK[losing].map(x=>`<li>${x}</li>`).join("")}</ul></div>`:"";
-  blocks.push(`<div class="card tri-card"><h3>ダイブ・ポーク・カウンター</h3><div class="tri-wrap">${triSvg(triA.tops,triE.tops)}
-    <div class="tri-text"><p class="tri-v ${verdict}">${head}</p><p style="margin:0">${body}</p>${comeback}
-    <p class="why" style="margin:0;font-size:12px">味方：${typeText(triA)}（${score(triA)}）<br>敵：${typeText(triE)}（${score(triE)}）<br>矢印の先のタイプに強い</p></div></div></div>`);
+  const comeback=losing?`<div class="tri-tip"><b>${J("不利なときの勝ち方","How to win from behind")}</b><ul class="plan-l">${TRIAD_COMEBACK[losing].map(x=>`<li>${x}</li>`).join("")}</ul></div>`:"";
+  // 英語では見出しと本文を「：」で分けたまま出さないよう、1文目の区切りを置き換える
+  const fixHead=s=>EN?String(s).replace("：",""):s;
+  blocks.push(`<div class="card tri-card"><h3>${J("ダイブ・ポーク・カウンター","Dive / Poke / Counter")}</h3><div class="tri-wrap">${triSvg(triA.tops,triE.tops)}
+    <div class="tri-text"><p class="tri-v ${verdict}">${fixHead(head)}</p><p style="margin:0">${body}</p>${comeback}
+    <p class="why" style="margin:0;font-size:12px">${J("味方","Ally")}${COL}${typeText(triA)}${PAR(score(triA))}<br>${J("敵","Enemy")}${COL}${typeText(triE)}${PAR(score(triE))}<br>${J("矢印の先のタイプに強い","Each type beats the one its arrow points to")}</p></div></div></div>`);
   // 5. レーン戦前に確認しておくこと
   const ec=compOf("enemy",null),checks=[];
-  if(ec.cc>=3)checks.push(`敵はCCが多い：${defTip(cls,"cc")}`);
-  if(ec.ap!==null&&ec.ap>=.65)checks.push(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：${defTip(cls,"ap")}`);
-  else if(ec.ap!==null&&ec.ap<=.35)checks.push(`敵のダメージは物理が中心（AD ${Math.round((1-ec.ap)*100)}%）：${defTip(cls,"ad")}`);
-  if(ec.front>=2)checks.push(cls&&ITEM_PEN[cls]?`敵は前衛が多い：${ITEM_PEN[cls]}などの防御を削るアイテムを検討`:cls?"敵は前衛が多い：倒しきるのは味方のキャリーに任せ、前衛を足止めして守る":"敵は前衛が多い：防御を削るアイテムを検討（自分のピックを決めると、合うアイテムを出します）");
+  const pick=J("（自分のピックを決めると、合うアイテムを出します）"," (pick your champion to see matching items)");
+  if(ec.cc>=3)checks.push(J(`敵はCCが多い：${defTip(cls,"cc")}`,`The enemy has lots of CC: ${defTip(cls,"cc")}`));
+  if(ec.ap!==null&&ec.ap>=.65)checks.push(J(`敵のダメージは魔法が中心（AP ${Math.round(ec.ap*100)}%）：${defTip(cls,"ap")}`,`Enemy damage is mostly magic (AP ${Math.round(ec.ap*100)}%): ${defTip(cls,"ap")}`));
+  else if(ec.ap!==null&&ec.ap<=.35)checks.push(J(`敵のダメージは物理が中心（AD ${Math.round((1-ec.ap)*100)}%）：${defTip(cls,"ad")}`,`Enemy damage is mostly physical (AD ${Math.round((1-ec.ap)*100)}%): ${defTip(cls,"ad")}`));
+  if(ec.front>=2)checks.push(cls&&ITEM_PEN[cls]?J(`敵は前衛が多い：${ITEM_PEN[cls]}などの防御を削るアイテムを検討`,`The enemy has a lot of frontline: consider penetration items like ${ITEM_PEN[cls]}`):cls?J("敵は前衛が多い：倒しきるのは味方のキャリーに任せ、前衛を足止めして守る","The enemy has a lot of frontline: leave the killing to your carries; slow their frontline and protect"):J("敵は前衛が多い：防御を削るアイテムを検討","The enemy has a lot of frontline: consider penetration items")+pick);
   const heals=ROLES.map(r=>enemy[r]).filter(k=>k&&BYKEY[k]&&HEAL_LIST.has(BYKEY[k].id));
-  if(heals.length>=2)checks.push(`敵は回復が多い（${heals.map(nm).join("、")}）：${cls?`回復阻害のアイテム（${ITEM_HEAL[cls]}）を早めに`:"回復阻害のアイテムを早めに（自分のピックを決めると、合うアイテムを出します）"}`);
-  if(es.engage>=2.5)checks.push(`敵は飛び込んでくる力が強い：${cls==="mage"?"ゾーニャの砂時計などの守りのアイテムも検討":cls==="adc"?"前に出すぎず、ガーディアン エンジェルなどの守りのアイテムも検討":cls==="support"?"味方のキャリーのそばにいて、飛び込んできた敵を止める":"固まりすぎず、飛び込んできた敵をまとめて迎え撃つ"}`);
-  blocks.push(card("レーン戦前に確認しておくこと",checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">特別な対策が必要な構成ではありません。</p>`));
-  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。</p>`;
+  if(heals.length>=2)checks.push(J(`敵は回復が多い（${heals.map(nm).join("、")}）：`,`The enemy has lots of healing (${heals.map(nm).join(", ")}): `)+(cls?J(`回復阻害のアイテム（${ITEM_HEAL[cls]}）を早めに`,`buy anti-heal (${ITEM_HEAL[cls]}) early`):J("回復阻害のアイテムを早めに","buy anti-heal early")+pick));
+  if(es.engage>=2.5)checks.push(J("敵は飛び込んでくる力が強い：","The enemy has strong engage: ")+(cls==="mage"?J("ゾーニャの砂時計などの守りのアイテムも検討","consider defensive items like Zhonya's Hourglass"):cls==="adc"?J("前に出すぎず、ガーディアン エンジェルなどの守りのアイテムも検討","don't step too far forward; consider defensive items like Guardian Angel"):cls==="support"?J("味方のキャリーのそばにいて、飛び込んできた敵を止める","stay next to your carry and stop whoever dives in"):J("固まりすぎず、飛び込んできた敵をまとめて迎え撃つ","don't bunch up too much; collapse together on whoever dives in")));
+  blocks.push(card(J("レーン戦前に確認しておくこと","Check before laning"),checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">${J("特別な対策が必要な構成ではありません。","No special counter-measures needed against this comp.")}</p>`));
+  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">${J("レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。","Laning and tempo come from collected game data; comp type and Dive/Poke/Counter are judged automatically from champion roles (Dive counts engagers as 1 and pick champions, assassins and diving fighters as 0.5; Poke counts poke champions as 1; Counter counts disengagers as 1 and peelers as 0.5).")}</p>`;
 }
 
 // ===== Tier表（BPのタブとは別に、表の上のボタンでレーンを切り替える） =====
 function buildTiers(){
   const sec=$("tier-sec");if(!ST){sec.hidden=true;return;}
-  sec.innerHTML=`<nav class="lt-tabs" aria-label="Tier表のレーン">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="false">${lb}</button>`).join("")}</nav>`
+  sec.innerHTML=`<nav class="lt-tabs" aria-label="${J("Tier表のレーン","Tier list role")}">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="false">${lb}</button>`).join("")}</nav>`
     +LANES.map(([t])=>`<div class="tier-lane" data-lane="${t}" hidden></div>`).join("");
   LANES.forEach(([id,pos,label])=>{
     const L=ST.lanes[pos]||{champs:{},vs:{}};
-    const extras=[{head:"苦手な対面",cell:k=>worstChips(L,k,pos)}];
-    if(pos==="BOTTOM")extras.push({head:"相性のいいサポート",cell:k=>pairCell(k,true)});
-    if(pos==="UTILITY")extras.push({head:"相性のいいADC",cell:k=>pairCell(k,false)});
+    const extras=[{head:J("苦手な対面","Tough matchups"),cell:k=>worstChips(L,k,pos)}];
+    if(pos==="BOTTOM")extras.push({head:J("相性のいいサポート","Best supports"),cell:k=>pairCell(k,true)});
+    if(pos==="UTILITY")extras.push({head:J("相性のいいADC","Best ADCs"),cell:k=>pairCell(k,false)});
     // 名前を押したら、そのチャンプを自分のピックにする（これはBPの操作なので、BPのタブも切り替える）
     const tbl=laneTable(sec.querySelector(`[data-lane="${id}"]`),L,label,extras,k=>{showTab(id);lanePanels[id].open(k,true);});
     lanePanels[id].table=tbl;
@@ -1089,42 +1231,42 @@ function setTierLane(id){
 
 function buildLane(id,pos,label){
   const root=$("p-"+id);
-  if(!ST){root.innerHTML=card("データを読み込めませんでした",empty("通信状態を確認して、ページを再読み込みしてください。"));return;}
+  if(!ST){root.innerHTML=card(J("データを読み込めませんでした","Couldn't load data"),empty(J("通信状態を確認して、ページを再読み込みしてください。","Check your connection and reload the page.")));return;}
   const L=ST.lanes[pos]||{champs:{},vs:{}};
   // 隣のレーン：SUP なら味方ADC、BOT なら味方SUP
-  const partner=pos==="UTILITY"?["BOTTOM","味方ADC"]:pos==="BOTTOM"?["UTILITY","味方SUP"]:null;
+  const partner=pos==="UTILITY"?["BOTTOM","ADC"]:pos==="BOTTOM"?["UTILITY",J("SUP","support")]:null;
   const step=(n,h,p,body)=>`<li class="step" data-step="${n}"><div class="step-h"><span class="sn">${n}</span><div><h3>${h}</h3><p>${p}</p></div></div>${body}</li>`;
-  root.innerHTML=`<section class="flow"><h2>${label}のBP</h2><ol class="steps">
-    ${step(1,"相手と味方を見る","ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）",`
-      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> クライアントと連携</label><span class="link-st"></span><a class="link-dl" href="https://github.com/blackpanda0609/lol-sup-ban-pick/releases/latest" target="_blank" rel="noopener">連携ソフト（Windows）の入手</a></div>
+  root.innerHTML=`<section class="flow"><h2>${J(`${label}のBP`,`${label} pick & ban`)}</h2><ol class="steps">
+    ${step(1,J("相手と味方を見る","Read the draft"),J("ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）","Enter the champions you see in champ select (shared across all tabs)"),`
+      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> ${J("クライアントと連携","Link with client")}</label><span class="link-st"></span><a class="link-dl" href="https://github.com/blackpanda0609/lol-sup-ban-pick/releases/latest" target="_blank" rel="noopener">${J("連携ソフト（Windows）の入手","Get the link app (Windows)")}</a></div>
       <div class="board">
-        ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?"味方":"敵"}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
+        ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?J("味方","Ally"):J("敵","Enemy")}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
         <div class="bans"></div>
-        <button type="button" class="draft-reset"><span aria-hidden="true">↺</span>ドラフトを全部消す</button>
+        <button type="button" class="draft-reset"><span aria-hidden="true">↺</span>${J("ドラフトを全部消す","Clear the whole draft")}</button>
       </div>
       <div class="comp"></div>
       <div class="field">
-        <span class="flabel" id="${id}-n-l">チームにほしいもの <span class="needs-note"></span></span>
+        <span class="flabel" id="${id}-n-l">${J("チームにほしいもの","What your team needs")} <span class="needs-note"></span></span>
         <div class="needs-row lane-needs" role="group" aria-labelledby="${id}-n-l">
-          <div class="ngroup"><span>ダメージ</span>${DMG_NEEDS.map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
-          <div class="ngroup"><span>役割</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
+          <div class="ngroup"><span>${J("ダメージ","Damage")}</span>${DMG_NEEDS.map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
+          <div class="ngroup"><span>${J("役割","Roles")}</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
         </div>
       </div>`)}
-    ${step(2,"ピックを決める","使うチャンプを選ぶ。迷ったら下のおすすめから",`
-      <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">自分のピック</span></div></div>
+    ${step(2,J("ピックを決める","Lock in your pick"),J("使うチャンプを選ぶ。迷ったら下のおすすめから","Choose your champion. Not sure? Use the suggestions below"),`
+      <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">${J("自分のピック","Your pick")}</span></div></div>
       <div class="s2b"></div>
-      <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><label class="easy-opt"><input type="checkbox" class="easy-on"${EASY?" checked":""}>操作が簡単なチャンプを優先する</label><div class="s2"></div></details>`)}
-    ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
-    ${step(4,"試合の勝ち筋","決まった構成で、どこで差をつけて、どう勝つか",`<div class="s5"></div>`)}
-    ${step(5,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
+      <details class="recs" open><summary>${J("迷ったら：おすすめから選ぶ","Not sure? Pick from the suggestions")}</summary><label class="easy-opt"><input type="checkbox" class="easy-on"${EASY?" checked":""}>${J("操作が簡単なチャンプを優先する","Prefer easy-to-play champions")}</label><div class="s2"></div></details>`)}
+    ${step(3,J("ルーンとサモナースペル","Runes & summoner spells"),J("ピックが決まったら設定する","Set these once your pick is locked"),`<div class="s3"></div>`)}
+    ${step(4,J("試合の勝ち筋","Game plan"),J("決まった構成で、どこで差をつけて、どう勝つか","With these comps, where to get ahead and how to win"),`<div class="s5"></div>`)}
+    ${step(5,J("ゲーム開始後","After the game starts"),J("BPには使わない情報なので、必要なときだけ開く","Not needed for the draft; open when you need it"),`<details class="later"><summary>${J("スタートアイテム・スキルの上げ方・アイテムの順番を見る","Show starting items, skill order and item order")}</summary><div class="s4"></div></details>`)}
     </ol></section>`;
   const fields=root.querySelectorAll(".field");
   // プルダウンは全チャンプから選べる（実際の試合では珍しいピックも来るので）。並びはあいうえお順。
   // そのロールでほとんど使われないチャンプには「まれ」と付ける
   const itemsOf=LL=>()=>{
     const g=k=>((LL.champs||{})[k]||[0])[0];
-    return Object.keys(BYKEY).sort((a,b)=>nm(a).localeCompare(nm(b),"ja")).map(k=>({v:k,name:nm(k),icon:icK(k),
-      extra:g(k)>=roleMin(LL)?`${clsTag(k)}<span class="gc">${g(k)}試合</span>`:`<span class="gc rare">まれ${g(k)?`・${g(k)}試合`:""}</span>`}));
+    return Object.keys(BYKEY).sort((a,b)=>nm(a).localeCompare(nm(b),LANG)).map(k=>({v:k,name:nm(k),icon:icK(k),
+      extra:g(k)>=roleMin(LL)?`${clsTag(k)}<span class="gc">${G(g(k))}</span>`:`<span class="gc rare">${J("まれ","rare")}${g(k)?`${SEP}${G(g(k))}`:""}</span>`}));
   };
   const slots=[...root.querySelectorAll(".slot[data-side]")].map(el=>{
     const side=el.dataset.side,r=el.dataset.pos;
@@ -1143,7 +1285,7 @@ function buildLane(id,pos,label){
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
   const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),s5=root.querySelector(".s5"),recs=root.querySelector(".recs");
   let lastM="";
-  const tk=t=>t?`・★${t}`:"";
+  const tk=t=>t?`${SEP}★${t}`:"";
   // 組んだときの成績：ADC→SUP の向きで持っているので、どちらのレーンからでも引けるように
   const duoR=(me,ally)=>pos==="UTILITY"?((ST.duo||{})[ally]||{})[me]:((ST.duo||{})[me]||{})[ally];
   const duoTeiki=(me,ally)=>pos==="UTILITY"?teikiDuo(ally,me):teikiDuo(me,ally);
@@ -1166,14 +1308,14 @@ function buildLane(id,pos,label){
     const M=pm.value,E=DRAFT.enemy[pos]||"",AL=partner?DRAFT.ally[partner[0]]||"":"";
     // 盤面の表示を合わせる
     slots.forEach(({side,r,p})=>{const v=DRAFT[side][r]||"";if(p.value!==v)p.set(v);});
-    mirror.innerHTML=M?`${icK(M)}<span>${nm(M)}</span>`:`<span>あなた</span>`;
-    bansEl.innerHTML=DRAFT.bans.length?`<span class="side">BAN</span><div class="chips">${DRAFT.bans.map(k=>`<span class="ban" tabindex="0" data-tip-h="${nm(k)}" data-tip="BAN されています">${icK(k)}</span>`).join("")}</div>`:"";
+    mirror.innerHTML=M?`${icK(M)}<span>${nm(M)}</span>`:`<span>${J("あなた","You")}</span>`;
+    bansEl.innerHTML=DRAFT.bans.length?`<span class="side">BAN</span><div class="chips">${DRAFT.bans.map(k=>`<span class="ban" tabindex="0" data-tip-h="${nm(k)}" data-tip="${J("BAN されています","Banned")}">${icK(k)}</span>`).join("")}</div>`:"";
     // 構成と、ほしいもの（手で触っていなければ自動）
     const allyC=compOf("ally",pos),enemyC=compOf("enemy",null);
     if(!touched){needs.clear();autoNeeds(allyC).forEach(x=>needs.add(x));}
     syncToggles();
-    compEl.innerHTML=compHtml(allyC,"味方（あなた以外）")+compHtml(enemyC,"敵");
-    needsNote.innerHTML=touched?`手で選んでいます <button type="button" class="linkbtn" data-auto>自動に戻す</button>`:allyC.n>=2?"味方の構成から、足りないものを自動で選んでいます（押して変えられます）":"味方を2人以上入れると、足りないものを自動で選びます";
+    compEl.innerHTML=compHtml(allyC,J("味方（あなた以外）","Allies (excluding you)"))+compHtml(enemyC,J("敵","Enemy"));
+    needsNote.innerHTML=touched?`${J("手で選んでいます","Set manually")} <button type="button" class="linkbtn" data-auto>${J("自動に戻す","Back to auto")}</button>`:allyC.n>=2?J("味方の構成から、足りないものを自動で選んでいます（押して変えられます）","Auto-selected from what your team is missing (tap to change)"):J("味方を2人以上入れると、足りないものを自動で選びます","Enter 2+ allies to auto-select what your team is missing");
     // すでに選ばれているチャンプは候補にしない
     const taken=new Set([...Object.values(DRAFT.ally),...Object.values(DRAFT.enemy),...DRAFT.bans].filter(Boolean));
     // --- ステップ2：おすすめ ---
@@ -1183,42 +1325,42 @@ function buildLane(id,pos,label){
       const tr=traitsOf(k,L),hit=[...needs].filter(n=>tr.has(n));
       if(needs.size&&!hit.length)return null;
       let s=hit.length*3+powerScore(r,k,L)*.2,shown=r;const notes=[];
-      if(hit.length)notes.push(`${hit.map(n=>LANE_NEEDS[n]).join("・")}を持っている`);
+      if(hit.length)notes.push(J(`${hit.map(n=>LANE_NEEDS[n]).join("・")}を持っている`,`Brings ${hit.map(n=>LANE_NEEDS[n]).join(", ")}`));
       const vr=E&&(L.vs[k]||{})[E];
-      if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);notes.push(`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`);shown=vr;}
-      else notes.push(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`);
+      if(vr&&vr[0]>=MIN){s+=clamp((smooth(vr)-.5)*40,2);notes.push(J(`${nm(E)}相手に${pct(vr)}（${vr[0]}試合）`,`${pct(vr)} vs ${nm(E)} (${G(vr[0])})`));shown=vr;}
+      else notes.push(J(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`,`Overall win rate ${pct(r)}, pick rate ${(r[0]/laneN(L)*100).toFixed(1)}%${E?`, no data vs ${nm(E)}`:""}`));
       if(!E){
         const b=blindRisk(L,k);
         // 判定できないものは「カウンターされやすい」の中くらい（8%ぶん）と同じだけ減点する
-        if(b.unknown){s-=3;notes.push("先出しの安全性はデータ不足で判定できない");}
-        else if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`);}
-        else if(b.risk<.03)notes.push("先出しでも安全（カウンターされにくい）");
+        if(b.unknown){s-=3;notes.push(J("先出しの安全性はデータ不足で判定できない","Not enough data to judge blind-pick safety"));}
+        else if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(J(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`,`Easy to counter if blind-picked (${Math.round(b.risk*100)}% chance of facing ${b.counters.slice(0,2).map(([o])=>nm(o)).join(", ")} or similar)`));}
+        else if(b.risk<.03)notes.push(J("先出しでも安全（カウンターされにくい）","Safe to blind pick (hard to counter)"));
       }
-      if(AL){const dr=duoR(k,AL);if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}}
-      if(EASY){const d=diffOf(k);s+=EASY_PTS[d]||0;if(d===1)notes.push("操作が簡単");else if(d===3)notes.push("操作が難しい（使い慣れていなければ避ける）");}
+      if(AL){const dr=duoR(k,AL);if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(J(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`,`${pct(dr)} with ${nm(AL)} (${G(dr[0])})`));}}
+      if(EASY){const d=diffOf(k);s+=EASY_PTS[d]||0;if(d===1)notes.push(J("操作が簡単","Easy to play"));else if(d===3)notes.push(J("操作が難しい（使い慣れていなければ避ける）","Hard to play (avoid unless you know the champion)"));}
       const teiki=[E&&teikiCounter(k,E),AL&&duoTeiki(k,AL)].filter(Boolean);
       return {k,s,notes,teiki,r:shown};
     }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,6);
-    const conds=[E?`${nm(E)}に勝ちやすい`:"先出しでも安全",AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`,EASY&&"操作が簡単"].filter(Boolean).join(" × ")||"今の環境で強い";
-    s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
+    const conds=[E?J(`${nm(E)}に勝ちやすい`,`beats ${nm(E)}`):J("先出しでも安全","safe blind pick"),AL&&J(`${nm(AL)}と相性がいい`,`synergy with ${nm(AL)}`),needs.size&&J(`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`,`needs ${[...needs].map(n=>LANE_NEEDS[n]).join(", ")}`),EASY&&J("操作が簡単","easy to play")].filter(Boolean).join(" × ")||J("今の環境で強い","strong in the current meta");
+    s2.innerHTML=`<h4 class="s-sub">${J("おすすめ：","Suggestions: ")}${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}${J("点"," pts")}</span>${x.k===M?`<span class="pick-btn on">${J("選択中","Selected")}</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">${J("これにする","Pick this")}</button>`}</span><span class="why">${x.notes.join(SL)}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
     if(E)sub.push(enemyCard(L,E,M));
     if(M){
-      if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${nm(M)}側の勝率・${r[0]}試合${teikiCounter(E,M)?`<br>★${nm(E)}の有利：${teikiCounter(E,M)}`:""}</p>`:empty("この対面の試合はまだありません。")));}
-      if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
+      if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${J(`${nm(M)}側の勝率・${r[0]}試合`,`${nm(M)}'s win rate, ${G(r[0])}`)}${teikiCounter(E,M)?`<br>★${J(`${nm(E)}の有利：`,`${nm(E)}'s edge: `)}${teikiCounter(E,M)}`:""}</p>`:empty(J("この対面の試合はまだありません。","No games for this matchup yet."))));}
+      if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)}${J(" ＋ "," + ")}${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">${J(`組んだときの勝率・${r[0]}試合`,`Win rate together, ${G(r[0])}`)}${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty(J("この組み合わせのデータはまだ少ないです。","Not much data for this pairing yet."))));}
       if(!E){
         const b=blindRisk(L,M);
-        sub.push(card(`${nm(M)}を先出しするリスク`,b.unknown?empty(`${nm(M)}はこのロールでの試合が少なく、よく出る相手との対面データが${Math.round(b.cov*100)}%ぶんしかありません。先出しして大丈夫かは判定できないので、先出しは避けるのが無難です。`):b.counters.length?`<p class="why" style="margin:0">カウンターされる確率 <b style="color:${b.risk>=.08?"var(--bad)":"var(--fg)"}">${Math.round(b.risk*100)}%</b>（下の相手のピック率の合計）</p>`+statList(b.counters.slice(0,5),o=>`・ピック率${(b.share(o)*100).toFixed(1)}%`):empty(`${nm(M)}を大きく上回る相手はデータ上いません。先出しでも安全です。`)));
+        sub.push(card(J(`${nm(M)}を先出しするリスク`,`Risk of blind-picking ${nm(M)}`),b.unknown?empty(J(`${nm(M)}はこのロールでの試合が少なく、よく出る相手との対面データが${Math.round(b.cov*100)}%ぶんしかありません。先出しして大丈夫かは判定できないので、先出しは避けるのが無難です。`,`${nm(M)} has few games in this role; matchup data covers only ${Math.round(b.cov*100)}% of common opponents. Blind-pick safety can't be judged, so it's safer not to pick it first.`)):b.counters.length?`<p class="why" style="margin:0">${J("カウンターされる確率","Chance of being countered")} <b style="color:${b.risk>=.08?"var(--bad)":"var(--fg)"}">${Math.round(b.risk*100)}%</b>${J("（下の相手のピック率の合計）"," (sum of the pick rates below)")}</p>`+statList(b.counters.slice(0,5),o=>J(`・ピック率${(b.share(o)*100).toFixed(1)}%`,`, pick rate ${(b.share(o)*100).toFixed(1)}%`)):empty(J(`${nm(M)}を大きく上回る相手はデータ上いません。先出しでも安全です。`,`No opponent clearly beats ${nm(M)} in the data. Safe to blind pick.`))));
       }
       sub.push(timingCard(L,M));
       const mine=Object.entries(L.vs[M]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
-      sub.push(card(`${nm(M)}の苦手な相手（次の試合のBAN候補）`,statList(mine,o=>tk(teikiCounter(o,M)))));
-      if(partner&&!AL){const ps=pairRank(M,pos==="BOTTOM").slice(0,5);sub.push(card(`${nm(M)}と相性のいい${partner[1].replace("味方","")}`,statList(ps.map(o=>[o.key,o.r]),k=>tk(pos==="BOTTOM"?teikiDuo(M,k):teikiDuo(k,M)))));}
+      sub.push(card(J(`${nm(M)}の苦手な相手（次の試合のBAN候補）`,`${nm(M)}'s counters (ban candidates next game)`),statList(mine,o=>tk(teikiCounter(o,M)))));
+      if(partner&&!AL){const ps=pairRank(M,pos==="BOTTOM").slice(0,5);sub.push(card(J(`${nm(M)}と相性のいい${partner[1]}`,`Best ${partner[1]} for ${nm(M)}`),statList(ps.map(o=>[o.key,o.r]),k=>tk(pos==="BOTTOM"?teikiDuo(M,k):teikiDuo(k,M)))));}
     }else if(E){
       const list=Object.keys(L.vs).map(x=>[x,L.vs[x][E]]).filter(([x,r])=>BYKEY[x]&&r&&r[0]>=Math.max(MIN,20)&&oppOk(L,x)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
       // ピック前は場所を取らないよう、アイコンと勝率だけを1行で
-      if(list.length)sub.push(`<div class="avoid" style="grid-column:1/-1"><span class="avoid-h">${nm(E)}相手に避けたいピック</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${nm(E)}相手に勝率が低いピック" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
+      if(list.length)sub.push(`<div class="avoid" style="grid-column:1/-1"><span class="avoid-h">${J(`${nm(E)}相手に避けたいピック`,`Picks to avoid vs ${nm(E)}`)}</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${J(`${nm(E)}相手に勝率が低いピック`,`Low win rate vs ${nm(E)}`)}" data-tip-s="${J(`${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）`,`${nm(k)}'s win rate ${pct(r)} (${G(r[0])})`)}" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
     }
     s2b.innerHTML=!sub.length?"":`<div class="results">${sub.join("")}</div>`;
     // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
@@ -1230,7 +1372,7 @@ function buildLane(id,pos,label){
     // --- ステップ4：試合の勝ち筋（味方は自分のピックを含めて考える） ---
     s5.innerHTML=planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy,M);
     // --- ステップ3・5 ---
-    if(!M){s3.innerHTML=s4.innerHTML=empty("ステップ2でピックを決めると表示されます。");}
+    if(!M){s3.innerHTML=s4.innerHTML=empty(J("ステップ2でピックを決めると表示されます。","Shown once you choose your pick in step 2."));}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
     root.querySelectorAll(".step").forEach(li=>{const n=+li.dataset.step;li.classList.toggle("wait",(n===3||n===5)&&!M);});
   }
@@ -1268,20 +1410,23 @@ function blindRisk(L,k){
 // 相手はそのロールでよくいるチャンプだけ（oppOk）、対面は20試合以上あるものだけ
 function worstChips(L,k,pos){
   const rows=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,3);
-  return rows.length?`<div class="chips">${rows.map(([o,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${pos==="UTILITY"&&teikiCounter(o,k)?"★ ":""}${nm(o)}" data-tip="${(pos==="UTILITY"&&teikiCounter(o,k))||"データ上の苦手な対面"}" data-tip-s="${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）" data-tip-d="${dirOf(r)}" aria-label="${nm(o)}">${icK(o)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div>`:`<span class="why">—</span>`;
+  return rows.length?`<div class="chips">${rows.map(([o,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${pos==="UTILITY"&&teikiCounter(o,k)?"★ ":""}${nm(o)}" data-tip="${(pos==="UTILITY"&&teikiCounter(o,k))||J("データ上の苦手な対面","Tough matchup in the data")}" data-tip-s="${J(`${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）`,`${nm(k)}'s win rate ${pct(r)} (${G(r[0])})`)}" data-tip-d="${dirOf(r)}" aria-label="${nm(o)}">${icK(o)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div>`:`<span class="why">—</span>`;
 }
 // CC/分 とダメージ内訳のセル
 function extCells(L,k){
   const e=extOf(L,k);
   if(!e)return `<td class="n">—</td><td><span class="why">—</span></td>`;
   const [p,m,t]=dmgShare(e),f=x=>(x*100).toFixed(0)+"%";
-  return `<td class="n">${ccPerMin(e).toFixed(1)}秒</td><td><span class="dmg" tabindex="0" data-tip-h="ダメージの内訳" data-tip="物理 ${f(p)} ／ 魔法 ${f(m)} ／ 確定 ${f(t)}" data-tip-s="1分あたり ${Math.round(dmgPerMin(e).reduce((a,b)=>a+b,0))}ダメージ（${e[0]}試合の平均）"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
+  return `<td class="n">${ccPerMin(e).toFixed(1)}${J("秒","s")}</td><td><span class="dmg" tabindex="0" data-tip-h="${J("ダメージの内訳","Damage breakdown")}" data-tip="${J("物理","Physical")} ${f(p)}${SL2}${J("魔法","Magic")} ${f(m)}${SL2}${J("確定","True")} ${f(t)}" data-tip-s="${J(`1分あたり ${Math.round(dmgPerMin(e).reduce((a,b)=>a+b,0))}ダメージ（${e[0]}試合の平均）`,`${Math.round(dmgPerMin(e).reduce((a,b)=>a+b,0))} damage per minute (average of ${G(e[0])})`)}"><i class="d-p" style="width:${f(p)}"></i><i class="d-m" style="width:${f(m)}"></i><i class="d-t" style="width:${f(t)}"></i></span></td>`;
 }
+const TIER_NOTE_JA=`Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。ただし、そのロールでのピック率が1%未満のチャンプは、スコアが高くてもSにはせずAまでにしています。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。`;
+const TIER_NOTE_EN=`Tiers come from a "meta impact" score ranked within each role (top 10% = S, next 20% = A, 35% = B, 20% = C, the rest = D). Champions with under 1% pick rate in the role are capped at A even if their score is higher. The score adds up a win-rate part, a popularity part from pick rate, and a ban part from ban rate (the ban part starts once 200 games with ban data are collected). Win rates are first smoothed toward 50% by adding 20 wins and 20 losses, so popular champions with above-average win rates rank above one-trick picks with a slightly higher win rate, and a low win rate pulls a champion down even if it's popular. Champions whose pick rate in the role is below the "Min. pick rate" setting above (0.3% by default) are hidden from the list and the pickers (minimum 10 games while data is scarce). Champions with under 50 games show "—" (no tier). Tap a tier (or hover on desktop) to see the breakdown. "Tough matchups" shows up to 3 opponents against whom the row's champion has a low win rate (small samples are pulled toward 50% for ranking); the number is the row champion's win rate. "Best supports" (BOT) and "Best ADCs" (SUP) are ranked by win rate together and how often they're paired. ★ marks hand-written well-known pairings; tap the icon for the reason (other reasons are generated automatically). "Early / Steady / Late" shows when a champion is strongest, based on the win-rate difference between games under and over 30 minutes (only champions with 30+ games in each). "CC/min" is the average crowd-control time applied to enemies per minute, and "Damage" is the share of physical (red), magic (light blue) and true (white) damage to champions. AP / AD in "What your team needs" only counts champions dealing 300+ of that damage type per minute (both require 10+ games).`;
 function laneTable(host,L,label,extras=[],onOpen=null){
-  host.innerHTML=`<div class="tablebar"><h2>${label}のTier表</h2><input type="search" placeholder="チャンプ名で絞り込み" aria-label="${label}のTier表を絞り込み"></div>
-    <div class="toggles cls-filter" role="group" aria-label="タイプで絞り込み"><button type="button" class="tg" data-c="" aria-pressed="true">すべて</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
-    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">チャンプ</th><th data-s="cls">タイプ</th><th class="n" data-s="wr">勝率</th><th class="n" data-s="g">試合数</th><th class="n" data-s="pr">ピック率</th><th class="n" data-s="br">BAN率</th><th class="n" data-s="cc">CC/分</th><th data-s="ap">ダメージ</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
-    <p class="why" style="margin:0">Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。ただし、そのロールでのピック率が1%未満のチャンプは、スコアが高くてもSにはせずAまでにしています。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。</p>`;
+  host.innerHTML=`<div class="tablebar"><h2>${J(`${label}のTier表`,`${label} tier list`)}</h2><input type="search" placeholder="${J("チャンプ名で絞り込み","Filter by champion")}" aria-label="${J(`${label}のTier表を絞り込み`,`Filter the ${label} tier list`)}"></div>
+    <div class="toggles cls-filter" role="group" aria-label="${J("タイプで絞り込み","Filter by class")}"><button type="button" class="tg" data-c="" aria-pressed="true">${J("すべて","All")}</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
+    <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">${J("チャンプ","Champion")}</th><th data-s="cls">${J("タイプ","Type")}</th><th class="n" data-s="wr">${J("勝率","Win")}</th><th class="n" data-s="g">${J("試合数","Games")}</th><th class="n" data-s="pr">${J("ピック率","Pick")}</th><th class="n" data-s="br">${J("BAN率","Ban")}</th><th class="n" data-s="cc">${J("CC/分","CC/min")}</th><th data-s="ap">${J("ダメージ","Damage")}</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
+    <p class="why" style="margin:0">${EN?TIER_NOTE_EN:TIER_NOTE_JA}</p>`;
+
   const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
   const cls=new Set();
   let sk="tier",sd=-1;
@@ -1298,8 +1443,8 @@ function laneTable(host,L,label,extras=[],onOpen=null){
     const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
     const tm=tierMapOf(L),TR={S:5,A:4,B:3,C:2,D:1};
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(tm[k]?TR[tm[k]]*1000+powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
-    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${diffTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,LANG):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${J(`${nm(k)}を自分のピックにする`,`Set ${nm(k)} as your pick`)}">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${diffTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="${J(`勝率 ${pct(r)}（${r[0]}試合）`,`Win rate ${pct(r)} (${G(r[0])})`)}" data-tip="${J(`試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます`,`Given the sample size, the true win rate is likely between ${ciText(r)}`)}" data-tip-s="${J("試合数が少ないほど、この幅は広くなります","The fewer the games, the wider this range")}">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">${J("該当なし","No results")}</td></tr>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
@@ -1317,9 +1462,9 @@ function buildMaps(){
   Object.keys(A).forEach(a=>{const k=kKey(a);if(k)K2A[k]=a;});
 }
 // x が target に有利、という定番の理由（なければ ""）
-const teikiCounter=(x,target)=>{const t=K2S[target],s=K2S[x];if(!t||!s||!C[t])return "";const f=C[t].find(([c])=>c===s);return f?f[1]:"";};
+const teikiCounter=(x,target)=>{const t=K2S[target],s=K2S[x];if(!t||!s||!C[t])return "";const i=C[t].findIndex(([c])=>c===s);return i<0?"":EN?((C_EN[t]||[])[i]||""):C[t][i][1];};
 // ADC とサポートの組み合わせの定番の理由（なければ ""）
-const teikiDuo=(adc,sup)=>{const a=K2A[adc],s=K2S[sup];if(!a||!s||!Y[a])return "";const f=Y[a].find(([c])=>c===s);return f?f[1]:"";};
+const teikiDuo=(adc,sup)=>{const a=K2A[adc],s=K2S[sup];if(!a||!s||!Y[a])return "";const i=Y[a].findIndex(([c])=>c===s);return i<0?"":EN?((Y_EN[a]||[])[i]||""):Y[a][i][1];};
 
 // 定番にない組み合わせの理由を、ADCの戦い方とサポートの役割から自動で組み立てる
 const ADC_STYLE={
@@ -1330,17 +1475,17 @@ const ADC_STYLE={
 };
 function autoDuoReason(adc,sup){
   const a=K2A[adc]||"",t=traitsOf(sup,ST&&ST.lanes.UTILITY),s=nm(sup),d=nm(adc),out=[];
-  if((t.has("engage")||t.has("catch"))&&ADC_STYLE.follow.has(a))out.push(`${s}の仕掛けに${d}がすぐ追撃できる`);
-  if((t.has("peel")||t.has("disengage"))&&ADC_STYLE.hyper.has(a))out.push(`自分で逃げにくい${d}を${s}が守れる`);
-  if(t.has("front")&&ADC_STYLE.hyper.has(a))out.push(`${s}が前に立つので、${d}が安全に攻撃できる`);
-  if(t.has("poke")&&ADC_STYLE.poke.has(a))out.push("どちらも射程が長く、ポークでレーンを押し込める");
-  if(t.has("cc")&&ADC_STYLE.cc.has(a))out.push(`${d}の足止めに${s}のCCを重ねて、長く拘束できる`);
+  if((t.has("engage")||t.has("catch"))&&ADC_STYLE.follow.has(a))out.push(J(`${s}の仕掛けに${d}がすぐ追撃できる`,`${d} can follow up instantly on ${s}'s engage`));
+  if((t.has("peel")||t.has("disengage"))&&ADC_STYLE.hyper.has(a))out.push(J(`自分で逃げにくい${d}を${s}が守れる`,`${s} protects ${d}, who has trouble escaping alone`));
+  if(t.has("front")&&ADC_STYLE.hyper.has(a))out.push(J(`${s}が前に立つので、${d}が安全に攻撃できる`,`${s} stands in front so ${d} can attack safely`));
+  if(t.has("poke")&&ADC_STYLE.poke.has(a))out.push(J("どちらも射程が長く、ポークでレーンを押し込める","Both have long range and can poke the lane down"));
+  if(t.has("cc")&&ADC_STYLE.cc.has(a))out.push(J(`${d}の足止めに${s}のCCを重ねて、長く拘束できる`,`${s}'s CC stacks on ${d}'s slows for long lockdowns`));
   if(!out.length){
-    if(t.has("engage")||t.has("catch"))out.push(`${s}がレーンで仕掛けられ、${d}の火力を活かせる`);
-    else if(t.has("peel")||t.has("disengage"))out.push(`${s}の守りで、${d}が安定して戦える`);
-    else if(t.has("poke")||t.has("ap"))out.push(`${s}のダメージでレーンを有利に進められる`);
+    if(t.has("engage")||t.has("catch"))out.push(J(`${s}がレーンで仕掛けられ、${d}の火力を活かせる`,`${s} can start fights in lane to make use of ${d}'s damage`));
+    else if(t.has("peel")||t.has("disengage"))out.push(J(`${s}の守りで、${d}が安定して戦える`,`${s}'s protection lets ${d} fight safely`));
+    else if(t.has("poke")||t.has("ap"))out.push(J(`${s}のダメージでレーンを有利に進められる`,`${s}'s damage helps win the lane`));
   }
-  return out.slice(0,2).join("。")||"役割からは理由を判定できませんでしたが、データ上は成績のよい組み合わせです";
+  return out.slice(0,2).join(J("。",". "))||J("役割からは理由を判定できませんでしたが、データ上は成績のよい組み合わせです","No clear reason from their roles, but the pairing performs well in the data");
 }
 
 // ADC とサポートの組み合わせの順位：勝率点（ならした勝率）＋ 人気点（その行のチャンプの相方のうち何割か）＋ 定番なら +1
@@ -1356,7 +1501,7 @@ function pairRank(rowKey,isAdcRow){
     return {key:p,adc,sup,r,share:r[0]/tot,w,sc:(w?1:0)+wrPts(r)+PR_W*.5*Math.sqrt(r[0]/tot*100)};
   }).sort((x,y)=>y.sc-x.sc);
 }
-const pairChip=(o,rowKey)=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+"（理由は自動判定）"}" data-tip="${o.w||autoDuoReason(o.adc,o.sup)}" data-tip-s="組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${nm(rowKey)}の相方の${(o.share*100).toFixed(0)}%" data-tip-d="${dirOf(o.r)}" aria-label="${nm(o.key)}">${icK(o.key)}<span class="wr ${dirOf(o.r)}">${o.w?"★":""}${pct(o.r)}</span></span>`;
+const pairChip=(o,rowKey)=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${o.w?"★ "+nm(o.key):nm(o.key)+J("（理由は自動判定）"," (auto-generated reason)")}" data-tip="${o.w||autoDuoReason(o.adc,o.sup)}" data-tip-s="${J(`組んだときの勝率 ${pct(o.r)}（${o.r[0]}試合）・${nm(rowKey)}の相方の${(o.share*100).toFixed(0)}%`,`Win rate together ${pct(o.r)} (${G(o.r[0])}), ${(o.share*100).toFixed(0)}% of ${nm(rowKey)}'s partners`)}" data-tip-d="${dirOf(o.r)}" aria-label="${nm(o.key)}">${icK(o.key)}<span class="wr ${dirOf(o.r)}">${o.w?"★":""}${pct(o.r)}</span></span>`;
 const pairCell=(rowKey,isAdcRow)=>{const ps=pairRank(rowKey,isAdcRow).slice(0,3);return ps.length?`<div class="chips">${ps.map(o=>pairChip(o,rowKey)).join("")}</div>`:`<span class="why">—</span>`;};
 // ===== ビルド（ルーン・スペル・アイテム・スキル順） =====
 // data/builds/{パッチ}.json は大きいので、自分のチャンプを選んだときに初めて読み込む
@@ -1365,18 +1510,18 @@ const RUNES={},STYLES={},SLOTS={},SPELLS={},ITEMS={},CHSP={};
 // ステータスのかけら：ルーン画面の3段（上から 攻撃・汎用・防御）と、それぞれのアイコン
 const SHARD_ROWS=[[5008,5005,5007],[5008,5010,5001],[5011,5013,5001]];
 const SHARD_ICON={5008:"StatModsAdaptiveForceIcon",5005:"StatModsAttackSpeedIcon",5007:"StatModsCDRScalingIcon",5010:"StatModsMovementSpeedIcon",5001:"StatModsHealthScalingIcon",5011:"StatModsHealthPlusIcon",5013:"StatModsTenacityIcon"};
-const SHARD={5008:"アダプティブフォース",5005:"攻撃速度",5007:"スキルヘイスト",5010:"移動速度",5001:"体力（レベルで増加）",5011:"体力",5013:"行動妨害・スロウ耐性",5002:"物理防御",5003:"魔法防御"};
+const SHARD=EN?{5008:"Adaptive Force",5005:"Attack Speed",5007:"Ability Haste",5010:"Move Speed",5001:"Health Scaling",5011:"Health",5013:"Tenacity and Slow Resist",5002:"Armor",5003:"Magic Resist"}:{5008:"アダプティブフォース",5005:"攻撃速度",5007:"スキルヘイスト",5010:"移動速度",5001:"体力（レベルで増加）",5011:"体力",5013:"行動妨害・スロウ耐性",5002:"物理防御",5003:"魔法防御"};
 const DDC="https://ddragon.leagueoflegends.com/cdn";
 const plain=s=>String(s||"").replace(/<[^>]+>/g,"").replace(/"/g,"”");
 // アイテムの説明：一言説明（plaintext）がないアイテムも多いので、ステータスと効果（description）から作る
-const ITEM_FALLBACK={3865:"サポートアイテム。ミニオンにとどめを刺さなくても、近くの味方や敵チャンピオンへの攻撃でゴールドを得られる。クエストを達成すると段階的にアップグレードし、ワードを置けるようになる。"};
-const ITEM_TAG={Health:"体力",ManaRegen:"マナ自動回復",Vision:"視界",GoldPer:"ゴールド獲得",Lane:"レーン向け",Damage:"攻撃力",SpellDamage:"魔力",AttackSpeed:"攻撃速度",CriticalStrike:"クリティカル",Armor:"物理防御",SpellBlock:"魔法防御",Boots:"移動速度",Consumable:"消耗品",Trinket:"トリンケット",Jungle:"ジャングル向け"};
+const ITEM_FALLBACK={3865:J("サポートアイテム。ミニオンにとどめを刺さなくても、近くの味方や敵チャンピオンへの攻撃でゴールドを得られる。クエストを達成すると段階的にアップグレードし、ワードを置けるようになる。","Support item. Earns gold from hitting enemy champions without last-hitting minions. Completing its quest upgrades it in stages and lets you place wards.")};
+const ITEM_TAG=EN?{Health:"Health",ManaRegen:"Mana regen",Vision:"Vision",GoldPer:"Gold income",Lane:"Laning",Damage:"Attack damage",SpellDamage:"Ability power",AttackSpeed:"Attack speed",CriticalStrike:"Critical strike",Armor:"Armor",SpellBlock:"Magic resist",Boots:"Move speed",Consumable:"Consumable",Trinket:"Trinket",Jungle:"Jungle"}:{Health:"体力",ManaRegen:"マナ自動回復",Vision:"視界",GoldPer:"ゴールド獲得",Lane:"レーン向け",Damage:"攻撃力",SpellDamage:"魔力",AttackSpeed:"攻撃速度",CriticalStrike:"クリティカル",Armor:"物理防御",SpellBlock:"魔法防御",Boots:"移動速度",Consumable:"消耗品",Trinket:"トリンケット",Jungle:"ジャングル向け"};
 const itemText=x=>{
-  const d=String(x.description||"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(passive|active|rarityMythic|rarityLegendary)>/gi,"：").replace(/<[^>]+>/g,"")
+  const d=String(x.description||"").replace(/<br\s*\/?>/gi,"\n").replace(/<\/(passive|active|rarityMythic|rarityLegendary)>/gi,COL).replace(/<[^>]+>/g,"")
     .replace(/[ \t]+/g," ").replace(/\n\s*\n+/g,"\n").trim();
   let t=[x.plaintext,d].filter(Boolean).join("\n");
   // 日本語データで説明が空のアイテムは、手書きの説明か、分類から作った一言を出す
-  if(!t)t=ITEM_FALLBACK[x.image&&x.image.full.replace(".png","")]||((x.tags||[]).map(g=>ITEM_TAG[g]).filter(Boolean).join("・")+(x.tags&&x.tags.length?"のアイテム":""));
+  if(!t)t=ITEM_FALLBACK[x.image&&x.image.full.replace(".png","")]||((x.tags||[]).map(g=>ITEM_TAG[g]).filter(Boolean).join(SEP)+(x.tags&&x.tags.length?J("のアイテム"," item"):""));
   t=t.replace(/"/g,"”");
   return t.length>420?t.slice(0,420)+"…":t;
 };
@@ -1384,7 +1529,7 @@ async function loadBuilds(){
   if(BUILDS_STATE!=="idle")return;
   BUILDS_STATE="loading";
   try{
-    const [rr,sm,it]=await Promise.all([getJSON(`${DDC}/${DD}/data/ja_JP/runesReforged.json`),getJSON(`${DDC}/${DD}/data/ja_JP/summoner.json`),getJSON(`${DDC}/${DD}/data/ja_JP/item.json`)]);
+    const [rr,sm,it]=await Promise.all([getJSON(`${DDC}/${DD}/data/${DD_LANG}/runesReforged.json`),getJSON(`${DDC}/${DD}/data/${DD_LANG}/summoner.json`),getJSON(`${DDC}/${DD}/data/${DD_LANG}/item.json`)]);
     rr.forEach(st=>{STYLES[st.id]={name:st.name,icon:st.icon};SLOTS[st.id]=st.slots.map(sl=>sl.runes.map(r=>r.id));st.slots.forEach(sl=>sl.runes.forEach(r=>{RUNES[r.id]={name:r.name,icon:r.icon,desc:plain(r.shortDesc)};}));});
     Object.values(sm.data).forEach(s=>{SPELLS[s.key]={id:s.id,name:s.name,desc:plain(s.description)};});
     Object.entries(it.data).forEach(([id,x])=>{ITEMS[id]={name:x.name,desc:itemText(x),gold:(x.gold||{}).total};});
@@ -1397,18 +1542,18 @@ async function loadBuilds(){
 function loadChampSpells(key){
   const c=BYKEY[key];if(!c||CHSP[key])return;
   CHSP[key]="loading";
-  getJSON(`${DDC}/${DD}/data/ja_JP/champion/${c.id}.json`).then(d=>{
+  getJSON(`${DDC}/${DD}/data/${DD_LANG}/champion/${c.id}.json`).then(d=>{
     const sp=d.data[c.id].spells;
     CHSP[key]={Q:sp[0],W:sp[1],E:sp[2]};
     Object.values(lanePanels).forEach(p=>p.draw());
   }).catch(()=>{CHSP[key]=null;});
 }
-const runeImg=(id,cls="rs")=>{const r=RUNES[id]||STYLES[id];return r?`<img class="bi ${cls}" src="${DDC}/img/${r.icon}" alt="" tabindex="0" data-tip-h="${r.name}" data-tip="${r.desc||"ルーンのパス"}" loading="lazy">`:"";};
-const itemImg=id=>{const x=ITEMS[id];return `<img class="bi" src="${DDC}/${DD}/img/item/${id}.png" alt="" tabindex="0" data-tip-h="${x?x.name:"アイテム"}" data-tip="${x?x.desc||x.name:""}"${x&&x.gold?` data-tip-s="合計 ${x.gold}G"`:""} loading="lazy">`;};
+const runeImg=(id,cls="rs")=>{const r=RUNES[id]||STYLES[id];return r?`<img class="bi ${cls}" src="${DDC}/img/${r.icon}" alt="" tabindex="0" data-tip-h="${r.name}" data-tip="${r.desc||J("ルーンのパス","Rune path")}" loading="lazy">`:"";};
+const itemImg=id=>{const x=ITEMS[id];return `<img class="bi" src="${DDC}/${DD}/img/item/${id}.png" alt="" tabindex="0" data-tip-h="${x?x.name:J("アイテム","Item")}" data-tip="${x?x.desc||x.name:""}"${x&&x.gold?` data-tip-s="${J("合計","Total")} ${x.gold}G"`:""} loading="lazy">`;};
 const spellImg=key=>{const s=SPELLS[key];return s?`<img class="bi" src="${DDC}/${DD}/img/spell/${s.id}.png" alt="" tabindex="0" data-tip-h="${s.name}" data-tip="${s.desc}" loading="lazy">`:"";};
-const keycap=(k,champ)=>{const s=CHSP[champ];const sp=s&&typeof s==="object"?s[k]:null;return sp?`<span class="kc" tabindex="0" data-tip-h="${k}：${sp.name}" data-tip="${plain(sp.description)}"><img src="${DDC}/${DD}/img/spell/${sp.image.full}" alt="">${k}</span>`:`<span class="kc">${k}</span>`;};
+const keycap=(k,champ)=>{const s=CHSP[champ];const sp=s&&typeof s==="object"?s[k]:null;return sp?`<span class="kc" tabindex="0" data-tip-h="${k}${COL}${sp.name}" data-tip="${plain(sp.description)}"><img src="${DDC}/${DD}/img/spell/${sp.image.full}" alt="">${k}</span>`:`<span class="kc">${k}</span>`;};
 // 使用率と勝率（base は母数の試合数）
-const bmeta=(r,base)=>`<span class="meta"><span title="使われた割合">${(r[0]/base*100).toFixed(1)}%</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="gcount">${r[0]}試合</span></span>`;
+const bmeta=(r,base)=>`<span class="meta"><span title="${J("使われた割合","Usage rate")}">${(r[0]/base*100).toFixed(1)}%</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="gcount">${G(r[0])}</span></span>`;
 // サブのパスの2つは選んだ順で記録されているので、順番違いの同じページをまとめる
 function canonRunes(d){
   const out={};
@@ -1423,35 +1568,35 @@ const topOf=(d,n)=>Object.entries(d||{}).sort((x,y)=>y[1][0]-x[1][0]).slice(0,n)
 // ステップ3（ルーン・スペル）とステップ4（ゲーム開始後）の中身を返す
 function buildSteps(pos,M){
   const wait=t=>[empty(t),empty(t)];
-  if(BUILDS_STATE!=="done"){loadBuilds();return wait("ビルドのデータを読み込み中…");}
+  if(BUILDS_STATE!=="done"){loadBuilds();return wait(J("ビルドのデータを読み込み中…","Loading build data…"));}
   const b=BUILDS&&BUILDS[pos]&&BUILDS[pos][M];
-  if(!b||b.g<5)return wait(`${nm(M)}のこのロールでのビルドデータは、まだたまっていません。`);
+  if(!b||b.g<5)return wait(J(`${nm(M)}のこのロールでのビルドデータは、まだたまっていません。`,`Not enough build data for ${nm(M)} in this role yet.`));
   loadChampSpells(M);
-  const tl=b.tl||0,sec=(h,body)=>`<div class="bsec"><h4>${h}</h4>${body}</div>`,none=`<p class="why" style="margin:0">まだデータがありません</p>`;
+  const tl=b.tl||0,sec=(h,body)=>`<div class="bsec"><h4>${h}</h4>${body}</div>`,none=`<p class="why" style="margin:0">${J("まだデータがありません","No data yet")}</p>`;
   // ルーン画面と同じ並び：メインのパス（キーストーン＋3段）／サブのパス（3段）とその下にかけら（3段）。選ばれたものだけ色付き
   const runeRow=([key,r],i)=>{
     const [pri,sub,sh]=key.split("|"),[ps,pp]=pri.split(":"),[ss,sp]=sub.split(":"),pk=pp.split(","),sk=sp.split(","),shs=sh.split(",");
-    const cell=(id,on,cls="")=>{const x=RUNES[id];return x?`<img class="rc ${cls}${on?" on":""}" src="${DDC}/img/${x.icon}" alt="${on?x.name:""}" tabindex="0" data-tip-h="${x.name}${on?"":"（選ばれていない）"}" data-tip="${x.desc}" loading="lazy">`:"";};
+    const cell=(id,on,cls="")=>{const x=RUNES[id];return x?`<img class="rc ${cls}${on?" on":""}" src="${DDC}/img/${x.icon}" alt="${on?x.name:""}" tabindex="0" data-tip-h="${x.name}${on?"":J("（選ばれていない）"," (not selected)")}" data-tip="${x.desc}" loading="lazy">`:"";};
     const head=id=>{const s=STYLES[id];return s?`<h5><img src="${DDC}/img/${s.icon}" alt="">${s.name}</h5>`:"";};
     const tree=(style,sel,rows,primary)=>(rows||[]).map((ids,j)=>`<div class="rp-row">${ids.map(id=>cell(id,sel.includes(String(id)),primary&&j===0?"ks":"")).join("")}</div>`).join("");
-    const shard=shs.map((v,j)=>`<div class="rp-row">${SHARD_ROWS[j].map(id=>`<img class="rc sh${String(id)===v?" on":""}" src="${DDC}/img/perk-images/StatMods/${SHARD_ICON[id]}.png" alt="" tabindex="0" data-tip-h="${SHARD[id]}${String(id)===v?"":"（選ばれていない）"}" data-tip="ステータスのかけら" loading="lazy">`).join("")}</div>`).join("");
-    return `<div class="rpage-wrap"><div class="brow rp-meta"><span class="rp-rank">${i+1}位のページ</span>${bmeta(r,b.g)}</div>
+    const shard=shs.map((v,j)=>`<div class="rp-row">${SHARD_ROWS[j].map(id=>`<img class="rc sh${String(id)===v?" on":""}" src="${DDC}/img/perk-images/StatMods/${SHARD_ICON[id]}.png" alt="" tabindex="0" data-tip-h="${SHARD[id]}${String(id)===v?"":J("（選ばれていない）"," (not selected)")}" data-tip="${J("ステータスのかけら","Stat shard")}" loading="lazy">`).join("")}</div>`).join("");
+    return `<div class="rpage-wrap"><div class="brow rp-meta"><span class="rp-rank">${J(`${i+1}位のページ`,`Page #${i+1}`)}</span>${bmeta(r,b.g)}</div>
       <div class="rpage"><div class="rcol">${head(ps)}${tree(ps,pk,SLOTS[ps],true)}</div><div class="rcol">${head(ss)}${tree(ss,sk,(SLOTS[ss]||[]).slice(1),false)}<div class="shard-sep" aria-hidden="true"></div>${shard}</div></div></div>`;
   };
   const rows=(d,n,fn,base)=>{const t=topOf(d,n);return t.length?t.map(([k,r])=>`<div class="brow">${fn(k)}${bmeta(r,base)}</div>`).join(""):none;};
   const order=k=>k.split("").map(x=>keycap(x,M)).join(`<span class="arrow">›</span>`);
   const s3=`<div class="build">
-      ${sec("ルーン",topOf(canonRunes(b.runes),2).map(runeRow).join("")||none)}
-      ${sec("サモナースペル",rows(b.spells,2,k=>k.split(",").map(spellImg).join(""),b.g))}
-    </div><p class="why" style="margin:0">${b.g}試合から。数字は「使われた割合／その勝率／試合数」です。</p>`;
+      ${sec(J("ルーン","Runes"),topOf(canonRunes(b.runes),2).map(runeRow).join("")||none)}
+      ${sec(J("サモナースペル","Summoner spells"),rows(b.spells,2,k=>k.split(",").map(spellImg).join(""),b.g))}
+    </div><p class="why" style="margin:0">${J(`${b.g}試合から。数字は「使われた割合／その勝率／試合数」です。`,`From ${G(b.g)}. Numbers are usage rate / win rate / games.`)}</p>`;
   const s4=`<div class="build">
-      ${sec("スタートアイテム",rows(b.start,2,k=>k.split(",").map(itemImg).join(""),tl))}
-      ${sec("最初の3レベル",rows(b.early,2,k=>k.split("").map(x=>keycap(x,M)).join(""),tl))}
-      ${sec("スキルの最大上げ順",rows(b.order,2,order,tl))}
-      ${sec("コアアイテム（買った順）",rows(b.core,3,k=>k.split(",").map(itemImg).join(`<span class="arrow">›</span>`),tl))}
-      ${sec("靴",rows(b.boots,2,itemImg,b.g))}
-      ${sec("よく完成させるアイテム",rows(b.items,6,itemImg,b.g))}
-    </div><p class="why" style="margin:0">スキル順・購入順は${tl}試合、靴・完成アイテムは${b.g}試合から（スキル順などは一部の試合だけ集めています）。</p>`;
+      ${sec(J("スタートアイテム","Starting items"),rows(b.start,2,k=>k.split(",").map(itemImg).join(""),tl))}
+      ${sec(J("最初の3レベル","First 3 levels"),rows(b.early,2,k=>k.split("").map(x=>keycap(x,M)).join(""),tl))}
+      ${sec(J("スキルの最大上げ順","Skill max order"),rows(b.order,2,order,tl))}
+      ${sec(J("コアアイテム（買った順）","Core items (in buy order)"),rows(b.core,3,k=>k.split(",").map(itemImg).join(`<span class="arrow">›</span>`),tl))}
+      ${sec(J("靴","Boots"),rows(b.boots,2,itemImg,b.g))}
+      ${sec(J("よく完成させるアイテム","Most completed items"),rows(b.items,6,itemImg,b.g))}
+    </div><p class="why" style="margin:0">${J(`スキル順・購入順は${tl}試合、靴・完成アイテムは${b.g}試合から（スキル順などは一部の試合だけ集めています）。`,`Skill and buy order from ${G(tl)}, boots and completed items from ${G(b.g)} (skill order etc. is collected from a subset of games).`)}</p>`;
   return [s3,s4];
 }
 // ===== データの読み込み =====
@@ -1469,18 +1614,19 @@ function blendPrev(P){
   ST.blend={patch:P.patch,f};
 }
 function drawStatus(p){
-  if(!ST){$("status").innerHTML=`<span class="warn">勝率データを読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。</span>`;return;}
+  if(!ST){$("status").innerHTML=`<span class="warn">${J("勝率データを読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。","Couldn't load win-rate data. Check your connection and reload the page.")}</span>`;return;}
   const d=new Date(ST.updated);
-  const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
-  $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}${ST.blend?`<span tabindex="0" data-tip-h="前のパッチのデータを混ぜています" data-tip="パッチが変わったばかりで試合が少ないので、対面と組み合わせの勝率には前のパッチ（${ST.blend.patch}）の試合も${Math.round(ST.blend.f*100)}%の重みで混ぜています" data-tip-s="今のパッチが${BLEND_UNTIL.toLocaleString()}試合に近づくほど、前のパッチの割合を減らします。チャンプ自体の勝率・ピック率・Tierは今のパッチだけです">対面は${ST.blend.patch}も参考</span>`:""}
-    <label for="show-pr">表示する最低ピック率<select id="show-pr">${[.001,.003,.005,.01,.02].map(v=>`<option value="${v}"${v===SHOW_PR?" selected":""}>${(v*100).toFixed(1)}%</option>`).join("")}</select></label>`;
+  const hm=`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  const when=isNaN(d)?"":J(`${d.getMonth()+1}/${d.getDate()} ${hm}更新`,`Updated ${d.toLocaleDateString("en-US",{month:"short",day:"numeric"})} ${hm}`);
+  $("status").innerHTML=`<span>${J("パッチ","Patch")} <b>${ST.patch}</b></span><span>${J("JP・KR / エメラルド以上","JP + KR / Emerald+")}</span><span><b>${ST.matches.toLocaleString()}</b>${J("試合"," games")}</span><span>${when}</span>${ST.matches<3000?`<span class="warn">${J("まだ試合数が少ないので参考程度に","Few games so far; treat as rough guidance")}</span>`:""}${ST.blend?`<span tabindex="0" data-tip-h="${J("前のパッチのデータを混ぜています","Includes previous-patch data")}" data-tip="${J(`パッチが変わったばかりで試合が少ないので、対面と組み合わせの勝率には前のパッチ（${ST.blend.patch}）の試合も${Math.round(ST.blend.f*100)}%の重みで混ぜています`,`The patch just changed and games are few, so matchup and duo win rates also include patch ${ST.blend.patch} games at ${Math.round(ST.blend.f*100)}% weight`)}" data-tip-s="${J(`今のパッチが${BLEND_UNTIL.toLocaleString()}試合に近づくほど、前のパッチの割合を減らします。チャンプ自体の勝率・ピック率・Tierは今のパッチだけです`,`The weight shrinks as the current patch approaches ${BLEND_UNTIL.toLocaleString()} games. Champion win rate, pick rate and tiers use the current patch only`)}">${J(`対面は${ST.blend.patch}も参考`,`Matchups include ${ST.blend.patch}`)}</span>`:""}
+    <label for="show-pr">${J("表示する最低ピック率","Min. pick rate")}<select id="show-pr">${[.001,.003,.005,.01,.02].map(v=>`<option value="${v}"${v===SHOW_PR?" selected":""}>${(v*100).toFixed(1)}%</option>`).join("")}</select></label>`;
   // 表示する最低ピック率を変えたら、一覧とプルダウンを描き直す
   $("show-pr").addEventListener("change",e=>{SHOW_PR=+e.target.value;Object.values(lanePanels).forEach(p=>{p.table();p.draw();});pickers.forEach(p=>p.drawBtn());});
 }
 (async()=>{
   try{const v=await getJSON("https://ddragon.leagueoflegends.com/api/versions.json");if(v[0])DD=v[0];}catch(e){}
   try{
-    const c=await getJSON(`https://ddragon.leagueoflegends.com/cdn/${DD}/data/ja_JP/champion.json`);
+    const c=await getJSON(`https://ddragon.leagueoflegends.com/cdn/${DD}/data/${DD_LANG}/champion.json`);
     for(const id in c.data){const x=c.data[id];CH[id]={key:x.key,name:x.name};BYKEY[x.key]={id,name:x.name,tags:x.tags||[],info:x.info||{},stats:x.stats||{}};}
   }catch(e){}
   for(const base of DATA_BASES){
