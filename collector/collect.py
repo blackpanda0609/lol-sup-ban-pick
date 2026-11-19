@@ -126,6 +126,38 @@ def load_items(version):
             LEGEND.add(int(iid))
 
 
+CDRAGON = "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1"
+
+
+def update_difficulty():
+    """ゲームのクライアントと同じ「難易度」（1=低 2=中 3=高）を CommunityDragon から取る。
+    新しいチャンプが出たときだけ取り直す（失敗しても収集は続ける）。"""
+    path = DATA / "difficulty.json"
+    old = load_json(path, {})
+
+    def fetch(url):
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (bpnote-collector)"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.load(r)
+
+    try:
+        ids = [c["id"] for c in fetch(f"{CDRAGON}/champion-summary.json") if 0 < c.get("id", -1) < 10000]  # 60000番台は別モード用の複製
+        new = dict(old)
+        for cid in ids:
+            if str(cid) in new:
+                continue
+            d = (fetch(f"{CDRAGON}/champions/{cid}.json").get("tacticalInfo") or {}).get("difficulty")
+            if d:
+                new[str(cid)] = d
+        if new != old:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps(dict(sorted(new.items(), key=lambda kv: int(kv[0]))),
+                                       separators=(",", ":")), encoding="utf-8")
+        print(f"difficulty: {len(new)} champions ({len(new) - len(old)} new)", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"difficulty: skipped ({e})", flush=True)
+
+
 def load_json(path, default):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -333,6 +365,7 @@ def main():
     patch = ".".join(version.split(".")[:2])
     load_items(version)
     print(f"items: {len(LEGEND)} completed, {len(BOOTS)} boots", flush=True)
+    update_difficulty()
     print(f"patch {patch}, platforms {PLATFORMS}, {MAX_MINUTES} min", flush=True)
     stats = load_json(DATA / "patches" / f"{patch}.json",
                       {"patch": patch, "matches": 0, "lanes": {}, "duo": {}})
