@@ -41,6 +41,9 @@ h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:
 h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
 header{display:grid;gap:10px}
 header p{color:var(--muted);margin:0;max-width:62ch}
+.h1row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.gh{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.gh:hover,.gh:focus-visible{color:var(--fg);border-color:var(--muted)}
 /* 説明文は意味のかたまりごとに折り返す（言葉の途中で改行しない） */
 .lead{word-break:auto-phrase}
 .lead span{display:inline-block}
@@ -345,7 +348,7 @@ td.extra .chips{flex-wrap:nowrap}
 <body>
 <div class="wrap">
 <header>
-  <h1>BPノート</h1>
+  <div class="h1row"><h1>BPノート</h1><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div>
   <p class="lead"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p>
   <div class="status" id="status"><span>データを読み込み中…</span></div>
 </header>
@@ -362,7 +365,7 @@ td.extra .chips{flex-wrap:nowrap}
 <section class="lt" id="tier-sec" aria-label="Tier表"></section>
 
 <p class="note">勝率は集めた試合からそのまま計算した数字です。試合数が少ない組み合わせはぶれやすいので、並び順では50%寄りに補正しています。★の付いた理由は、手書きの定番の相性をもとにした目安で、パッチによって変わることがあります。</p>
-<p class="note">BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
+<p class="note">ソースコードと集計方法は <a href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener">GitHub</a> で公開しています。<br>BPノートはRiot Gamesの承認を受けたものではなく、Riot Gamesやその関係者の見解・意見を反映するものではありません。League of LegendsおよびRiot GamesはRiot Games, Inc.の商標または登録商標です。League of Legends &copy; Riot Games, Inc.</p>
 </div>
 
 <script>
@@ -1186,7 +1189,8 @@ function buildLane(id,pos,label){
       else notes.push(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`);
       if(!E){
         const b=blindRisk(L,k);
-        if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`);}
+        if(b.unknown){s-=1;notes.push("先出しの安全性はデータ不足で判定できない");}
+        else if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`);}
         else if(b.risk<.03)notes.push("先出しでも安全（カウンターされにくい）");
       }
       if(AL){const dr=duoR(k,AL);if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}}
@@ -1204,7 +1208,7 @@ function buildLane(id,pos,label){
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)} ＋ ${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">組んだときの勝率・${r[0]}試合${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty("この組み合わせのデータはまだ少ないです。")));}
       if(!E){
         const b=blindRisk(L,M);
-        sub.push(card(`${nm(M)}を先出しするリスク`,b.counters.length?`<p class="why" style="margin:0">カウンターされる確率 <b style="color:${b.risk>=.08?"var(--bad)":"var(--fg)"}">${Math.round(b.risk*100)}%</b>（下の相手のピック率の合計）</p>`+statList(b.counters.slice(0,5),o=>`・ピック率${(b.share(o)*100).toFixed(1)}%`):empty(`${nm(M)}を大きく上回る相手はデータ上いません。先出しでも安全です。`)));
+        sub.push(card(`${nm(M)}を先出しするリスク`,b.unknown?empty(`${nm(M)}はこのロールでの試合が少なく、よく出る相手との対面データが${Math.round(b.cov*100)}%ぶんしかありません。先出しして大丈夫かは判定できないので、先出しは避けるのが無難です。`):b.counters.length?`<p class="why" style="margin:0">カウンターされる確率 <b style="color:${b.risk>=.08?"var(--bad)":"var(--fg)"}">${Math.round(b.risk*100)}%</b>（下の相手のピック率の合計）</p>`+statList(b.counters.slice(0,5),o=>`・ピック率${(b.share(o)*100).toFixed(1)}%`):empty(`${nm(M)}を大きく上回る相手はデータ上いません。先出しでも安全です。`)));
       }
       sub.push(timingCard(L,M));
       const mine=Object.entries(L.vs[M]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o)).sort((p,q)=>smooth(p[1])-smooth(q[1])).slice(0,5);
@@ -1253,7 +1257,11 @@ function blindRisk(L,k){
   const opps=Object.entries((L.vs||{})[k]||{}).filter(([o,r])=>BYKEY[o]&&r[0]>=Math.max(MIN,20)&&oppOk(L,o));
   const share=o=>((L.champs||{})[o]||[0])[0]/laneN(L);
   const counters=opps.filter(([,r])=>smooth(r)<.45).sort((a,b)=>smooth(a[1])-smooth(b[1]));
-  return {risk:counters.reduce((n,[o])=>n+share(o),0),counters,share};
+  // 対面データ（20試合以上）がある相手が、よく出る相手全体のどれだけを占めるか。
+  // 少ないと「カウンターが見つからない＝安全」と誤判定するので、半分未満なら判定しない
+  const all=Object.keys(L.champs||{}).filter(o=>o!==k&&BYKEY[o]&&oppOk(L,o)).reduce((n,o)=>n+share(o),0);
+  const cov=all?opps.reduce((n,[o])=>n+share(o),0)/all:0;
+  return {risk:counters.reduce((n,[o])=>n+share(o),0),counters,share,cov,unknown:cov<.5};
 }
 // データ上の苦手な対面（そのチャンプ側の勝率が低い順に3体）。
 // 相手はそのロールでよくいるチャンプだけ（oppOk）、対面は20試合以上あるものだけ
