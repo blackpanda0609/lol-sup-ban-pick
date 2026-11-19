@@ -1111,20 +1111,42 @@ const TRIAD_COMEBACK=EN?{
     "敵のポークのスキルが外れた直後や、敵が前に出すぎた瞬間だけを狙って一気に寄る"
   ]
 };
-function triad(team){
-  // ダイブ：エンゲージ役1、キャッチ役・アサシン・飛び込むファイター0.5 ／ ポーク：ポーク役1 ／ カウンター：ディスエンゲージ役1、ピール役0.5
+// 1人ぶんの点数。ダイブ：エンゲージ役1、キャッチ役・アサシン・飛び込むファイター0.5 ／ ポーク：ポーク役1 ／ カウンター：ディスエンゲージ役1、ピール役0.5
+function triOne(k,r){
   const s={dive:0,poke:0,counter:0};
+  if(!k||!BYKEY[k])return s;
+  const t=traitsOf(k,ST.lanes[r]),tg=BYKEY[k].tags;
+  if(t.has("engage"))s.dive+=1;else if(t.has("catch")||tg[0]==="Assassin"||(tg[0]==="Fighter"&&t.has("dps")&&r!=="BOTTOM"))s.dive+=.5;
+  if(t.has("poke"))s.poke+=1;
+  if(t.has("disengage"))s.counter+=1;else if(t.has("peel"))s.counter+=.5;
+  return s;
+}
+// ロールごとの「よくある構成」の点数（ピック率で重みづけした平均）。
+// ダイブの点はファイター・アサシン・エンゲージ役など多くのチャンプに付くので、
+// そのまま比べるとほとんどの構成がダイブになる。平均との差で比べて偏りをなくす
+let TRI_BASE=null,TRI_BASE_OF=null;
+function triBase(){
+  if(TRI_BASE_OF===ST.lanes)return TRI_BASE;
+  TRI_BASE={};
+  for(const r of ROLES){
+    const e=Object.entries((ST.lanes[r]||{}).champs||{}).filter(([k])=>BYKEY[k]);
+    const tot=e.reduce((n,[,v])=>n+v[0],0),b={dive:0,poke:0,counter:0};
+    if(tot)for(const [k,v] of e){const x=triOne(k,r);for(const y in b)b[y]+=x[y]*v[0]/tot;}
+    TRI_BASE[r]=b;
+  }
+  TRI_BASE_OF=ST.lanes;return TRI_BASE;
+}
+function triad(team){
+  const s={dive:0,poke:0,counter:0},d={dive:0,poke:0,counter:0},B=triBase();
   for(const r of ROLES){
     const k=team[r];if(!k||!BYKEY[k])continue;
-    const t=traitsOf(k,ST.lanes[r]),tg=BYKEY[k].tags;
-    if(t.has("engage"))s.dive+=1;else if(t.has("catch")||tg[0]==="Assassin"||(tg[0]==="Fighter"&&t.has("dps")&&r!=="BOTTOM"))s.dive+=.5;
-    if(t.has("poke"))s.poke+=1;
-    if(t.has("disengage"))s.counter+=1;else if(t.has("peel"))s.counter+=.5;
+    const x=triOne(k,r);
+    for(const y in s){s[y]+=x[y];d[y]+=x[y]-B[r][y];}
   }
-  // 一番高いタイプ（1点以上）。並んだときは並んだタイプをすべて候補にする
-  const max=Math.max(s.dive,s.poke,s.counter);
-  const tops=max>=1?Object.keys(s).filter(k=>s[k]===max):[];
-  return {s,tops,type:tops.length===1?tops[0]:null};
+  // 平均より0.5点以上多いタイプのうち一番のもの。差が0.25点以内なら両方を候補にする
+  const max=Math.max(d.dive,d.poke,d.counter);
+  const tops=max>=.5?Object.keys(d).filter(k=>d[k]>=max-.25-1e-9):[];
+  return {s,d,tops,type:tops.length===1?tops[0]:null};
 }
 
 function planHtml(ally,enemy,me){
@@ -1163,7 +1185,7 @@ function planHtml(ally,enemy,me){
   const as=teamStyle(ally),es=teamStyle(enemy),[ak]=topStyle(as),[ek]=topStyle(es);
   blocks.push(card(J("構成のタイプ","Team comp type"),`<p><b>${J("味方","Ally")}${COL}${STYLE_JA[ak][0]}</b><br><span class="why">${STYLE_JA[ak][1]}</span></p><p><b>${J("敵","Enemy")}${COL}${STYLE_JA[ek][0]}</b><br><span class="why">${STYLE_JA[ek][1]}</span></p>`));
   // 4. 三すくみ：ダイブ → ポーク → カウンター → ダイブ（矢印の先に強い）
-  const triA=triad(ally),triE=triad(enemy),fmt=x=>Number.isInteger(x)?x:x.toFixed(1);
+  const triA=triad(ally),triE=triad(enemy);
   const tn=k=>TRIAD[k][0],typeText=x=>x.tops.length?x.tops.map(tn).join(J("・"," + "))+(x.tops.length>1?J("の両面"," (mixed)"):J("型","")):J("はっきりしない","unclear");
   let head,body,verdict="";
   if(triA.type&&triE.type){
@@ -1182,11 +1204,22 @@ function planHtml(ally,enemy,me){
     head=J(`味方は${triA.tops.map(tn).join("・")}の両面がある`,`Your team is mixed: ${triA.tops.map(tn).join(" + ")}`);
     body=win?J(`敵は${tn(e)}型なので、相性で有利な${tn(win)}の動き方を選ぶ：`,`The enemy is ${tn(e)}, so play the ${tn(win)} style, which beats it: `)+TRIAD_MU[win][e].split("：").slice(1).join("："):J(`敵は${tn(e)}型。どちらの動き方でも相性での有利はないので、レーン戦と構成のタイプで決める。`,`The enemy is ${tn(e)}. Neither of your styles has the edge, so decide from the lanes and comp types.`);
     verdict=win?"up":"";
+  }else if(triE.type&&!triA.tops.length){
+    // 味方の型がはっきりせず、敵だけ型があるとき：敵の型に強い動き方を意識する
+    const e=triE.type,win=Object.keys(BEATS).find(a=>BEATS[a]===e);
+    head=J(`敵は${tn(e)}型`,`The enemy is ${tn(e)}`);
+    body=J(`味方の型ははっきりしないので、${tn(e)}に強い${tn(win)}の動き方を意識する：`,`Your team has no clear type, so lean toward the ${tn(win)} style, which beats it: `)+TRIAD_MU[win][e].split("：").slice(1).join("：");
+  }else if(triA.type&&!triE.tops.length){
+    // 味方だけ型があるとき：自分たちの型の動き方を貫く
+    const a=triA.type;
+    head=J(`味方は${tn(a)}型`,`Your team is ${tn(a)}`);
+    body=J(`${TRIAD[a][1]}。敵の型ははっきりしないので、相性よりも自分たちの得意な動き方を貫く。`,`${TRIAD[a][1][0].toUpperCase()+TRIAD[a][1].slice(1)}. The enemy has no clear type, so stick to what your team does best.`);
   }else{
     head=J("相性の決め手がない","No clear edge");
     body=J("味方・敵ともにタイプがはっきりしないので、三すくみよりも、レーン戦の有利・不利と構成のタイプで動き方を決める。","Neither team has a clear type, so decide how to play from the lane matchups and comp types instead.");
   }
-  const score=x=>`${J("ダイブ","Dive")} ${fmt(x.s.dive)}${SEP}${J("ポーク","Poke")} ${fmt(x.s.poke)}${SEP}${J("カウンター","Counter")} ${fmt(x.s.counter)}`;
+  const sg=v=>(v>=.05?"+":v<=-.05?"−":"±")+Math.abs(v).toFixed(1);
+  const score=x=>J("よくある構成との差 ","vs. a typical comp: ")+`${J("ダイブ","Dive")} ${sg(x.d.dive)}${SEP}${J("ポーク","Poke")} ${sg(x.d.poke)}${SEP}${J("カウンター","Counter")} ${sg(x.d.counter)}`;
   // 相性で不利なとき（敵が2つで並び、片方に不利なときも）は、不利なときの勝ち方を出す
   const losing=triA.type&&triE.tops.some(e=>BEATS[e]===triA.type)?triA.type:null;
   const comeback=losing?`<div class="tri-tip"><b>${J("不利なときの勝ち方","How to win from behind")}</b><ul class="plan-l">${TRIAD_COMEBACK[losing].map(x=>`<li>${x}</li>`).join("")}</ul></div>`:"";
@@ -1206,7 +1239,7 @@ function planHtml(ally,enemy,me){
   if(heals.length>=2)checks.push(J(`敵は回復が多い（${heals.map(nm).join("、")}）：`,`The enemy has lots of healing (${heals.map(nm).join(", ")}): `)+(cls?J(`回復阻害のアイテム（${ITEM_HEAL[cls]}）を早めに`,`buy anti-heal (${ITEM_HEAL[cls]}) early`):J("回復阻害のアイテムを早めに","buy anti-heal early")+pick));
   if(es.engage>=2.5)checks.push(J("敵は飛び込んでくる力が強い：","The enemy has strong engage: ")+(cls==="mage"?J("ゾーニャの砂時計などの守りのアイテムも検討","consider defensive items like Zhonya's Hourglass"):cls==="adc"?J("前に出すぎず、ガーディアン エンジェルなどの守りのアイテムも検討","don't step too far forward; consider defensive items like Guardian Angel"):cls==="support"?J("味方のキャリーのそばにいて、飛び込んできた敵を止める","stay next to your carry and stop whoever dives in"):J("固まりすぎず、飛び込んできた敵をまとめて迎え撃つ","don't bunch up too much; collapse together on whoever dives in")));
   blocks.push(card(J("レーン戦前に確認しておくこと","Check before laning"),checks.length?`<ul class="plan-l">${checks.map(c=>`<li>${c}</li>`).join("")}</ul>`:`<p class="why" style="margin:0">${J("特別な対策が必要な構成ではありません。","No special counter-measures needed against this comp.")}</p>`));
-  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">${J("レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。","Laning and tempo come from collected game data; comp type and Dive/Poke/Counter are judged automatically from champion roles (Dive counts engagers as 1 and pick champions, assassins and diving fighters as 0.5; Poke counts poke champions as 1; Counter counts disengagers as 1 and peelers as 0.5).")}</p>`;
+  return `<div class="results">${blocks.join("")}</div><p class="why" style="margin:0;font-size:12px">${J("レーン戦とテンポは集めた試合データ、構成のタイプと三すくみはチャンプの役割から自動で判定しています（ダイブはエンゲージ役を1、キャッチ役・アサシン・飛び込むファイターを0.5、ポークはポーク役を1、カウンターはディスエンゲージ役を1、ピール役を0.5として数えています）。ダイブの点は多くのチャンプに付くため、ピック率から求めたよくある構成の点数を引き、平均より0.5点以上多いタイプを、そのチームのタイプとしています。","Laning and tempo come from collected game data; comp type and Dive/Poke/Counter are judged automatically from champion roles (Dive counts engagers as 1 and pick champions, assassins and diving fighters as 0.5; Poke counts poke champions as 1; Counter counts disengagers as 1 and peelers as 0.5). Since many champions score some Dive, each team is compared with a typical comp (weighted by pick rate), and a type counts only if it is at least 0.5 above average.")}</p>`;
 }
 
 // ===== Tier表（BPのタブとは別に、表の上のボタンでレーンを切り替える） =====
