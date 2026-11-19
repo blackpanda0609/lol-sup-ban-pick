@@ -2,12 +2,14 @@ name: Collect match data
 
 on:
   schedule:
-    - cron: "0 18 * * *" # 毎日 3:00 (日本時間)
+    # 6時間ごと。ちょうどの時刻は混んで開始が遅れやすいので、17分にずらす。
+    # 前の回が動いていれば、終わるまで待ってから始まる（concurrency）
+    - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
       minutes:
         description: "集める時間（分）。テストなら 10"
-        default: "300"
+        default: "340"
 
 permissions:
   contents: write
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -28,7 +30,7 @@ jobs:
       - name: Collect
         env:
           RIOT_API_KEY: ${{ secrets.RIOT_API_KEY }}
-          MAX_MINUTES: ${{ inputs.minutes || '300' }}
+          MAX_MINUTES: ${{ inputs.minutes || '340' }}
         run: python collector/collect.py
       - name: Commit data
         if: always()
