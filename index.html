@@ -1189,7 +1189,8 @@ function buildLane(id,pos,label){
       else notes.push(`全体勝率${pct(r)}・ピック率${(r[0]/laneN(L)*100).toFixed(1)}%${E?`・${nm(E)}との対面データなし`:""}`);
       if(!E){
         const b=blindRisk(L,k);
-        if(b.unknown){s-=1;notes.push("先出しの安全性はデータ不足で判定できない");}
+        // 判定できないものは「カウンターされやすい」の中くらい（8%ぶん）と同じだけ減点する
+        if(b.unknown){s-=3;notes.push("先出しの安全性はデータ不足で判定できない");}
         else if(b.risk>=.08){s-=Math.min(5,b.risk*20);notes.push(`先出しはカウンターされやすい（${b.counters.slice(0,2).map(([o])=>nm(o)).join("・")}などが出る確率 ${Math.round(b.risk*100)}%）`);}
         else if(b.risk<.03)notes.push("先出しでも安全（カウンターされにくい）");
       }
@@ -1455,11 +1456,23 @@ function buildSteps(pos,M){
 }
 // ===== データの読み込み =====
 const getJSON=(url,opt)=>fetch(url,opt).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();});
+// 今のパッチが BLEND_UNTIL 試合に届くまでは、前のパッチの対面（vs）と組み合わせ（duo）を混ぜる。
+// 混ぜる割合は試合が増えるほど小さくする（0試合なら前のパッチを丸ごと、BLEND_UNTIL試合で0）。
+// チャンプ自体の勝率・ピック率・Tierは、バランス調整の影響が大きいので今のパッチだけで出す
+const BLEND_UNTIL=50000;
+function blendPrev(P){
+  const f=Math.max(0,1-ST.matches/BLEND_UNTIL);
+  if(!f||!P)return;
+  const add=(dst,src)=>{for(const a in src)for(const b in src[a]){const [g,w]=src[a][b],G=Math.round(g*f),W=Math.round(w*f);if(!G)continue;const t=((dst[a]=dst[a]||{})[b]=dst[a][b]||[0,0]);t[0]+=G;t[1]+=W;}};
+  for(const pos in P.lanes||{}){const L=ST.lanes[pos];if(L&&P.lanes[pos].vs)add(L.vs=L.vs||{},P.lanes[pos].vs);}
+  if(P.duo)add(ST.duo=ST.duo||{},P.duo);
+  ST.blend={patch:P.patch,f};
+}
 function drawStatus(p){
   if(!ST){$("status").innerHTML=`<span class="warn">勝率データを読み込めませんでした。通信状態を確認して、ページを再読み込みしてください。</span>`;return;}
   const d=new Date(ST.updated);
   const when=isNaN(d)?"":`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}更新`;
-  $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}
+  $("status").innerHTML=`<span>パッチ <b>${ST.patch}</b></span><span>JP・KR / エメラルド以上</span><span><b>${ST.matches.toLocaleString()}</b>試合</span><span>${when}</span>${ST.matches<3000?`<span class="warn">まだ試合数が少ないので参考程度に</span>`:""}${ST.blend?`<span tabindex="0" data-tip-h="前のパッチのデータを混ぜています" data-tip="パッチが変わったばかりで試合が少ないので、対面と組み合わせの勝率には前のパッチ（${ST.blend.patch}）の試合も${Math.round(ST.blend.f*100)}%の重みで混ぜています" data-tip-s="今のパッチが${BLEND_UNTIL.toLocaleString()}試合に近づくほど、前のパッチの割合を減らします。チャンプ自体の勝率・ピック率・Tierは今のパッチだけです">対面は${ST.blend.patch}も参考</span>`:""}
     <label for="show-pr">表示する最低ピック率<select id="show-pr">${[.001,.003,.005,.01,.02].map(v=>`<option value="${v}"${v===SHOW_PR?" selected":""}>${(v*100).toFixed(1)}%</option>`).join("")}</select></label>`;
   // 表示する最低ピック率を変えたら、一覧とプルダウンを描き直す
   $("show-pr").addEventListener("change",e=>{SHOW_PR=+e.target.value;Object.values(lanePanels).forEach(p=>{p.table();p.draw();});pickers.forEach(p=>p.drawBtn());});
@@ -1476,6 +1489,9 @@ function drawStatus(p){
       let p=idx.patches[0];
       if(p.matches<1000&&idx.patches[1]&&idx.patches[1].matches>p.matches)p=idx.patches[1];
       ST=await getJSON(base+`patches/${p.patch}.json`,{cache:"no-cache"});
+      // パッチが変わってすぐは対面・組み合わせのデータが少ないので、前のパッチのぶんも混ぜる
+      const prev=idx.patches[idx.patches.indexOf(p)+1];
+      if(prev&&ST.matches<BLEND_UNTIL)try{blendPrev(await getJSON(base+`patches/${prev.patch}.json`,{cache:"no-cache"}));}catch(e){}
       try{DIFF=await getJSON(base+"difficulty.json",{cache:"no-cache"});}catch(e){}
       break;
     }catch(e){}
