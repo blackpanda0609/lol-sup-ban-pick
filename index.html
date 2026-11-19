@@ -95,6 +95,10 @@ ul.list li{display:grid;gap:2px}
 .name{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .why{color:var(--muted);font-size:13.5px}
 .tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.6}
+.diff-1{color:var(--good)}.diff-2{color:var(--muted)}.diff-3{color:var(--bad)}
+.tag.diff-1,.tag.diff-2,.tag.diff-3{border-style:dashed}
+.easy-opt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:0 0 8px;cursor:pointer;width:fit-content}
+.easy-opt input{width:auto;margin:0;padding:0;flex:none;accent-color:var(--good)}
 .t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}.t-fighter{color:var(--fighter)}.t-assassin{color:var(--assassin)}.t-marks{color:var(--marks)}
 .score{font-family:var(--mono);font-size:12px;color:var(--accent)}
 .wr{font-family:var(--mono);font-size:13px;margin-left:auto}
@@ -477,6 +481,15 @@ const fewMsg=()=>empty(`${MIN}試合以上の組み合わせがまだありま�
 // Data Dragon のクラス（1つ目の色で表示し、2つ目があれば併記）
 const CLS={Fighter:["ファイター","fighter"],Tank:["タンク","tank"],Mage:["メイジ","mage"],Assassin:["アサシン","assassin"],Marksman:["マークスマン","marks"],Support:["サポート","ench"]};
 const clsTag=key=>{const t=((BYKEY[key]||{}).tags||[]).filter(x=>CLS[x]);return t.length?`<span class="tag t-${CLS[t[0]][1]}">${t.map(x=>CLS[x][0]).join("／")}</span>`:"";};
+// 操作の難しさ（ゲームのクライアントと同じ 1=低 2=中 3=高）。data/difficulty.json がなければ Data Dragon の古い10段階で代用
+let DIFF={},EASY=true;
+try{EASY=localStorage.getItem("bp-easy")!=="0";}catch(e){}
+const diffOf=key=>{const v=DIFF[key];if(v)return v;const d=((BYKEY[key]||{}).info||{}).difficulty;return d?(d<=3?1:d<=7?2:3):0;};
+// 中くらいのチャンプには何も付けない
+const DIFF_L={1:["簡単","diff-1","操作がシンプルで、はじめて使っても力を出しやすいチャンプです"],3:["難しい","diff-3","操作が難しく、使い慣れるまで本来の勝率が出にくいチャンプです"]};
+const diffTag=key=>{const x=DIFF_L[diffOf(key)];if(!x)return "";const [n,c,t]=x;return `<span class="tag ${c}" tabindex="0" data-tip-h="操作が${n}" data-tip="${t}" data-tip-s="ゲームのチャンプ情報にある難易度（低・中・高）の、低を「簡単」、高を「難しい」としています">${n}</span>`;};
+// おすすめの点数への上乗せ（「操作が簡単なチャンプを優先」がオンのとき）
+const EASY_PTS={1:2,2:0,3:-3};
 const statLi=(key,r,note="")=>`<li class="sl"><span class="name">${icK(key)}${nm(key)}${clsTag(key)}</span><span class="why">${r[0]}試合${note}</span><span class="wr ${dirOf(r)}">${pct(r)}</span><span class="bar ${dirOf(r)}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`;
 // Tier：勝率に「20勝20敗」を足して50%寄りにならした値で並べる（試合数が多いほど実際の勝率に近づく）。
 // 50試合（最低試合数のほうが多ければそちら）に届いたチャンプだけを対象に、レーン内の順位で
@@ -1097,7 +1110,7 @@ function buildLane(id,pos,label){
     ${step(2,"ピックを決める","使うチャンプを選ぶ。迷ったら下のおすすめから",`
       <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">自分のピック</span></div></div>
       <div class="s2b"></div>
-      <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><div class="s2"></div></details>`)}
+      <details class="recs" open><summary>迷ったら：おすすめから選ぶ</summary><label class="easy-opt"><input type="checkbox" class="easy-on"${EASY?" checked":""}>操作が簡単なチャンプを優先する</label><div class="s2"></div></details>`)}
     ${step(3,"ルーンとサモナースペル","ピックが決まったら設定する",`<div class="s3"></div>`)}
     ${step(4,"試合の勝ち筋","決まった構成で、どこで差をつけて、どう勝つか",`<div class="s5"></div>`)}
     ${step(5,"ゲーム開始後","BPには使わない情報なので、必要なときだけ開く",`<details class="later"><summary>スタートアイテム・スキルの上げ方・アイテムの順番を見る</summary><div class="s4"></div></details>`)}
@@ -1117,6 +1130,12 @@ function buildLane(id,pos,label){
   });
   const mirror=root.querySelector(".me-mirror"),compEl=root.querySelector(".comp"),needsNote=root.querySelector(".needs-note"),bansEl=root.querySelector(".bans");
   root.querySelector(".link-on").addEventListener("change",e=>setLink(e.target.checked));
+  // 「操作が簡単なチャンプを優先」は全ロール共通
+  root.querySelector(".easy-on").addEventListener("change",e=>{
+    EASY=e.target.checked;try{localStorage.setItem("bp-easy",EASY?"1":"0");}catch(x){}
+    document.querySelectorAll(".easy-on").forEach(x=>{x.checked=EASY;});
+    Object.values(lanePanels).forEach(p=>p.draw());
+  });
   root.querySelector(".draft-reset").addEventListener("click",()=>{ROLES.forEach(r=>{delete DRAFT.ally[r];delete DRAFT.enemy[r];});DRAFT.bans=[];Object.values(lanePanels).forEach(p=>{p.resetNeeds&&p.resetNeeds();p.setPick&&p.setPick("");});redrawAll();});
   const pm=makePicker(root.querySelector(`#${id}-m-l`).parentElement,`${id}-m-l`,itemsOf(L),draw);
   const s2=root.querySelector(".s2"),s2b=root.querySelector(".s2b"),s3=root.querySelector(".s3"),s4=root.querySelector(".s4"),s5=root.querySelector(".s5"),recs=root.querySelector(".recs");
@@ -1171,11 +1190,12 @@ function buildLane(id,pos,label){
         else if(b.risk<.03)notes.push("先出しでも安全（カウンターされにくい）");
       }
       if(AL){const dr=duoR(k,AL);if(dr&&dr[0]>=MIN){s+=clamp((smooth(dr)-.5)*40,2);notes.push(`${nm(AL)}と組んで${pct(dr)}（${dr[0]}試合）`);}}
+      if(EASY){const d=diffOf(k);s+=EASY_PTS[d]||0;if(d===1)notes.push("操作が簡単");else if(d===3)notes.push("操作が難しい（使い慣れていなければ避ける）");}
       const teiki=[E&&teikiCounter(k,E),AL&&duoTeiki(k,AL)].filter(Boolean);
       return {k,s,notes,teiki,r:shown};
     }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,6);
-    const conds=[E?`${nm(E)}に勝ちやすい`:"先出しでも安全",AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`].filter(Boolean).join(" × ")||"今の環境で強い";
-    s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
+    const conds=[E?`${nm(E)}に勝ちやすい`:"先出しでも安全",AL&&`${nm(AL)}と相性がいい`,needs.size&&`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`,EASY&&"操作が簡単"].filter(Boolean).join(" × ")||"今の環境で強い";
+    s2.innerHTML=`<h4 class="s-sub">おすすめ：${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}点</span>${x.k===M?`<span class="pick-btn on">選択中</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">これにする</button>`}</span><span class="why">${x.notes.join("／")}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
     if(E)sub.push(enemyCard(L,E,M));
@@ -1270,7 +1290,7 @@ function laneTable(host,L,label,extras=[],onOpen=null){
     const tm=tierMapOf(L),TR={S:5,A:4,B:3,C:2,D:1};
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(tm[k]?TR[tm[k]]*1000+powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,"ja"):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
-    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
+    tb.innerHTML=rows.map(([k,r])=>`<tr><td>${tierBadge(tm[k],r,k,L,tm[k+"_cap"])}</td><td class="key">${onOpen?`<button type="button" class="kn nm-link" data-open="${k}" title="${nm(k)}を自分のピックにする">${icK(k)}${nm(k)}</button>`:`<span class="kn">${icK(k)}${nm(k)}</span>`}</td><td><div class="tags2">${clsTag(k)}${diffTag(k)}${timingTag(L,k)}</div></td><td class="n"><span class="wr ${r[0]>=MIN?dirOf(r):""}" tabindex="0" data-tip-h="勝率 ${pct(r)}（${r[0]}試合）" data-tip="試合数から見て、本当の勝率はおよそ ${ciText(r)} のあいだと考えられます" data-tip-s="試合数が少ないほど、この幅は広くなります">${pct(r)}</span></td><td class="n">${r[0]}</td><td class="n">${(r[0]/laneN(L)*100).toFixed(1)}%</td><td class="n">${banRate(k)===null?"—":(banRate(k)*100).toFixed(1)+"%"}</td>${extCells(L,k)}${extras.map(x=>`<td class="extra">${x.cell(k)}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${9+extras.length}">該当なし</td></tr>`;
     queueHeads();
     host.querySelectorAll("th[data-s]").forEach(th=>th.setAttribute("aria-sort",(th.dataset.s===sk||(sk==="g"&&th.dataset.s==="pr"))?(sd<0?"descending":"ascending"):"none"));
   }
@@ -1448,6 +1468,7 @@ function drawStatus(p){
       let p=idx.patches[0];
       if(p.matches<1000&&idx.patches[1]&&idx.patches[1].matches>p.matches)p=idx.patches[1];
       ST=await getJSON(base+`patches/${p.patch}.json`,{cache:"no-cache"});
+      try{DIFF=await getJSON(base+"difficulty.json",{cache:"no-cache"});}catch(e){}
       break;
     }catch(e){}
   }
