@@ -394,7 +394,9 @@ document.querySelectorAll(".lang [data-lang]").forEach(b=>{
     const qs=new URLSearchParams(location.search);qs.delete("lang");
     // 保存できないブラウザでは URL で言語を持ち回る
     try{localStorage.setItem("bp-lang",b.dataset.lang);}catch(e){qs.set("lang",b.dataset.lang);}
-    location.href=location.pathname+(qs.toString()?"?"+qs:"")+location.hash;
+    // 同じ URL への移動はページ内の移動として扱われ、読み込み直されないので、URL を書き換えてから reload する
+    history.replaceState(null,"",location.pathname+(qs.toString()?"?"+qs:"")+location.hash);
+    location.reload();
   });
 });
 // ===== 手書きデータ（サポートタブ） =====
