@@ -7,29 +7,29 @@
 <meta name="description" content="LoLのBP支援。JP・KRのエメラルド以上の試合データから、全レーンの対面勝率とbotの組み合わせ勝率、サポートのカウンターと構成の相性を引けます。">
 <meta property="og:title" content="BPノート">
 <meta property="og:description" content="全レーンの対面勝率とサポートのBP早見表">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%234ade80'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%234ade80'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%234ade80'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%234ade80'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%235ad68c'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%235ad68c'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%235ad68c'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%235ad68c'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: ヘッダー（データの状態）→ レーンタブ → タブごとのパネル。1カラム、最大幅 1000px */
 :root{
-  --bg:#dfeae3; --surface:#ffffff; --fg:#13241b; --muted:#4f665a; --line:#c2d6ca;
-  --accent:#15803d; --accent-soft:#dcf3e2;
+  --bg:#d5e3da; --surface:#ffffff; --fg:#13241b; --muted:#4f665a; --line:#c2d6ca;
+  --accent:#0f6b32; --accent-soft:#dcf3e2;
   --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
   --dmg-ad:#e5392b; --dmg-ap:#2fa8e8; --dmg-true:#ffffff;
-  --good:#1f6fd1; --bad:#c0392b; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
+  --good:#1a5cb0; --bad:#b3261e; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
   --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
   --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#4ade80; --accent-soft:#173a24;
+  --bg:#07110c; --surface:#1b3126; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
+  --accent:#5ad68c; --accent-soft:#183d27;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#4ade80; --accent-soft:#173a24;
+  --bg:#07110c; --surface:#1b3126; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
+  --accent:#5ad68c; --accent-soft:#183d27;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
@@ -191,7 +191,7 @@ td.extra .chips{flex-wrap:nowrap}
 .step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:14px;min-width:0}
 .step.wait{opacity:.55}
 .step-h{display:flex;gap:12px;align-items:flex-start}
-.sn{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:15px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+.sn{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-size:15px;background:var(--bg);color:var(--fg);border:1px solid var(--line)}
 .step-h h3{font-size:16px;color:var(--fg);letter-spacing:0;margin:0}
 .step-h p{margin:2px 0 0;color:var(--muted);font-size:13px}
 .step .card{background:var(--bg)}
@@ -280,7 +280,7 @@ td.extra .chips{flex-wrap:nowrap}
 .tri-card{grid-column:1/-1}
 .tri-wrap{display:flex;gap:12px 24px;align-items:center;flex-wrap:wrap}
 .tri-svg{width:240px;max-width:100%;flex:none}
-.tchart{display:block;width:100%;height:auto;margin:4px 0}
+.tchart{display:block;width:100%;max-width:440px;height:auto;margin:4px 0}
 .tline{margin:0;font-size:14px;line-height:1.9}
 .tline img{vertical-align:middle;margin:0 4px 0 2px}
 .tsw{display:inline-block;width:14px;height:4px;border-radius:2px;vertical-align:middle}
@@ -334,8 +334,10 @@ td.extra .chips{flex-wrap:nowrap}
 .needs-row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center}
 .ngroup{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ngroup>span{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);margin-right:4px}
-.pick-btn{font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:4px}
-.pick-btn.on{color:var(--bg);background:var(--accent);cursor:default}
+.pick-btn{font:inherit;font-size:12px;font-weight:700;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:4px}
+.pick-btn:hover{color:var(--accent);border-color:var(--accent)}
+.pick-btn.on{color:var(--bg);background:var(--accent);border-color:var(--accent);cursor:default}
+.rrow:first-child+.rrow .pick-btn:not(.on){color:var(--accent);border-color:var(--accent)}
 .rank li.chosen{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
 /* おすすめ：表の形で、どの行も同じ位置に名前・理由・勝率・ボタンを並べる */
 .rtable{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
