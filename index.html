@@ -1490,7 +1490,6 @@ function buildLane(id,pos,label){
     s2.innerHTML=`<h4 class="s-sub">${J("おすすめ：","Suggestions: ")}${conds}</h4>`+(rs.length?`<ul class="rtable"><li class="rrow rhead" aria-hidden="true"><span>#</span><span>${J("チャンプ","Champion")}</span><span>${J("理由","Why")}</span><span class="r-num">${J("勝率","Win rate")}</span><span></span></li>${rs.map((x,i)=>`<li class="rrow${x.k===M?" chosen":""}"><span class="r-no">${i+1}</span><span class="r-ch">${icK(x.k)}<span class="r-nm"><b>${nm(x.k)}</b><span class="tags2">${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}</span></span></span><span class="r-why">${x.notes.join(SL)}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="r-num"><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="score">${x.s.toFixed(1)}${J("点"," pts")}</span></span>${x.k===M?`<span class="pick-btn on">${J("選択中","Selected")}</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">${J("これにする","Pick this")}</button>`}</li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
-    if(E)sub.push(enemyCard(L,E,M));
     if(M){
       if(E){const r=(L.vs[M]||{})[E];sub.push(card(`${nm(M)} vs ${nm(E)}`,r?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(E)}</div><p class="why" style="margin:0">${J(`${nm(M)}側の勝率・${r[0]}試合`,`${nm(M)}'s win rate, ${G(r[0])}`)}${teikiCounter(E,M)?`<br>★${J(`${nm(E)}の有利：`,`${nm(E)}'s edge: `)}${teikiCounter(E,M)}`:""}</p>`:empty(J("この対面の試合はまだありません。","No games for this matchup yet."))));}
       if(AL){const r=duoR(M,AL);sub.push(card(`${nm(M)}${J(" ＋ "," + ")}${nm(AL)}`,r&&r[0]>=MIN?`<div class="name">${icK(M)}<span class="h2h wr ${dirOf(r)}" style="margin:0">${pct(r)}</span>${icK(AL)}</div><p class="why" style="margin:0">${J(`組んだときの勝率・${r[0]}試合`,`Win rate together, ${G(r[0])}`)}${duoTeiki(M,AL)?`<br>★${duoTeiki(M,AL)}`:""}</p>`:empty(J("この組み合わせのデータはまだ少ないです。","Not much data for this pairing yet."))));}
@@ -1517,7 +1516,8 @@ function buildLane(id,pos,label){
       if(!root.hidden&&location.hash!==want)history.replaceState(null,"",want);
     }
     // --- ステップ4：試合の勝ち筋（味方は自分のピックを含めて考える） ---
-    s5.innerHTML=planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy,M);
+    // 対面の強み・弱点はピックを決めるときではなくレーン戦の準備なので、ステップ④の先頭に置く
+    s5.innerHTML=(E?`<div class="results" style="margin-bottom:12px">${enemyCard(L,E,M)}</div>`:"")+planHtml({...DRAFT.ally,[pos]:M||DRAFT.ally[pos]||""},DRAFT.enemy,M);
     // --- ステップ3・5 ---
     if(!M){s3.innerHTML=s4.innerHTML=empty(J("ステップ2でピックを決めると表示されます。","Shown once you choose your pick in step 2."));}
     else{const [a,b]=buildSteps(pos,M);s3.innerHTML=a;s4.innerHTML=b;}
