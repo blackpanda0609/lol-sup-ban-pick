@@ -7,32 +7,37 @@
 <meta name="description" content="LoLのBP支援。JP・KRのエメラルド以上の試合データから、全レーンの対面勝率とbotの組み合わせ勝率、サポートのカウンターと構成の相性を引けます。">
 <meta property="og:title" content="BPノート">
 <meta property="og:description" content="全レーンの対面勝率とサポートのBP早見表">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%235ad68c'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%235ad68c'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%235ad68c'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%235ad68c'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%23774D78'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%23F1E3C4'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%23774D78'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%23774D78'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%23774D78'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<script>
+// テーマ：自分で選んだものがあればそれを使い、なければ端末の設定に合わせる（描画前に決めてちらつきを防ぐ）
+try{const t=localStorage.getItem("bp-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}
+</script>
 <style>
 /* Layout: ヘッダー（データの状態）→ レーンタブ → タブごとのパネル。1カラム、最大幅 1000px */
 :root{
-  --bg:#d5e3da; --surface:#ffffff; --fg:#13241b; --muted:#4f665a; --line:#c2d6ca;
-  --accent:#0f6b32; --accent-soft:#dcf3e2;
-  --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
+  /* 配色：クリーム #F1E3C4・モーヴ #774D78・うす藤 #AF8EB1・セージ #B7D0CC をもとに、文字が4.5:1以上になるよう明るさを調整 */
+  --bg:#e8d5b0; --surface:#fdf9f0; --fg:#2e1f2f; --muted:#5c4b5f; --line:#d2bb92;
+  --accent:#774D78; --accent-soft:#efe1ef;
+  --engage:#c0392b; --catch:#7b4bb5; --tank:#365a72; --ench:#2a8a6a; --mage:#c46a1a;
   --dmg-ad:#e5392b; --dmg-ap:#2fa8e8; --dmg-true:#ffffff;
-  --good:#1a5cb0; --bad:#b3261e; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
+  --good:#285f58; --bad:#9e2c48; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
   --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
   --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#07110c; --surface:#1b3126; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#5ad68c; --accent-soft:#183d27;
-  --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
+  --bg:#140e15; --surface:#35283a; --fg:#F1E3C4; --muted:#c9b6ca; --line:#5a4560;
+  --accent:#d4aed6; --accent-soft:#3d2a42;
+  --engage:#ef6b5c; --catch:#b48de6; --tank:#AF8EB1; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
-  --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
+  --good:#9ed3ca; --bad:#f0a0b4; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#07110c; --surface:#1b3126; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#5ad68c; --accent-soft:#183d27;
-  --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
+  --bg:#140e15; --surface:#35283a; --fg:#F1E3C4; --muted:#c9b6ca; --line:#5a4560;
+  --accent:#d4aed6; --accent-soft:#3d2a42;
+  --engage:#ef6b5c; --catch:#b48de6; --tank:#AF8EB1; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
-  --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
+  --good:#9ed3ca; --bad:#f0a0b4; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
 /* 見た目には出さず、読み上げには残す（選んでいるタブと同じ内容の見出しなど） */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -398,7 +403,7 @@ td.extra .chips{flex-wrap:nowrap}
 <body>
 <div class="wrap">
 <header>
-  <div class="h1row"><h1 data-en="BP Note">BPノート</h1><p class="lead" data-en="<span>A pick &amp; ban helper for every role,</span> <span>based on JP/KR Emerald+ solo queue win rates.</span>"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p><div class="hlinks"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button></div><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div>
+  <div class="h1row"><h1 data-en="BP Note">BPノート</h1><p class="lead" data-en="<span>A pick &amp; ban helper for every role,</span> <span>based on JP/KR Emerald+ solo queue win rates.</span>"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p><div class="hlinks"><div class="lang theme" role="group" aria-label="テーマ" data-en-aria="Theme"><button type="button" data-theme-set="light" data-en="Light">ライト</button><button type="button" data-theme-set="dark" data-en="Dark">ダーク</button></div><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button></div><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div>
   <div class="status" id="status"><span data-en="Loading data…">データを読み込み中…</span></div>
 </header>
 
@@ -432,6 +437,17 @@ if(EN){
   document.querySelectorAll("[data-en]").forEach(el=>{el.innerHTML=el.dataset.en;});
   document.querySelectorAll("[data-en-aria]").forEach(el=>el.setAttribute("aria-label",el.dataset.enAria));
 }
+// ライト／ダーク：押したほうに切り替えて覚える（再読み込みはしない）
+const DARK_MQ=matchMedia("(prefers-color-scheme:dark)");
+const themeNow=()=>document.documentElement.dataset.theme||(DARK_MQ.matches?"dark":"light");
+const syncThemeBtns=()=>document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.themeSet===themeNow()));
+document.querySelectorAll("[data-theme-set]").forEach(b=>b.addEventListener("click",()=>{
+  document.documentElement.dataset.theme=b.dataset.themeSet;
+  try{localStorage.setItem("bp-theme",b.dataset.themeSet);}catch(e){}
+  syncThemeBtns();
+}));
+DARK_MQ.addEventListener("change",syncThemeBtns);
+syncThemeBtns();
 document.querySelectorAll(".lang [data-lang]").forEach(b=>{
   b.setAttribute("aria-pressed",b.dataset.lang===LANG);
   b.addEventListener("click",()=>{
