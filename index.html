@@ -7,12 +7,12 @@
 <meta name="description" content="LoLのBP支援。JP・KRのエメラルド以上の試合データから、全レーンの対面勝率とbotの組み合わせ勝率、サポートのカウンターと構成の相性を引けます。">
 <meta property="og:title" content="BPノート">
 <meta property="og:description" content="全レーンの対面勝率とサポートのBP早見表">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%23e0b35a'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%23121722'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%23e0b35a'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%23e0b35a'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%23e0b35a'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%23e0b35a'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%23e0b35a'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%23e0b35a'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%23e0b35a'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: ヘッダー（データの状態）→ レーンタブ → タブごとのパネル。1カラム、最大幅 1000px */
 :root{
-  --bg:#eef1f5; --surface:#ffffff; --fg:#1b2230; --muted:#5d6779; --line:#d5dbe5;
+  --bg:#dfeae3; --surface:#ffffff; --fg:#13241b; --muted:#4f665a; --line:#c2d6ca;
   --accent:#a8761b; --accent-soft:#f3e7cc;
   --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
   --dmg-ad:#e5392b; --dmg-ap:#2fa8e8; --dmg-true:#ffffff;
@@ -22,13 +22,13 @@
   --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
+  --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121722; --surface:#1b2230; --fg:#e7ebf2; --muted:#9aa4b6; --line:#2d3646;
+  --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
   --accent:#e0b35a; --accent-soft:#3a3020;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
