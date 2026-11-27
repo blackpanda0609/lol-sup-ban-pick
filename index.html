@@ -34,14 +34,17 @@
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
   --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
+/* 見た目には出さず、読み上げには残す（選んでいるタブと同じ内容の見出しなど） */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.65}
-.wrap{max-width:1120px;margin:0 auto;padding:32px 16px 64px;display:grid;gap:28px}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,5vw,40px);line-height:1.2;margin:0;text-wrap:balance}
+.wrap{max-width:1120px;margin:0 auto;padding:18px 16px 64px;display:grid;gap:16px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(26px,4vw,32px);line-height:1.2;margin:0;text-wrap:balance}
 h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:balance}
 h3{font-size:13px;letter-spacing:.08em;color:var(--muted);margin:0;font-weight:700}
 header{display:grid;gap:10px}
 header p{color:var(--muted);margin:0;max-width:62ch}
-.h1row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.h1row{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.h1row .lead{flex:1 1 280px;font-size:13px;line-height:1.5}
 .hlinks{display:flex;align-items:center;gap:8px}
 .lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
 .lang button{font:inherit;font-size:12.5px;font-weight:700;color:var(--muted);background:none;border:0;padding:5px 11px;cursor:pointer}
@@ -51,7 +54,7 @@ header p{color:var(--muted);margin:0;max-width:62ch}
 /* 説明文は意味のかたまりごとに折り返す（言葉の途中で改行しない） */
 .lead{word-break:auto-phrase}
 .lead span{display:inline-block}
-.status{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.status{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 14px}
 .status b{color:var(--fg);font-family:var(--mono);font-weight:500}
 .status .warn{color:var(--bad)}
 .status label{margin-left:auto;display:flex;gap:8px;align-items:center}
@@ -230,6 +233,7 @@ td.extra .chips{flex-wrap:nowrap}
 .link-st{font-size:12px;color:var(--bad)}
 .link-st.ok{color:var(--good)}
 .link-dl{margin-left:auto;font-size:12px;color:var(--muted)}
+.needs-field{margin:0 0 10px}
 .link-dl:hover{color:var(--accent)}
 .bans{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .bans .side{padding:0;color:var(--muted)}
@@ -356,8 +360,7 @@ td.extra .chips{flex-wrap:nowrap}
 <body>
 <div class="wrap">
 <header>
-  <div class="h1row"><h1 data-en="BP Note">BPノート</h1><div class="hlinks"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button></div><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div>
-  <p class="lead" data-en="<span>A pick &amp; ban helper for every role,</span> <span>based on JP/KR Emerald+ solo queue win rates.</span>"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p>
+  <div class="h1row"><h1 data-en="BP Note">BPノート</h1><p class="lead" data-en="<span>A pick &amp; ban helper for every role,</span> <span>based on JP/KR Emerald+ solo queue win rates.</span>"><span>JP・KRのエメラルド以上の</span><span>ソロランクの勝率をもとにした、</span><span>全レーンのBP支援ツールです。</span></p><div class="hlinks"><div class="lang" role="group" aria-label="Language"><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">English</button></div><a class="gh" href="https://github.com/blackpanda0609/lol-sup-ban-pick" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div></div>
   <div class="status" id="status"><span data-en="Loading data…">データを読み込み中…</span></div>
 </header>
 
@@ -1323,26 +1326,25 @@ function buildLane(id,pos,label){
   // 隣のレーン：SUP なら味方ADC、BOT なら味方SUP
   const partner=pos==="UTILITY"?["BOTTOM","ADC"]:pos==="BOTTOM"?["UTILITY",J("SUP","support")]:null;
   const step=(n,h,p,body)=>`<li class="step" data-step="${n}"><div class="step-h"><span class="sn">${n}</span><div><h3>${h}</h3><p>${p}</p></div></div>${body}</li>`;
-  root.innerHTML=`<section class="flow"><h2>${J(`${label}のBP`,`${label} pick & ban`)}</h2><ol class="steps">
+  root.innerHTML=`<section class="flow"><h2 class="sr-only">${J(`${label}のBP`,`${label} pick & ban`)}</h2><ol class="steps">
     ${step(1,J("相手と味方を見る","Read the draft"),J("ピック画面で見えているチャンプを入れる（入れた内容は全タブで共有）","Enter the champions you see in champ select (shared across all tabs)"),`
-      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> ${J("クライアントと連携","Link with client")}</label><span class="link-st"></span><a class="link-dl" href="https://github.com/blackpanda0609/lol-sup-ban-pick/releases/latest" target="_blank" rel="noopener">${J("連携ソフト（Windows）の入手","Get the link app (Windows)")}</a></div>
+      <div class="link-bar"><label class="link-tg"><input type="checkbox" class="link-on"> ${J("クライアントと連携","Link with client")}</label><span class="link-st"></span><a class="link-dl" href="https://github.com/blackpanda0609/lol-sup-ban-pick/releases/latest" target="_blank" rel="noopener">${J("連携ソフト（Windows）の入手","Get the link app (Windows)")}</a><button type="button" class="draft-reset"><span aria-hidden="true">↺</span>${J("ドラフトを全部消す","Clear the whole draft")}</button></div>
       <div class="board">
         ${["ally","enemy"].map(side=>`<div class="bline ${side}"><span class="side">${side==="ally"?J("味方","Ally"):J("敵","Enemy")}</span>${ROLES.map(r=>side==="ally"&&r===pos?`<div class="slot me"><span class="slot-l">${POSLABEL[r]}</span><div class="me-mirror"></div></div>`:`<div class="slot" data-side="${side}" data-pos="${r}"><span class="slot-l" id="${id}-${side}-${r}">${POSLABEL[r]}</span></div>`).join("")}</div>`).join("")}
         <div class="bans"></div>
-        <button type="button" class="draft-reset"><span aria-hidden="true">↺</span>${J("ドラフトを全部消す","Clear the whole draft")}</button>
       </div>
-      <div class="comp"></div>
-      <div class="field">
+      <div class="comp"></div>`)}
+    ${step(2,J("ピックを決める","Lock in your pick"),J("使うチャンプを選ぶ。迷ったら下のおすすめから","Choose your champion. Not sure? Use the suggestions below"),`
+      <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">${J("自分のピック","Your pick")}</span></div></div>
+      <div class="s2b"></div>
+      <details class="recs" open><summary>${J("迷ったら：おすすめから選ぶ","Not sure? Pick from the suggestions")}</summary>
+      <div class="field needs-field">
         <span class="flabel" id="${id}-n-l">${J("チームにほしいもの","What your team needs")} <span class="needs-note"></span></span>
         <div class="needs-row lane-needs" role="group" aria-labelledby="${id}-n-l">
           <div class="ngroup"><span>${J("ダメージ","Damage")}</span>${DMG_NEEDS.map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
           <div class="ngroup"><span>${J("役割","Roles")}</span>${Object.keys(LANE_NEEDS).filter(n=>!DMG_NEEDS.includes(n)).map(n=>`<button type="button" class="tg" data-n="${n}" aria-pressed="false">${LANE_NEEDS[n]}</button>`).join("")}</div>
         </div>
-      </div>`)}
-    ${step(2,J("ピックを決める","Lock in your pick"),J("使うチャンプを選ぶ。迷ったら下のおすすめから","Choose your champion. Not sure? Use the suggestions below"),`
-      <div class="mypick"><div class="field"><span class="flabel" id="${id}-m-l">${J("自分のピック","Your pick")}</span></div></div>
-      <div class="s2b"></div>
-      <details class="recs" open><summary>${J("迷ったら：おすすめから選ぶ","Not sure? Pick from the suggestions")}</summary><label class="easy-opt"><input type="checkbox" class="easy-on"${EASY?" checked":""}>${J("操作が簡単なチャンプを優先する","Prefer easy-to-play champions")}</label><div class="s2"></div></details>`)}
+      </div><label class="easy-opt"><input type="checkbox" class="easy-on"${EASY?" checked":""}>${J("操作が簡単なチャンプを優先する","Prefer easy-to-play champions")}</label><div class="s2"></div></details>`)}
     ${step(3,J("ルーンとサモナースペル","Runes & summoner spells"),J("ピックが決まったら設定する","Set these once your pick is locked"),`<div class="s3"></div>`)}
     ${step(4,J("試合の勝ち筋","Game plan"),J("決まった構成で、どこで差をつけて、どう勝つか","With these comps, where to get ahead and how to win"),`<div class="s5"></div>`)}
     ${step(5,J("ゲーム開始後","After the game starts"),J("BPには使わない情報なので、必要なときだけ開く","Not needed for the draft; open when you need it"),`<details class="later"><summary>${J("スタートアイテム・スキルの上げ方・アイテムの順番を見る","Show starting items, skill order and item order")}</summary><div class="s4"></div></details>`)}
@@ -1401,6 +1403,8 @@ function buildLane(id,pos,label){
     const allyC=compOf("ally",pos),enemyC=compOf("enemy",null);
     if(!touched){needs.clear();autoNeeds(allyC).forEach(x=>needs.add(x));}
     syncToggles();
+    // まだ誰も入っていないときは、構成の欄ごと隠して②を上に寄せる
+    compEl.hidden=!allyC.n&&!enemyC.n;
     compEl.innerHTML=compHtml(allyC,J("味方（あなた以外）","Allies (excluding you)"))+compHtml(enemyC,J("敵","Enemy"));
     needsNote.innerHTML=touched?`${J("手で選んでいます","Set manually")} <button type="button" class="linkbtn" data-auto>${J("自動に戻す","Back to auto")}</button>`:allyC.n>=2?J("味方の構成から、足りないものを自動で選んでいます（押して変えられます）","Auto-selected from what your team is missing (tap to change)"):J("味方を2人以上入れると、足りないものを自動で選びます","Enter 2+ allies to auto-select what your team is missing");
     // すでに選ばれているチャンプは候補にしない
