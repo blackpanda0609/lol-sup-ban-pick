@@ -7,32 +7,32 @@
 <meta name="description" content="LoLのBP支援。JP・KRのエメラルド以上の試合データから、全レーンの対面勝率とbotの組み合わせ勝率、サポートのカウンターと構成の相性を引けます。">
 <meta property="og:title" content="BPノート">
 <meta property="og:description" content="全レーンの対面勝率とサポートのBP早見表">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%23e0b35a'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%23e0b35a'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%23e0b35a'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%23e0b35a'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 1c4.5 4.5 7 8 7 11.5a7 7 0 0 1-14 0C9 9 11.5 5.5 16 1z' fill='%234ade80'/%3E%3Cellipse cx='16' cy='13' rx='4' ry='2.6' fill='%2307110c'/%3E%3Ccircle cx='16' cy='13' r='1.4' fill='%234ade80'/%3E%3Crect x='14.6' y='19' width='2.8' height='8' rx='1' fill='%234ade80'/%3E%3Cpath d='M9 31h14l-2.5-4h-9z' fill='%234ade80'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 /* Layout: ヘッダー（データの状態）→ レーンタブ → タブごとのパネル。1カラム、最大幅 1000px */
 :root{
   --bg:#dfeae3; --surface:#ffffff; --fg:#13241b; --muted:#4f665a; --line:#c2d6ca;
-  --accent:#a8761b; --accent-soft:#f3e7cc;
+  --accent:#15803d; --accent-soft:#dcf3e2;
   --engage:#c0392b; --catch:#7b4bb5; --tank:#3a6ea5; --ench:#2a8a6a; --mage:#c46a1a;
   --dmg-ad:#e5392b; --dmg-ap:#2fa8e8; --dmg-true:#ffffff;
-  --good:#2a8a6a; --bad:#c0392b; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
+  --good:#1f6fd1; --bad:#c0392b; --fighter:#8a6418; --assassin:#a3326f; --marks:#23798a;
   --display:"Dela Gothic One","Zen Kaku Gothic New",sans-serif;
   --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#e0b35a; --accent-soft:#3a3020;
+  --accent:#4ade80; --accent-soft:#173a24;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
-  --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
+  --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#07110c; --surface:#16281f; --fg:#ebf4ee; --muted:#a6bcb0; --line:#2f4b3d;
-  --accent:#e0b35a; --accent-soft:#3a3020;
+  --accent:#4ade80; --accent-soft:#173a24;
   --engage:#ef6b5c; --catch:#b48de6; --tank:#78a9e0; --ench:#5cc9a2; --mage:#eb9a4f;
   --dmg-ad:#ff5446; --dmg-ap:#5cc6ff; --dmg-true:#f4f6f8;
-  --good:#5cc9a2; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
+  --good:#5aa9ff; --bad:#ef6b5c; --fighter:#d8b25a; --assassin:#e483bb; --marks:#6cc6d6; color-scheme:dark}
 [hidden]{display:none!important}
 /* 見た目には出さず、読み上げには残す（選んでいるタブと同じ内容の見出しなど） */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
@@ -105,12 +105,14 @@ ul.list li{display:grid;gap:2px}
 .name{font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .why{color:var(--muted);font-size:13.5px}
 .tag{font-size:11px;font-weight:700;letter-spacing:.06em;padding:1px 7px;border-radius:999px;border:1px solid currentColor;line-height:1.6}
-.diff-1{color:var(--good)}.diff-2{color:var(--muted)}.diff-3{color:var(--bad)}
+.diff-1{color:var(--fg)}.diff-2{color:var(--muted)}.diff-3{color:var(--muted)}
 .tag.diff-1,.tag.diff-2,.tag.diff-3{border-style:dashed}
 .easy-opt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);margin:0 0 8px;cursor:pointer;width:fit-content}
 .easy-opt input{width:auto;margin:0;padding:0;flex:none;accent-color:var(--good)}
 .t-engage{color:var(--engage)}.t-catch{color:var(--catch)}.t-tank{color:var(--tank)}.t-ench{color:var(--ench)}.t-mage{color:var(--mage)}.t-fighter{color:var(--fighter)}.t-assassin{color:var(--assassin)}.t-marks{color:var(--marks)}
-.score{font-family:var(--mono);font-size:12px;color:var(--accent)}
+/* タグは色で主張させない：分類や型はグレーの枠だけ。色は「選択中・押せるもの（緑）」「勝率（青・赤）」に絞る */
+.tag[class*="t-"]{color:var(--muted);border-color:var(--line)}
+.score{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .wr{font-family:var(--mono);font-size:13px;margin-left:auto}
 .wr.up{color:var(--good)}.wr.down{color:var(--bad)}
 /* 勝率つきの1行：1行目に名前と勝率、2行目に説明を横いっぱいに、3行目に帯 */
@@ -119,8 +121,8 @@ ul.list li{display:grid;gap:2px}
 .sl .bar{grid-column:1/-1;grid-row:3}
 
 .bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;display:block}
-.bar i{display:block;height:100%;background:var(--accent)}
-.bar.up i{background:var(--good)}.bar.down i{background:var(--bad)}
+.bar i{display:block;height:100%;background:var(--muted);opacity:.55}
+.bar.up i{background:var(--good);opacity:1}.bar.down i{background:var(--bad);opacity:1}
 .h2h{font-size:28px;font-family:var(--mono)}
 .toggles{display:flex;flex-wrap:wrap;gap:8px}
 .tg{font:inherit;font-size:13.5px;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
@@ -248,6 +250,23 @@ td.extra .chips{flex-wrap:nowrap}
 .later summary{cursor:pointer;font-size:13px;font-weight:700;color:var(--muted)}
 .later[open] summary{margin-bottom:10px}
 @media (max-width:560px){.slot .pbtn .pn,.me-mirror span{display:none}.slot .pbtn{justify-content:center;padding:6px 2px}.me-mirror{justify-content:center;min-height:40px}.bline{grid-template-columns:30px repeat(5,minmax(0,1fr))}.comp-h{min-width:0;flex-basis:100%}}
+/* 広い画面では2列：左にドラフトの盤面（スクロールしても付いてくる）、右に②〜⑤。
+   盤面はゲームのチャンプ選択と同じく、味方を左・敵を右に縦に並べる */
+@media (min-width:1180px){
+  .wrap{max-width:1400px}
+  .steps{grid-template-columns:minmax(380px,420px) minmax(0,1fr);grid-template-rows:auto auto auto auto 1fr;align-items:start}
+  .step[data-step="1"]{grid-column:1;grid-row:1/span 5;position:sticky;top:12px;z-index:5}
+  .step:not([data-step="1"]){grid-column:2}
+  .board{grid-template-columns:1fr 1fr;column-gap:10px}
+  .bline{grid-template-columns:minmax(0,1fr);gap:6px;align-items:stretch}
+  .bline .side{padding:0}
+  .slot{grid-template-columns:30px minmax(0,1fr);align-items:center;gap:4px}
+  .bline.enemy .slot-l{visibility:hidden;width:0}
+  .bline.enemy .slot{grid-template-columns:0 minmax(0,1fr);gap:0}
+  .bans{grid-column:1/-1}
+  .link-dl{margin-left:0}
+  .comp-h{min-width:0;flex-basis:100%}
+}
 /* 自分のピック：ステップ2の主役 */
 .mypick .flabel{font-size:13.5px;color:var(--fg)}
 .mypick .pbtn{font-size:15px;padding:8px 12px 8px 8px;border-color:var(--accent)}
@@ -318,6 +337,23 @@ td.extra .chips{flex-wrap:nowrap}
 .pick-btn{font:inherit;font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:999px;padding:1px 10px;cursor:pointer;margin-left:4px}
 .pick-btn.on{color:var(--bg);background:var(--accent);cursor:default}
 .rank li.chosen{outline:2px solid var(--accent);outline-offset:6px;border-radius:6px}
+/* おすすめ：表の形で、どの行も同じ位置に名前・理由・勝率・ボタンを並べる */
+.rtable{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.rrow{display:grid;grid-template-columns:20px minmax(160px,210px) minmax(0,1fr) 64px 96px;gap:4px 14px;align-items:center;padding:9px 12px;border-top:1px solid var(--line)}
+.rrow:first-child{border-top:0}
+.rhead{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);background:var(--surface);padding:6px 12px}
+.r-no{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.r-ch{display:flex;align-items:center;gap:10px;min-width:0}
+.r-ch .ic{width:34px;height:34px}
+.r-nm{display:grid;gap:3px;min-width:0}
+.r-nm b{font-size:14.5px}
+.r-nm .tag{font-size:10px;padding:0 6px}
+.r-why{font-size:12.5px;color:var(--muted);line-height:1.55;min-width:0}
+.r-num{display:grid;justify-items:end;gap:1px;text-align:right}
+.r-num .wr{margin:0;font-size:14.5px;font-weight:700}
+.rrow .pick-btn{justify-self:end;margin:0;padding:4px 12px}
+.rrow.chosen{background:var(--accent-soft)}
+@media (max-width:700px){.rrow{grid-template-columns:18px minmax(0,1fr) auto;row-gap:6px}.rhead{display:none}.r-why{grid-column:2;grid-row:2}.rrow .pick-btn{grid-column:3;grid-row:2;align-self:start}}
 /* ビルド */
 .build{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:18px 28px}
 .bsec{display:grid;gap:4px;min-width:0;align-content:start}
@@ -1433,7 +1469,7 @@ function buildLane(id,pos,label){
       return {k,s,notes,teiki,r:shown};
     }).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,6);
     const conds=[E?J(`${nm(E)}に勝ちやすい`,`beats ${nm(E)}`):J("先出しでも安全","safe blind pick"),AL&&J(`${nm(AL)}と相性がいい`,`synergy with ${nm(AL)}`),needs.size&&J(`${[...needs].map(n=>LANE_NEEDS[n]).join("・")}がほしい`,`needs ${[...needs].map(n=>LANE_NEEDS[n]).join(", ")}`),EASY&&J("操作が簡単","easy to play")].filter(Boolean).join(" × ")||J("今の環境で強い","strong in the current meta");
-    s2.innerHTML=`<h4 class="s-sub">${J("おすすめ：","Suggestions: ")}${conds}</h4>`+(rs.length?`<ul class="rank">${rs.map(x=>`<li class="sl${x.k===M?" chosen":""}"><span class="name">${icK(x.k)}${nm(x.k)}${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}<span class="score">${x.s.toFixed(1)}${J("点"," pts")}</span>${x.k===M?`<span class="pick-btn on">${J("選択中","Selected")}</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">${J("これにする","Pick this")}</button>`}</span><span class="why">${x.notes.join(SL)}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="bar ${dirOf(x.r)}"><i style="width:${(wrOf(x.r)*100).toFixed(1)}%"></i></span></li>`).join("")}</ul>`:fewMsg());
+    s2.innerHTML=`<h4 class="s-sub">${J("おすすめ：","Suggestions: ")}${conds}</h4>`+(rs.length?`<ul class="rtable"><li class="rrow rhead" aria-hidden="true"><span>#</span><span>${J("チャンプ","Champion")}</span><span>${J("理由","Why")}</span><span class="r-num">${J("勝率","Win rate")}</span><span></span></li>${rs.map((x,i)=>`<li class="rrow${x.k===M?" chosen":""}"><span class="r-no">${i+1}</span><span class="r-ch">${icK(x.k)}<span class="r-nm"><b>${nm(x.k)}</b><span class="tags2">${clsTag(x.k)}${diffTag(x.k)}${timingTag(L,x.k)}</span></span></span><span class="r-why">${x.notes.join(SL)}${x.teiki.map(t=>`<br>★${t}`).join("")}</span><span class="r-num"><span class="wr ${dirOf(x.r)}">${pct(x.r)}</span><span class="score">${x.s.toFixed(1)}${J("点"," pts")}</span></span>${x.k===M?`<span class="pick-btn on">${J("選択中","Selected")}</span>`:`<button type="button" class="pick-btn" data-pick="${x.k}">${J("これにする","Pick this")}</button>`}</li>`).join("")}</ul>`:fewMsg());
     // --- ステップ2（ピック後）：対面・隣との相性・次のBAN候補 ---
     const sub=[];
     if(E)sub.push(enemyCard(L,E,M));
