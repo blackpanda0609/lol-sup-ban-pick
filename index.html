@@ -175,7 +175,6 @@ td.extra .chips{flex-wrap:nowrap}
 .d-p{background:var(--dmg-ad)}.d-m{background:var(--dmg-ap)}.d-t{background:var(--dmg-true)}
 .dmg{box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
 .dot{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
-.cls-filter .tg{color:var(--fg)}
 #tip{position:absolute;z-index:50;max-width:min(300px,calc(100vw - 16px));display:grid;gap:4px;
   background:var(--surface);color:var(--fg);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;
   font-size:13px;line-height:1.55;pointer-events:none;box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 0 4px var(--accent-soft)}
@@ -1354,18 +1353,19 @@ function planHtml(ally,enemy,me){
 // ===== Tier表（BPのタブとは別に、表の上のボタンでレーンを切り替える） =====
 function buildTiers(){
   const sec=$("tier-sec");if(!ST){sec.hidden=true;return;}
-  sec.innerHTML=`<nav class="lt-tabs" aria-label="${J("Tier表のレーン","Tier list role")}">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="false">${lb}</button>`).join("")}</nav>`
-    +LANES.map(([t])=>`<div class="tier-lane" data-lane="${t}" hidden></div>`).join("");
+  // レーンの切り替えは、各レーンの表の見出しのすぐ下に置く（以前のタイプ絞り込みの位置）
+  const nav=`<nav class="lt-tabs" aria-label="${J("Tier表のレーン","Tier list role")}">${LANES.map(([t,,lb])=>`<button type="button" class="lt-tab" data-lt="${t}" aria-current="false">${lb}</button>`).join("")}</nav>`;
+  sec.innerHTML=LANES.map(([t])=>`<div class="tier-lane" data-lane="${t}" hidden></div>`).join("");
   LANES.forEach(([id,pos,label])=>{
     const L=ST.lanes[pos]||{champs:{},vs:{}};
     const extras=[{head:J("苦手な対面","Tough matchups"),cell:k=>worstChips(L,k,pos)}];
     if(pos==="BOTTOM")extras.push({head:J("相性のいいサポート","Best supports"),cell:k=>pairCell(k,true)});
     if(pos==="UTILITY")extras.push({head:J("相性のいいADC","Best ADCs"),cell:k=>pairCell(k,false)});
     // 名前を押したら、そのチャンプを自分のピックにする（これはBPの操作なので、BPのタブも切り替える）
-    const tbl=laneTable(sec.querySelector(`[data-lane="${id}"]`),L,label,extras,k=>{showTab(id);lanePanels[id].open(k,true);});
+    const tbl=laneTable(sec.querySelector(`[data-lane="${id}"]`),L,label,extras,k=>{showTab(id);lanePanels[id].open(k,true);},nav);
     lanePanels[id].table=tbl;
   });
-  sec.querySelector(".lt-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-lt]");if(b)setTierLane(b.dataset.lt);});
+  sec.addEventListener("click",e=>{const b=e.target.closest("[data-lt]");if(b)setTierLane(b.dataset.lt);});
 }
 function setTierLane(id){
   document.querySelectorAll("#tier-sec .tier-lane").forEach(el=>{el.hidden=el.dataset.lane!==id;});
@@ -1568,26 +1568,18 @@ function extCells(L,k){
 }
 const TIER_NOTE_JA=`Tierは「環境への影響力」のスコアで、レーン内の順位から決めています（上位10%がS、次の20%がA、35%がB、20%がC、残りがD）。ただし、そのロールでのピック率が1%未満のチャンプは、スコアが高くてもSにはせずAまでにしています。スコアは勝率点、ピック率から出す人気点、BAN率から出すBAN点の合計です（BAN点はbanを数えた試合が200試合たまってから入ります）。勝率は20勝20敗ぶんを足して50%寄りにならしてから使います。そのため、勝率が少し高いだけの職人チャンプより、よく使われていて勝率が平均以上のチャンプが上に来ます。勝率が低ければ、人気があっても下がります。そのロールでのピック率が、上の「表示する最低ピック率」（最初は0.3%）より低いチャンプは一覧とプルダウンに出しません（データが少ないうちは最低10試合）。50試合未満のチャンプは「—」（Tierなし）です。Tierをタップ（パソコンならカーソルを合わせる）と内訳が出ます。「苦手な対面」は、その行のチャンプ側の勝率が低い相手を3体まで出しています（試合数が少ないものは50%寄りに補正して並べます）。数字はその行のチャンプ側から見た対面勝率です。BOTの「相性のいいサポート」とSUPの「相性のいいADC」は、組んだときの勝率と組まれる割合で並べています。★は手書きの定番の組み合わせで、アイコンをタップすると理由が出ます（★以外の理由は自動判定）。「アーリー／安定／レイト」は、30分未満と30分以上の試合の勝率の差で決めた強い時間帯の目安です（それぞれ30試合以上集まったチャンプだけ）。「CC/分」は敵にCCを当てた時間の1分あたりの平均、「ダメージ」はチャンピオンに与えたダメージの物理（赤）・魔法（水色）・確定（白）の割合です。「ほしいもの」のAP・ADは、その種類のダメージを1分あたり300以上出しているチャンプだけを数えます（どちらも10試合以上集まったチャンプだけ）。`;
 const TIER_NOTE_EN=`Tiers come from a "meta impact" score ranked within each role (top 10% = S, next 20% = A, 35% = B, 20% = C, the rest = D). Champions with under 1% pick rate in the role are capped at A even if their score is higher. The score adds up a win-rate part, a popularity part from pick rate, and a ban part from ban rate (the ban part starts once 200 games with ban data are collected). Win rates are first smoothed toward 50% by adding 20 wins and 20 losses, so popular champions with above-average win rates rank above one-trick picks with a slightly higher win rate, and a low win rate pulls a champion down even if it's popular. Champions whose pick rate in the role is below the "Min. pick rate" setting above (0.3% by default) are hidden from the list and the pickers (minimum 10 games while data is scarce). Champions with under 50 games show "—" (no tier). Tap a tier (or hover on desktop) to see the breakdown. "Tough matchups" shows up to 3 opponents against whom the row's champion has a low win rate (small samples are pulled toward 50% for ranking); the number is the row champion's win rate. "Best supports" (BOT) and "Best ADCs" (SUP) are ranked by win rate together and how often they're paired. ★ marks hand-written well-known pairings; tap the icon for the reason (other reasons are generated automatically). "Early / Steady / Late" shows when a champion is strongest, based on the win-rate difference between games under and over 30 minutes (only champions with 30+ games in each). "CC/min" is the average crowd-control time applied to enemies per minute, and "Damage" is the share of physical (red), magic (light blue) and true (white) damage to champions. AP / AD in "What your team needs" only counts champions dealing 300+ of that damage type per minute (both require 10+ games).`;
-function laneTable(host,L,label,extras=[],onOpen=null){
+function laneTable(host,L,label,extras=[],onOpen=null,nav=""){
   host.innerHTML=`<div class="tablebar"><h2>${J(`${label}のTier表`,`${label} tier list`)}</h2><input type="search" placeholder="${J("チャンプ名で絞り込み","Filter by champion")}" aria-label="${J(`${label}のTier表を絞り込み`,`Filter the ${label} tier list`)}"></div>
-    <div class="toggles cls-filter" role="group" aria-label="${J("タイプで絞り込み","Filter by class")}"><button type="button" class="tg" data-c="" aria-pressed="true">${J("すべて","All")}</button>${Object.keys(CLS).map(c=>`<button type="button" class="tg" data-c="${c}" aria-pressed="false"><span class="dot t-${CLS[c][1]}"></span>${CLS[c][0]}</button>`).join("")}</div>
+    ${nav}
     <div class="tbl"><table><thead><tr><th data-s="tier">Tier</th><th data-s="name">${J("チャンプ","Champion")}</th><th data-s="cls">${J("タイプ","Type")}</th><th class="n" data-s="wr">${J("勝率","Win")}</th><th class="n" data-s="g">${J("試合数","Games")}</th><th class="n" data-s="pr">${J("ピック率","Pick")}</th><th class="n" data-s="br">${J("BAN率","Ban")}</th><th class="n" data-s="cc">${J("CC/分","CC/min")}</th><th data-s="ap">${J("ダメージ","Damage")}</th>${extras.map(x=>`<th class="thw">${x.head}</th>`).join("")}</tr></thead><tbody></tbody></table></div>
     <p class="why" style="margin:0">${EN?TIER_NOTE_EN:TIER_NOTE_JA}</p>`;
 
-  const tq=host.querySelector("input"),tb=host.querySelector("tbody"),cf=host.querySelector(".cls-filter");
-  const cls=new Set();
+  const tq=host.querySelector("input"),tb=host.querySelector("tbody");
   let sk="tier",sd=-1;
-  cf.addEventListener("click",e=>{
-    const b=e.target.closest("[data-c]");if(!b)return;
-    const c=b.dataset.c;
-    if(!c)cls.clear();else cls.has(c)?cls.delete(c):cls.add(c);
-    cf.querySelectorAll("[data-c]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.c?cls.has(x.dataset.c):!cls.size));
-    table();
-  });
   const order=Object.keys(CLS);
   function table(){
     const t=kata(tq.value.trim());
-    const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&(!t||kata(nm(k)).includes(t))&&(!cls.size||BYKEY[k].tags.some(x=>cls.has(x))));
+    const rows=Object.entries(L.champs).filter(([k,r])=>BYKEY[k]&&r[0]>=roleMin(L)&&(!t||kata(nm(k)).includes(t)));
     const tm=tierMapOf(L),TR={S:5,A:4,B:3,C:2,D:1};
     const val=([k,r])=>sk==="name"?nm(k):sk==="wr"?wrOf(r):sk==="tier"?(tm[k]?TR[tm[k]]*1000+powerScore(r,k,L):-99+r[0]/1e6):sk==="br"?(banRate(k)||0):sk==="cc"?(extOf(L,k)?ccPerMin(extOf(L,k)):-1):sk==="ap"?(extOf(L,k)?dmgShare(extOf(L,k))[1]:-1):sk==="cls"?order.indexOf(BYKEY[k].tags[0])*-1:r[0];
     rows.sort((a,b)=>{const x=val(a),y=val(b);return (typeof x==="string"?x.localeCompare(y,LANG):x-y)*sd||powerScore(b[1],b[0],L)-powerScore(a[1],a[0],L);});
