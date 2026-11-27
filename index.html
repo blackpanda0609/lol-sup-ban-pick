@@ -624,17 +624,18 @@ function tierMapOf(L){
   return map;
 }
 const tierBadge=(t,r,key,L,cap=false)=>t?`<span class="tier tier-${t}" tabindex="0" data-tip-h="Tier ${t}" data-tip="${J("環境への影響力スコア","Meta impact score")} ${powerScore(r,key,L).toFixed(1)}${cap?J(`（スコアはS相当ですが、ピック率が${S_MIN_PR*100}%未満なのでAにしています）`,` (S-level score, but capped at A because pick rate is under ${S_MIN_PR*100}%)`):""}" data-tip-s="${J("勝率点","Win rate")} ${wrPts(r)>=0?"+":""}${wrPts(r).toFixed(1)}${SL2}${J("人気点","Popularity")} +${prPts(r,L).toFixed(1)}${SL2}${J("BAN点","Ban")} +${banPts(r,key).toFixed(1)}">${t}</span>`:`<span class="tier tier-none" tabindex="0" data-tip-h="${J("Tierなし","No tier")}" data-tip="${J(`${tierMin()}試合に届いていないので、まだTierを付けていません`,`Not ranked yet: fewer than ${tierMin()} games`)}">—</span>`;
-// 強い時間帯：30分未満と30分以上の勝率（それぞれ10勝10敗ぶんを足してならす）の差で、アーリー型かレイト型かを決める
+// 強い時間帯：25分未満と30分以上の勝率（それぞれ10勝10敗ぶんを足してならす）の差で、アーリー型かレイト型かを決める。
+// 25〜30分を「序盤」に入れると差が薄まり、ジンクスのような後半型も「安定」になってしまうので、間の時間帯は比べない
 const TB=J(["〜25分","25〜30分","30〜35分","35分〜"],["< 25 min","25–30 min","30–35 min","35+ min"]);
 const TIMING={early:[J("アーリー","Early"),J("序盤に強く、試合が長引くと勝率が下がる","Strong early; win rate drops in long games"),"fighter"],mid:[J("安定","Steady"),J("試合時間で勝率があまり変わらない","Win rate barely changes with game length"),"tank"],late:[J("レイト","Late"),J("序盤は控えめで、試合が長引くほど勝率が上がる","Modest early; win rate rises the longer the game goes"),"catch"]};
 function timingOf(L,k){
   const t=L&&L.time&&L.time[k];if(!t)return null;
-  const e=[t[0][0]+t[1][0],t[0][1]+t[1][1]],l=[t[2][0]+t[3][0],t[2][1]+t[3][1]];
+  const e=t[0],l=[t[2][0]+t[3][0],t[2][1]+t[3][1]];
   if(e[0]<30||l[0]<30)return {t,type:null};
   const d=(e[1]+10)/(e[0]+20)-(l[1]+10)/(l[0]+20);
-  return {t,d,type:d>.03?"early":d<-.03?"late":"mid"};
+  return {t,d,type:d>.025?"early":d<-.025?"late":"mid"};
 }
-const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${J(`${n}型`,`${n} game`)}" data-tip="${desc}" data-tip-s="${J("30分未満と30分以上の勝率の差","Win rate under 30 min minus 30+ min:")} ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
+const timingTag=(L,k)=>{const x=timingOf(L,k);if(!x||!x.type)return "";const [n,desc,c]=TIMING[x.type];return `<span class="tag t-${c}" tabindex="0" data-tip-h="${J(`${n}型`,`${n} game`)}" data-tip="${desc}" data-tip-s="${J("25分未満と30分以上の勝率の差","Win rate under 25 min minus 30+ min:")} ${x.d>0?"+":""}${(x.d*100).toFixed(1)}pt">${n}</span>`;};
 // ===== 対面の強み・弱点（自動判定） =====
 // 射程（公式データ）、強い時間帯・ダメージの種類と量・CC（実データ）、分類、勝率、データ上の苦手な相手から作る。
 // それぞれに、初心者向けの「どう突くか」を添える
@@ -706,12 +707,32 @@ function enemyCard(L,E,M){
   return `<div class="card ep-card"><h3>${J(`対面：${icK(E)}${nm(E)}の強みと弱点`,`Lane opponent: ${icK(E)}${nm(E)} strengths & weaknesses`)}</h3>${body}</div>`;
 }
 
-function timingCard(L,k){
-  const x=timingOf(L,k),title=J(`${nm(k)}の強い時間帯`,`When ${nm(k)} is strongest`);
+// 隣（ADC⇔サポート）の強い時間帯：どの時間帯に合わせて動けばいいかを、ひとことで添える
+const TIMING_PLAN={
+  early:J("序盤に強い。レベル2・6の先行や最初のドラゴンで積極的に仕掛け、25分までに差を広げて試合を長引かせない","Strong early. Play for level 2/6 spikes and the first dragon, build a lead by 25 min, and don't let the game drag on"),
+  mid:J("時間帯で勝率があまり変わらない。無理に急がず、レーンの有利・不利と構成に合わせて動く","Win rate barely changes with game length. No need to rush; play around the lane matchup and team comps"),
+  late:J("育つほど強い。序盤は無理に仕掛けずファームを守り、30分以降の集団戦で守り切る","Gets stronger the longer it goes. Don't force early fights; protect the farm and win the teamfights after 30 min")
+};
+function partnerTimingCard(Lp,AL,Lm,M){
+  const x=timingOf(Lp,AL);
+  let extra=x&&x.type?`<p class="why" style="margin:0">${TIMING_PLAN[x.type]}</p>`:"";
+  const y=M?timingOf(Lm,M):null;
+  if(x&&x.type&&y&&y.type){
+    const a=x.type,b=y.type;
+    const s=a==="early"&&b==="early"?J("2人とも序盤型。レーンで有利を作ったら、タワーとドラゴンを早めに取りにいく","Both of you are early-game. Once you win lane, take towers and dragons early")
+      :a==="late"&&b==="late"?J("2人とも後半型。序盤は守りに徹して、試合を長引かせる","Both of you scale. Play safe early and drag the game out")
+      :a==="late"&&b==="early"?J(`あなたは序盤に強いので、レーンの主導権を取って${nm(AL)}が育つ時間を作る`,`You're stronger early, so take control of the lane and buy time for ${nm(AL)} to scale`)
+      :a==="early"&&b==="late"?J(`序盤は${nm(AL)}の仕掛けに合わせる。長引けばあなたのほうが強くなる`,`Follow ${nm(AL)}'s plays early; you get stronger if the game goes long`):"";
+    if(s)extra+=`<p class="why" style="margin:0">★${s}</p>`;
+  }
+  return timingCard(Lp,AL,J(`隣の${nm(AL)}の強い時間帯`,`When your partner ${nm(AL)} is strongest`),extra);
+}
+function timingCard(L,k,title=J(`${nm(k)}の強い時間帯`,`When ${nm(k)} is strongest`),extra=""){
+  const x=timingOf(L,k);
   if(!x)return card(title,empty(J("試合時間ごとのデータは、まだたまっていません。","Not enough data by game length yet.")));
   const rows=x.t.map((r,i)=>r[0]?`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${G(r[0])}</span><span class="wr ${r[0]>=MIN?dirOf(r):""}">${pct(r)}</span><span class="bar ${r[0]>=MIN?dirOf(r):""}"><i style="width:${(wrOf(r)*100).toFixed(1)}%"></i></span></li>`:`<li class="sl"><span class="name">${TB[i]}</span><span class="why">${J("データなし","No data")}</span></li>`).join("");
   const head=x.type?`<p class="why" style="margin:0"><b style="color:var(--fg)">${J(`${TIMING[x.type][0]}型`,`${TIMING[x.type][0]} game`)}</b>${COL}${TIMING[x.type][1]}</p>`:`<p class="why" style="margin:0">${J("試合数が少ないので、まだ型は判定していません。","Too few games to classify yet.")}</p>`;
-  return card(title,head+`<ul class="list">${rows}</ul>`);
+  return card(title,head+extra+`<ul class="list">${rows}</ul>`);
 }
 const statList=(rows,noteFn=null)=>rows.length?`<ul class="list">${rows.map(([k,r])=>statLi(k,r,noteFn?noteFn(k):"")).join("")}</ul>`:fewMsg();
 
@@ -1397,6 +1418,8 @@ function buildLane(id,pos,label){
       // ピック前は場所を取らないよう、アイコンと勝率だけを1行で
       if(list.length)sub.push(`<div class="avoid" style="grid-column:1/-1"><span class="avoid-h">${J(`${nm(E)}相手に避けたいピック`,`Picks to avoid vs ${nm(E)}`)}</span><div class="chips">${list.map(([k,r])=>`<span class="chip ichip" tabindex="0" role="button" data-tip-h="${nm(k)}" data-tip="${J(`${nm(E)}相手に勝率が低いピック`,`Low win rate vs ${nm(E)}`)}" data-tip-s="${J(`${nm(k)}側の勝率 ${pct(r)}（${r[0]}試合）`,`${nm(k)}'s win rate ${pct(r)} (${G(r[0])})`)}" data-tip-d="${dirOf(r)}" aria-label="${nm(k)}">${icK(k)}<span class="wr ${dirOf(r)}">${pct(r)}</span></span>`).join("")}</div></div>`);
     }
+    // 隣（ADC⇔サポート）が決まっていれば、その強い時間帯も出す（自分のピック前でも）
+    if(AL)sub.push(partnerTimingCard(ST.lanes[partner[0]],AL,L,M));
     s2b.innerHTML=!sub.length?"":`<div class="results">${sub.join("")}</div>`;
     // ピックが決まったらおすすめは閉じ、ピックを外したら開く（開け閉めは自分でもできる）
     if(M!==lastM){
